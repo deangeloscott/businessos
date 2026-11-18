@@ -35,20 +35,27 @@ try {
   await until(`!!document.querySelector('#world-side [data-world-go^="land:"]') && !!window.auraLinks`, 'the aura to open');
   await until(`!!window.auraWorld && (!window.auraWorld.available || !!window.auraWorld.model())`, 'the world renderer to load');
   const has3d = await evaluate(`!!window.auraWorld?.available && !!window.auraWorld.model()`);
-  // Select a collection from the list, then open Connections and give the diagram the whole screen.
+  // Select a collection from the list, then open Connections: the diagram takes the stage and the world goes small.
   await evaluate(`document.querySelector('#world-side [data-world-go^="land:col_"]').click()`);
   await sleep(400);
   await evaluate(`document.querySelector('[data-world-tab="map"]').click()`);
-  await evaluate(`document.querySelector('[data-world-expand]').click()`);
-  await sleep(600);
-  const map = await evaluate(`(()=>{const m=document.querySelector('#world-map'),side=document.querySelector('#world-side');return m?{height:m.getBoundingClientRect().height,lines:m.querySelectorAll('path').length,nodes:m.querySelectorAll('.wm-node').length,overflows:side.scrollHeight>side.clientHeight}:null;})()`);
-  check(map && map.nodes > 1, 'the expanded diagram has its nodes: ' + JSON.stringify(map));
-  check(map.height > 40, 'the expanded diagram is visible even when the list beside it is long: ' + JSON.stringify(map));
-  check(map.lines > 0, 'the expanded diagram draws its lines: ' + JSON.stringify(map));
+  await sleep(700);
+  const map = await evaluate(`(()=>{const m=document.querySelector('#world-lens #world-map'),side=document.querySelector('#world-side'),stage=document.querySelector('#world-stage').getBoundingClientRect();return m?{height:m.getBoundingClientRect().height,lines:m.querySelectorAll('.ln').length,nodes:m.querySelectorAll('.wm-node').length,side:!!side.querySelector('h2'),mini:stage.width<260}:null;})()`);
+  check(map && map.nodes > 1, 'the diagram on the stage has its nodes: ' + JSON.stringify(map));
+  check(map.height > 40 && map.side, 'the diagram is visible with its list beside it: ' + JSON.stringify(map));
+  check(map.lines > 0, 'the diagram draws its lines: ' + JSON.stringify(map));
+  check(map.mini, 'the world keeps going small in the corner: ' + JSON.stringify(map));
   // Pointing at a box traces its chain in the diagram, as the prototype's Map did.
   const traced = await evaluate(`(()=>{const n=document.querySelector('#world-map .wm-node[data-world-go^="task:"]')||document.querySelector('#world-map .wm-node[data-world-go^="app:"]');n.dispatchEvent(new PointerEvent('pointerover',{bubbles:true}));const d=document.querySelectorAll('#world-map .world-dim').length;n.dispatchEvent(new PointerEvent('pointerout',{bubbles:true,relatedTarget:document.body}));return {dimmed:d,after:document.querySelectorAll('#world-map .world-dim').length};})()`);
   check(traced.dimmed > 0 && traced.after === 0, 'pointing at a box traces its chain and lets go after: ' + JSON.stringify(traced));
-  await evaluate(`document.querySelector('[data-world-expand]').click()`);
+  // Time and AI effort take the stage too.
+  await evaluate(`document.querySelector('[data-world-tab="timeline"]').click()`); await sleep(500);
+  check(await evaluate(`!!document.querySelector('#world-lens .tl-today') && document.querySelectorAll('#world-lens .tl-lane').length>0`), 'Time draws its rows with today on the stage');
+  await evaluate(`document.querySelector('[data-world-tab="effort"]').click()`); await sleep(500);
+  check(await evaluate(`!document.querySelector('#world-lens').hidden && !!document.querySelector('#world-lens .we-stage, #world-lens .tl-empty')`), 'AI effort takes the stage');
+  // The side panel can be made wider from its edge, with the keyboard as well as by dragging.
+  const widths = await evaluate(`(()=>{const g=document.querySelector('#world-grip'),side=document.querySelector('#world-side'),a=side.getBoundingClientRect().width;g.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true}));const b=side.getBoundingClientRect().width;localStorage.removeItem('aura-world-side-width');return [a,b];})()`);
+  check(widths[1] > widths[0], 'the side panel widens from its edge: ' + JSON.stringify(widths));
   if (has3d) {
     // An AI app in the sky beside the world opens its connections when clicked.
     await evaluate(`document.querySelector('[data-world-tab="world"]').click()`); await sleep(300);

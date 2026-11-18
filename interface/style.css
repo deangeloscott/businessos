@@ -1326,7 +1326,7 @@ body.panel-resizing :is(.shell-main,#sidebar,#detail){transition:none;animation:
 .world-tabs{display:flex;flex-wrap:wrap;gap:6px}.world-tabs [aria-selected=true]{background:var(--accent);color:var(--accent-ink,var(--paper));border-color:var(--accent)}
 .world-stage[hidden],.world-alt[hidden]{display:none}
 .world-alt{overflow:auto;padding:16px 18px;display:grid;gap:14px;align-content:start;border-radius:var(--surface-radius,12px);box-shadow:inset 0 0 0 1px var(--line)}.world-alt p{margin:0}
-.wm{position:relative;display:grid;grid-template-columns:repeat(var(--wm-cols,3),minmax(160px,1fr));gap:56px;align-items:start}.wm-lines{position:absolute;left:0;top:0;pointer-events:none}.wm-lines path{fill:none;stroke:color-mix(in srgb,var(--accent) 60%,transparent);stroke-width:1.4}
+.wm{position:relative;display:grid;grid-template-columns:repeat(var(--wm-cols,3),minmax(160px,1fr));gap:56px;align-items:start}.wm-lines{position:absolute;left:0;top:0;pointer-events:none}
 .wm-col{display:grid;gap:8px;align-content:start;position:relative}.wm-col h3{margin:0 0 2px;font-size:var(--text-xs);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
 .wm-node{display:grid;gap:1px;width:100%;padding:8px 12px;text-align:left;font:inherit;color:var(--ink);background:var(--raised-bg,var(--paper));border:0;border-radius:8px;box-shadow:0 0 0 1px var(--line);cursor:pointer}.wm-node:hover{box-shadow:0 0 0 1px var(--accent)}.wm-node.plain{cursor:default}.wm-node.plain:hover{box-shadow:0 0 0 1px var(--line)}
 .wm-node b{font-size:var(--text-sm);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wm-node small{font-size:var(--text-xs);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1349,7 +1349,7 @@ body.panel-resizing :is(.shell-main,#sidebar,#detail){transition:none;animation:
 body:has(#detail[open][data-mode=context]) .aura-view.world-view{grid-template-columns:minmax(0,1fr)}body:has(#detail[open][data-mode=context]) .world-side{display:none}
 /* In the aura, the world owns everything to the right of the sidebar: no page margins, no heading, controls on the picture. */
 body.in-aura #section-dialog{padding:0;overflow:hidden}body.in-aura #section-dialog>.dialog-top{display:none}body.in-aura #section-content{height:100%;max-width:none;margin:0;padding:0;overflow:hidden}
-body.in-aura .aura-view.world-view{height:100%;min-height:0;grid-template-columns:minmax(0,1fr) 380px}
+body.in-aura .aura-view.world-view{height:100%;min-height:0;grid-template-columns:minmax(0,1fr) var(--world-side-w,380px);position:relative}
 body.in-aura .world-main{display:block;position:relative;height:100%}body.in-aura .world-stage{position:absolute;inset:0;border-radius:0;min-height:0}
 .world-top{position:absolute;left:14px;right:14px;top:12px;z-index:4;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;pointer-events:none}.world-top>*{pointer-events:auto}
 .world-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-left:auto}.world-tools input[type=search]{width:190px}.world-tools select{max-width:210px}
@@ -1386,28 +1386,18 @@ body.in-aura.world-chat-open #world-chat-back { display:block; align-self:start;
 body.in-aura.world-chat-open .world-side { display:none }
 body.in-aura.world-chat-open .aura-view.world-view { grid-template-columns:1fr; grid-template-rows:1fr }
 .world-ask { width:auto }
-body.in-aura .world-expanded { position:relative }
-body.in-aura .world-expanded .world-side {
-  position:absolute; inset:0; z-index:6; overflow:auto; padding:clamp(16px,3vw,48px);
-}
-.world-expanded .world-side .wm { grid-template-columns:none; grid-auto-flow:column; grid-auto-columns:minmax(150px,1fr); gap:56px;
-  /* Not a scroll box of its own: inside the panel's grid a scroll box can shrink to nothing. The panel scrolls instead. */ overflow:visible }
-.world-expanded .world-side .wm-lines { display:block }
-.world-expanded .world-side .we-map { height: min(360px,50vh) }
+
 body.in-aura .world-side { overflow-y:auto; min-height:0 }
 @media (max-width:860px) {
   body.in-aura.world-chat-open #section-dialog { visibility:hidden; pointer-events:none }
   body.in-aura.world-chat-open #main { width:100% }
 }
 
-.world-expanded .world-dim { opacity:.42 }
-.world-expanded .wm-lines .world-dim { opacity:.16 }
-.world-expanded .world-side { align-content:start }
+.world-lens .world-dim { opacity:.42 }
+.world-lens .wm-lines .world-dim { opacity:.16 }
 .world-side .we-block:is(button) { color:#fff; text-align:start; cursor:pointer }
 .world-side .we-block[aria-pressed=true] { box-shadow:inset 0 0 0 3px var(--paper); outline:2px solid var(--accent); z-index:1 }
 /* Lines can be hovered to read what each one records; the boxes stay on top. */
-.world-expanded .wm-lines path { pointer-events:stroke }
-.world-expanded .wm-lines path:hover { stroke:var(--accent) }
 .world-side [data-effort-details] summary { cursor:pointer; padding:.45em 0 }
 
 /* Compact controls scroll as one row instead of covering the world with wrapped buttons. */
@@ -1473,7 +1463,7 @@ body.in-aura .world-bar [hidden] { display:none }
 .world-side .wm-node[aria-pressed="true"] { outline:2px solid var(--accent); outline-offset:2px }
 .world-outcome { border-inline-start:3px solid var(--accent); padding:8px 12px }
 
-.world-expanded .world-side .wm-col { min-width:0 }
+.world-lens .wm-col { min-width:0 }
 .world-side .wm-node b { overflow-wrap:anywhere }
 .world-side .wm-node:focus-visible { outline:2px solid var(--accent); outline-offset:3px }
 .world-side .world-row:focus-visible { outline:2px solid var(--accent); outline-offset:-2px }
@@ -1493,10 +1483,6 @@ body.in-aura .world-bar [hidden] { display:none }
 .wm-group h4 { margin:2px 0 0; font-size:var(--text-xs); font-weight:500; color:var(--muted) }
 .wm-more { display:flex; flex-wrap:wrap; gap:4px 10px; margin:0; font-size:var(--text-xs) }
 /* A dashed line is a recorded link with nothing recorded along it yet; a moving one belongs to work running now. */
-.wm-lines path.idle { stroke-dasharray:3 4; opacity:.55 }
-.wm-lines path.live { stroke:var(--accent); stroke-dasharray:7 7; animation:wm-flow .9s linear infinite }
-@keyframes wm-flow { to { stroke-dashoffset:-14 } }
-@media (prefers-reduced-motion:reduce) { .wm-lines path.live { animation:none; stroke-dasharray:none } }
 .world-flow { display:flex; align-items:center; gap:8px; font-size:var(--text-sm) }
 .world-found { border-bottom:1px solid var(--line); padding-bottom:8px }
 .world-group { border-bottom:1px solid var(--line); padding:4px 0 }
@@ -1507,11 +1493,83 @@ body.in-aura .world-bar [hidden] { display:none }
 .world-chip-more{color:var(--muted)}
 /* The full-screen diagram: zoom controls, panning, and each style's own way of drawing boxes and connectors. */
 .wm-zoom{display:inline-flex;gap:4px;align-items:center}.wm-zoom button{min-width:36px}
-.world-expanded .world-side{cursor:grab}.world-expanded .world-side.wm-panning{cursor:grabbing;user-select:none}
-.world-expanded .world-side :is(button,a,select,input,label){cursor:pointer}
-:root[data-style=desktop90] .wm-node{border-radius:0;box-shadow:inset -1px -1px 0 rgba(0,0,0,.45),inset 1px 1px 0 rgba(255,255,255,.7),0 0 0 1px var(--line)}
-:root[data-style=desktop90] .wm-lines path,:root[data-style=classic] .wm-lines path{stroke-linejoin:miter;shape-rendering:crispEdges}
-:root[data-style=classic] .wm-node{border-radius:2px;box-shadow:0 0 0 1px var(--ink)}
-:root:is([data-style=console90],[data-style=console00]) .wm-node{border-radius:0;font-family:var(--c90-mono,ui-monospace,monospace);box-shadow:0 0 0 1px var(--accent)}
-:root:is([data-style=console90],[data-style=console00]) .wm-lines path{stroke-dasharray:3 3;stroke-linejoin:miter;shape-rendering:crispEdges}
-:root[data-style=desktop00] .wm-node{border-radius:10px;background:linear-gradient(var(--raised-bg,var(--paper)),color-mix(in srgb,var(--raised-bg,var(--paper)) 88%,var(--accent)))}
+.world-lens{cursor:grab}.world-lens.wm-panning{cursor:grabbing;user-select:none}
+.world-lens :is(button,a,select,input,label){cursor:pointer}
+/* The one line, as SVG: a soft glow, a fine core, a dot at each end, a pulse while work runs, a dashed hairline when idle. */
+.wm-lines path{fill:none}.wm-lines .ln-glow{opacity:.16}.wm-lines .ln-ring{fill:var(--world-bg,var(--paper))}.wm-lines .ln-pulse{filter:drop-shadow(0 0 4px currentColor)}
+.wm-lines .ln.idle .ln-core{stroke-width:1;stroke-dasharray:2 5;opacity:.6}
+.wm-lines .ln :is(.ln-core,.ln-glow){pointer-events:stroke}.wm-lines .ln:hover .ln-glow{opacity:.36}
+.wm-lines .world-dim{opacity:.12}
+:root:is([data-style=desktop90],[data-style=classic],[data-style=console90],[data-style=console00]) .wm-lines path{stroke-linejoin:miter;shape-rendering:crispEdges}
+:root:is([data-style=console90],[data-style=console00]) .wm-lines .ln-glow{opacity:0}
+/* A box in the diagram: its area's colour as a stripe and on its icon, and how much went through it. */
+.wm-node{grid-template-columns:auto minmax(0,1fr) auto}.wm-node[style*="--tint"]{background:linear-gradient(90deg,color-mix(in srgb,var(--tint) 14%,transparent),transparent 42%) var(--raised-bg,var(--paper));border-left:3px solid var(--tint)}
+.wm-node[style*="--tint"] .kind-icon{color:var(--tint)}
+.wm-count{font-style:normal;font-size:var(--text-xs);font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink);background:color-mix(in srgb,var(--tint,var(--muted)) 26%,transparent);border-radius:999px;padding:1px 8px;align-self:center}
+
+/* A view on the stage: Connections, Time or AI effort fill the picture area; the world keeps going small in the corner. */
+.world-lens{position:absolute;inset:0;z-index:3;overflow:auto;padding:64px clamp(16px,2.4vw,36px) 96px;background:var(--world-bg,var(--paper));color:var(--ink)}
+.world-lens[hidden]{display:none}
+.world-lens .wm{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(200px,1fr);gap:56px;overflow:visible}
+.world-lens .wm-lines{display:block}
+body.in-aura .world-main.lens-on .world-stage{inset:auto;right:18px;bottom:58px;width:clamp(110px,11%,150px);aspect-ratio:1;height:auto;z-index:5;border-radius:50%;box-shadow:0 0 0 1px var(--line),0 14px 34px rgba(0,0,0,.35);pointer-events:none}
+.world-main.lens-on .world-stage>:not(canvas){display:none}
+.world-mini-back{position:absolute;right:18px;bottom:58px;width:clamp(110px,11%,150px);aspect-ratio:1;z-index:6;border-radius:50%;border:0;background:transparent;color:transparent;cursor:pointer;font:inherit}
+.world-mini-back:hover,.world-mini-back:focus-visible{color:var(--ink);background:radial-gradient(circle,color-mix(in srgb,var(--world-bg,#000) 55%,transparent) 0 40%,transparent 41%);outline:2px solid var(--accent);outline-offset:3px}
+.world-mini-back[hidden]{display:none}
+.world-main.lens-on .world-keys{z-index:4;right:clamp(140px,13%,180px)}
+/* Chat stays one click away, beside the area chips instead of over the view. */
+.world-main.lens-on .world-ask{left:auto;right:clamp(140px,13%,180px);bottom:52px;transform:none;width:auto;z-index:5}
+/* The side panel's edge: drag it, or use the arrow keys, to make the panel wider or narrower. */
+.world-grip{position:absolute;top:0;bottom:0;right:calc(var(--world-side-w,380px) - 5px);width:10px;cursor:col-resize;z-index:8;touch-action:none}
+.world-grip:hover,.world-grip:focus-visible{background:linear-gradient(90deg,transparent 4px,var(--accent) 4px,var(--accent) 6px,transparent 6px);outline:none}
+@media (max-width:860px){.world-grip{display:none}body.in-aura .world-main.lens-on .world-stage,.world-mini-back{width:110px;bottom:58px;right:10px}}
+
+/* Time on the stage: a label column, and lanes you can drag sideways. Marks take their place's colour. */
+.tl{display:grid;gap:10px;min-height:100%;align-content:start}.tl-intro,.tl-key{margin:0;color:var(--muted);font-size:var(--text-sm)}
+.tl-empty{margin:20vh auto 0;max-width:460px;text-align:center;color:var(--muted)}
+.tl-grid{display:grid;grid-template-columns:minmax(150px,220px) minmax(0,1fr);gap:0 14px}
+.tl-labels{display:grid;grid-auto-rows:30px}.tl-axis-pad{height:30px}
+.tl-group{height:30px;display:flex;align-items:flex-end;padding-bottom:4px;font-size:var(--text-xs);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:650}
+.tl-label{all:unset;box-sizing:border-box;height:30px;display:flex;align-items:center;gap:8px;font-size:var(--text-sm);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;color:var(--ink)}
+.tl-label::before{content:"";flex:none;width:8px;height:8px;border-radius:50%;background:var(--tint)}.tl-label.plain{cursor:default}.tl-label:hover:not(.plain){color:var(--accent)}
+.tl-scroll{overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
+.tl-canvas{position:relative;display:grid;grid-auto-rows:30px}
+.tl-axis{position:relative;height:30px;border-bottom:1px solid var(--line)}.tl-axis span{position:absolute;bottom:6px;transform:translateX(4px);font-size:var(--text-xs);color:var(--muted);white-space:nowrap}
+.tl-tick{position:absolute;top:30px;bottom:0;width:1px;background:color-mix(in srgb,var(--line) 70%,transparent)}
+.tl-future{position:absolute;top:30px;bottom:0;right:0;background:repeating-linear-gradient(135deg,transparent 0 7px,color-mix(in srgb,var(--ink) 4%,transparent) 7px 8px)}
+.tl-today{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--accent);box-shadow:0 0 12px var(--accent)}.tl-today span{position:absolute;top:2px;left:6px;font-size:var(--text-xs);font-weight:700;color:var(--accent)}
+.tl-lane{position:relative;border-bottom:1px solid color-mix(in srgb,var(--line) 45%,transparent)}
+.tl-mark{position:absolute;top:50%;width:10px;height:10px;margin:-5px 0 0 -5px;padding:0;border:0;border-radius:50%;background:var(--tint,var(--accent));box-shadow:0 0 0 2px var(--world-bg,var(--paper)),0 0 8px color-mix(in srgb,var(--tint,var(--accent)) 55%,transparent);cursor:pointer}
+.tl-mark.finding{width:8px;height:8px;margin:-4px 0 0 -4px;background:transparent;box-shadow:inset 0 0 0 2px var(--tint,var(--accent)),0 0 0 2px var(--world-bg,var(--paper))}
+.tl-mark.change{width:6px;height:6px;margin:-3px 0 0 -3px;opacity:.75}
+.tl-mark.decision,.tl-mark.due{border-radius:1px;transform:rotate(45deg)}.tl-mark.due{background:transparent;box-shadow:inset 0 0 0 2px var(--tint,var(--warn))}
+.tl-mark.measure{width:12px;height:12px;margin:-6px 0 0 -6px}.tl-mark.measure.reached{box-shadow:0 0 0 2px var(--world-bg,var(--paper)),0 0 0 4px var(--accent),0 0 12px var(--accent)}
+.tl-mark.next{background:transparent;box-shadow:inset 0 0 0 2px var(--tint,var(--accent)),0 0 0 2px var(--world-bg,var(--paper))}
+.tl-mark.run{width:8px;height:8px;margin:-4px 0 0 -4px}
+.tl-mark:hover,.tl-mark:focus-visible{outline:2px solid var(--ink);outline-offset:2px;z-index:2}
+.tl-bar{position:absolute;bottom:5px;min-width:3px;padding:0;border:0;border-radius:3px 3px 1px 1px;background:linear-gradient(var(--tint,var(--accent)),color-mix(in srgb,var(--tint,var(--accent)) 55%,transparent));opacity:.9;cursor:pointer}
+.tl-bar:hover{opacity:1;outline:1px solid var(--ink)}
+.tl-key .tl-mark{position:relative;display:inline-block;top:auto;margin:0 4px 0 12px;vertical-align:middle;--tint:var(--muted);cursor:default}
+
+/* AI effort on the stage: a large chart with readable labels, the grouping as chips, and ranked bars beside it. */
+.we-stage{display:grid;gap:12px;height:100%;grid-template-rows:auto auto minmax(260px,1fr) auto}
+.we-head{display:flex;flex-wrap:wrap;gap:8px 18px}.we-chips{display:flex;flex-wrap:wrap;gap:6px}
+.we-chip{font:inherit;font-size:var(--text-xs);padding:5px 12px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer}
+.we-chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink,var(--paper));font-weight:650}
+.we-total{margin:0;font-size:var(--text-sm);color:var(--muted)}.we-total b{color:var(--ink)}
+.we-stage .we-map{height:100%;min-height:260px}
+.we-block{background:linear-gradient(160deg,var(--tint),color-mix(in srgb,var(--tint) 70%,#000));text-align:left;border:0;cursor:pointer;padding:12px 14px;gap:4px}
+.we-block b{font-size:var(--text-md);color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.35)}.we-block strong{font-size:var(--text-lg);color:#fff;font-variant-numeric:tabular-nums}.we-block strong span{font-size:var(--text-sm);opacity:.85;font-weight:600}
+.we-stage .we-block small{color:rgba(255,255,255,.88);font-size:var(--text-xs)}
+.we-block[aria-pressed=true]{outline:3px solid var(--ink);outline-offset:-3px}
+.we-bars{display:grid;gap:6px}
+.we-bar{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"name value" "track track" "note note";gap:3px 10px;padding:8px 10px;border-radius:8px;border:1px solid transparent;background:transparent;text-align:left;font:inherit;color:var(--ink);cursor:pointer}
+.we-bar:hover,.we-bar[aria-pressed=true]{border-color:var(--line);background:color-mix(in srgb,var(--tint) 8%,transparent)}
+.we-bar-name{grid-area:name;font-size:var(--text-sm);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.we-bar-value{grid-area:value;font-size:var(--text-sm);font-variant-numeric:tabular-nums}
+.we-bar-track{grid-area:track;height:8px;border-radius:4px;background:color-mix(in srgb,var(--line) 70%,transparent);overflow:hidden}.we-bar-track i{display:block;height:100%;border-radius:4px;background:var(--tint)}
+.we-bar small{grid-area:note;font-size:var(--text-xs);color:var(--muted)}
+/* The new stage views in the older styles: square corners, and the console styles' own type. */
+:root:is([data-style=desktop90],[data-style=console90],[data-style=console00],[data-style=classic]) :is(.we-chip,.we-block,.we-bar,.we-bar-track,.we-bar-track i,.tl-bar,.world-lens .wm-count){border-radius:0}
+:root:is([data-style=console90],[data-style=console00]) :is(.tl-label,.tl-group,.tl-axis span,.we-block b,.we-block strong,.we-chip,.we-bar-name,.we-bar-value){font-family:var(--c90-mono,ui-monospace,monospace)}
+:root[data-style=desktop90] .we-chip{border:2px outset var(--line)}:root[data-style=desktop90] .we-chip[aria-pressed=true]{border-style:inset}

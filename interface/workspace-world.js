@@ -264,7 +264,7 @@ function actorsOf(feed) {
   if (L) for (const [key, node] of L.index(feed).nodes) if (node.kind === 'agent' && !key.includes('|')) out.push({ key, kind: 'agent', name: node.name, id: key.slice(6), use: (L.index(feed).from.get(key) || []).filter(e => e.type === 'used').length, unit: 'conversation' });
   return out.sort((a, b) => b.use - a.use);
 }
-let region = null, arrivals = null, dockSpots = [], peek = null, changedBy = new Map(), lastTouch = 0, lastDrawT = 0;
+let region = null, dockFocus = null, mini = false, miniCam = null, arrivals = null, dockSpots = [], peek = null, changedBy = new Map(), lastTouch = 0, lastDrawT = 0;
 function setEffortMetric(metric='requests') {
   effortMetric=metric;
   const groups=new Map((M.feed.effort || []).filter(g=>g.kind==='land').map(g=>[g.id,g]));
@@ -320,6 +320,9 @@ function selectionTrace() {
   return edges;
 }
 
+/* The one line every view uses (see workspace-links.js): glow and core coloured by area, end dots, a pulse while live. */
+const LINE = o => window.auraLinks?.line.stroke(g, { stage: C.stage, ...o });
+const landTint = l => l && !l.unch ? cssHue(l.hue, 72) : C.muted;
 function drawTrace() {
   const position = record => {
     if(record.kind==='goal') {
@@ -331,9 +334,7 @@ function drawTrace() {
   for (const edge of trace) {
     const a=position(edge.a),b=position(edge.b);
     if (!a?.vis || !b?.vis) continue;
-    g.save();g.strokeStyle=C.accent;g.globalAlpha=.8;g.lineWidth=1.5;
-    g.setLineDash(edge.type==='shares_source' ? [3,4] : []);
-    g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);g.stroke();g.restore();
+    LINE({ a, b, share: .3, from: landTint(edge.a.land || (edge.a.kindOf === 'land' ? edge.a : null)), to: landTint(edge.b.land || (edge.b.kindOf === 'land' ? edge.b : null)), state: edge.type === 'shares_source' ? 'idle' : 'flow', alpha: .9 });
     const x=(a.x+b.x)/2,y=(a.y+b.y)/2,width=wOf(edge.label,10.5);
     if(edge.label && free(x-width/2,y-8,width,18)){
       txt(edge.label,x,y,{size:10.5,color:C.accent,align:'center'});
@@ -379,12 +380,16 @@ const hit = (x, y, w, h, s, tip) => hits.push({ x, y, w, h, s, tip });
 const alertDot = (x, y) => { g.save(); g.fillStyle = C.warn; g.beginPath(); g.arc(x, y, 7, 0, TAU); g.fill(); g.fillStyle = kit ? '#fff' : '#111'; g.font = `800 10px ${C.font}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('!', x, y + .5); g.restore(); };
 const fieldLine = x => { const e = Object.entries(x.raw.fields || {})[0]; return e ? `${e[0]}: ${e[1]}` : ''; };
 function overlay(t, dd) { placed = []; hits = []; const alt = cam.alt, playing = show?.type === 'play', focus = hov && hov.p ? hov : sel && sel.p ? sel : null; g.clearRect(0, 0, W, H);
+  // As a small globe beside another view it shows only the lights: the view itself carries the words.
+  if (mini) return;
   /* Rings: the goal's name and number where its ring comes nearest. */
   rings.forEach((R, ri) => { const far = sstep(1.2, 2.2, alt); if (far < .02) return; const c = R.hue == null ? C.muted : cssHue(R.hue, 72), pv = proj(R.end, 1, false);
     if (pv.vis && R.shown < .995) { g.save(); g.globalAlpha = far; g.fillStyle = c; g.beginPath(); g.arc(pv.x, pv.y, 4.5, 0, TAU); g.fill(); g.fillStyle = C.stage; g.beginPath(); g.arc(pv.x, pv.y, 2, 0, TAU); g.fill(); g.restore(); }
     let bi = 0, bz = -9; R.around.forEach((v, k) => { V.copy(v).applyMatrix4(globe.matrixWorld); const sc = V.z + V.x * .55; if (sc > bz) { bz = sc; bi = k; } }); const an = proj(R.around[(bi + (ri - 1) * 4 + 60) % 60], 1, false), lbl = fitLabel(`${R.G.name} · ${goalText(R.G)}`,Math.max(80,W-32)), w = wOf(lbl, 12), lx = Math.min(an.x + 12, W - w - 10); let ly = an.y, labelFits=false; for (const dy of [0, 19, -19, 38, -38, 57, -57]) { if (free(lx, an.y + dy - 9, w + 4, 18)) { ly = an.y + dy; labelFits=true; break; } }
     R.anchor = { x: an.x, y: an.y }; g.save(); g.globalAlpha = far; g.fillStyle = c; g.beginPath(); g.arc(an.x, an.y, 3, 0, TAU); g.fill(); g.restore();
-    const words = labelFits && !playing && W >= 560 && (!sel || sel===R.G || related.has(R.G)); if (words) { txt(lbl, lx, ly, { size: 12, color: sel === R.G ? C.accent : c, alpha: far }); take(lx, ly - 9, w, 18); } hit(an.x - 10, ly - 11, words ? w + 26 : 20, 22, R.G, [R.G.name, 'Goal · ' + goalText(R.G) + ' · click to open']); });
+    const words = labelFits && !playing && W >= 560 && (!sel || sel===R.G || related.has(R.G)); if (words) { // a small dark pill behind the name keeps it readable over bright land, as the chips are
+      g.save(); g.globalAlpha = far * .78; g.fillStyle = C.stage; g.beginPath(); g.roundRect(lx - 7, ly - 10, w + 14, 20, 10); g.fill(); g.globalAlpha = far * .9; g.strokeStyle = c; g.lineWidth = 1; g.stroke(); g.restore();
+      txt(lbl, lx, ly, { size: 12, color: sel === R.G ? C.accent : c, alpha: far }); take(lx - 7, ly - 10, w + 14, 20); } hit(an.x - 10, ly - 11, words ? w + 26 : 20, 22, R.G, [R.G.name, 'Goal · ' + goalText(R.G) + ' · click to open']); });
   /* Continents, and places still to chart. */
   for (const l of M.lands) { const c = proj(l.c, 1.004); if (!c.vis) continue;
     if (U.uR.value[l.i] < .02) { if (!l.unch || l.hidden) continue; const al = c.fade * sstep(.6, 1.4, alt) * (playing ? .5 : 1) * (sel && sel!==l ? .15 : 1); if (al < .03) continue; g.save(); g.strokeStyle = cssHue(l.hue, 66); g.globalAlpha = al * .6; g.setLineDash([3, 5]); g.beginPath(); let pen = false;
@@ -394,7 +399,7 @@ function overlay(t, dd) { placed = []; hits = []; const alt = cam.alt, playing =
     txt(name, x, y, { size, weight: 700, color: cssHue(l.hue, 74), align: 'center', alpha: al, track: 2 }); take(x - w / 2, y - size * .7, w, size * 1.4);
     if ((alt < 3.6 || lens === 'time' || lens === 'effort') && alt > .5 && !playing) { const nt = l.things.length + (l.more || 0), sub = lens === 'effort' ? l.effortLabel : lens === 'time' && comparison ? (changedBy.get(l.id) ? `${changedBy.get(l.id)} changed in this period` : 'No change in this period') : [nt ? `${nt} tracked` : '', l.finds.length ? `${l.finds.length} finding${l.finds.length === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · '); txt(sub, x, y + size + 3, { size: 10.5, weight: 500, color: C.muted, align: 'center', alpha: al * .9 }); take(x - 60, y + size - 5, 120, 15); }
     if (l.quiet) alertDot(x + w / 2 + 12, y);
-    if (lens === 'links') for (const R of rings) if (R.anchor && R.G.lands.includes(l.id)) { g.save(); g.strokeStyle = R.hue == null ? C.muted : cssHue(R.hue, 72); g.globalAlpha = .75 * c.fade; g.lineWidth = 1.4; g.setLineDash([4, 4]); g.beginPath(); g.moveTo(c.x, c.y); g.quadraticCurveTo((c.x + R.anchor.x) / 2, Math.min(c.y, R.anchor.y) - 40, R.anchor.x, R.anchor.y); g.stroke(); g.restore(); }
+    if (lens === 'links') for (const R of rings) if (R.anchor && R.G.lands.includes(l.id)) LINE({ a: c, b: R.anchor, c: { x: (c.x + R.anchor.x) / 2, y: Math.min(c.y, R.anchor.y) - 40 }, share: .2, from: landTint(l), to: R.hue == null ? C.muted : cssHue(R.hue, 72), alpha: .85 * c.fade });
     hit(x - w / 2 - 6, y - 10, w + 12, 22, l, [l.name, 'Click to fly there']); }
   if (region && !playing) drawRegion(region);
   drawTrace();
@@ -409,7 +414,7 @@ function overlay(t, dd) { placed = []; hits = []; const alt = cam.alt, playing =
     if (bad.length) alertDot(a.x - 9, a.y - 9);
     hit(a.x - 12, a.y - 15, 26 + bw, 27, l, [`${list.length} scheduled tasks keep ${l.name} current`, list.slice(0, 5).map(k => k.name).join(', ') + (list.length > 5 ? '…' : '') + (bad.length ? ` · ${bad.length} need${bad.length === 1 ? 's' : ''} a look` : '') + ' · click to see them']); }
   if (alt > .7) for (const k of M.tasks) { const l = k.land; if ((crowded.get(l) || []).length >= 3) continue; if (U.uR.value[l.i] < .02) continue; const a = proj(k.p, 1, false), b = proj(k.foot, 1.004); if (!a.vis) continue; const far = sstep(.7, 1.3, alt) * (l.dim > .5 ? 1 : .3), bad = ['failed', 'missing', 'paused'].includes(k.raw.health), just = !bad && k.raw.last_run && Date.parse(M.feed.as_of) - Date.parse(k.raw.last_run) < 15 * 60e3, col = bad ? C.warn : just ? C.accent : C.muted, on = sel === k || hov === k; if (far < .02) continue;
-    g.save(); g.globalAlpha = far * .6; g.strokeStyle = col; g.lineWidth = 1; g.setLineDash([2, 3]); if (b.vis) { g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke(); } g.setLineDash([]);
+    if (b.vis) LINE({ a, b, share: 0, from: bad ? C.warn : landTint(l), to: landTint(l), dots: false, alpha: far * .7 }); g.save();
     g.globalAlpha = far; g.fillStyle = C.stage; g.beginPath(); g.arc(a.x, a.y, 8, 0, TAU); g.fill(); g.strokeStyle = on ? C.accent : col; g.lineWidth = 1.5; g.beginPath(); g.arc(a.x, a.y, 6, 0, TAU); g.moveTo(a.x, a.y - 3.5); g.lineTo(a.x, a.y); g.lineTo(a.x + 2.6, a.y + 1.6); g.stroke(); g.restore();
     if (bad) alertDot(a.x + 8, a.y - 8); if (on) txt(k.name, a.x + 14, a.y, { size: 11.5, color: C.accent, alpha: far });
     hit(a.x - 11, a.y - 11, 22, 22, k, [k.name, (just ? 'Ran just now · ' : '') + (k.raw.schedule ? k.raw.schedule + ' · ' : '') + (k.raw.status || '')]); }
@@ -557,14 +562,14 @@ function dock(t, playing) {
     const label = showName ? fitLabel(name, on ? 240 : 150) : '', lw = label ? wOf(label, 10.5, 500) : 0, out = room ? 1 : -1, cs = Math.cos(ang) * out, sn = Math.sin(ang) * out;
     const align = cs > .35 ? 'left' : cs < -.35 ? 'right' : 'center', lx = x + cs * (size * 2.6 + 6), ly = y + sn * (size + 14), lx0 = align === 'left' ? lx : align === 'right' ? lx - lw : lx - lw / 2;
     if (label) txt(label, lx, ly, { size: 10.5, weight: 500, align, color: on ? C.accent : C.muted, alpha: on || over || front ? 1 : .6 });
-    if (share != null) for (const [id, w] of effortWires(a)) { const l = M.lands.find(z => z.id === id); if (!l || w <= 0) continue; let c = proj(l.c, 1.004);
+    if (share != null && (over || dockFocus === a.key)) for (const [id, w] of effortWires(a)) { const l = M.lands.find(z => z.id === id); if (!l || w <= 0) continue; let c = proj(l.c, 1.004);
       if (!c.vis) { if (M.lands.length < 2) continue; const [lo, la] = lonlat(l.c); c = { x: W - 162 + 8 + ((wrap(lo - HOME) + Math.PI) / TAU) * 134, y: 104 + 37 - la / 1.1 * 29 }; }
-      g.save(); g.strokeStyle = `hsla(${hue},55%,${kit ? 40 : 62}%,1)`; g.globalAlpha = .55; g.lineWidth = 1 + 6 * Math.sqrt(w / effortWires.most); g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo((x + c.x) / 2, Math.min(y, c.y) - 30, c.x, c.y); g.stroke(); g.restore(); }
+      LINE({ a: { x, y }, b: c, c: { x: (x + c.x) / 2, y: Math.min(y, c.y) - 30 }, share: w / effortWires.most, from: cssHue(hue, 66), to: landTint(l) }); }
     if (on) for (const r of work) { const ids = window.auraLinks ? window.auraLinks.places(M.feed, 'chat:' + r.id) : [r.land]; if (!ids.length && r.land) ids.push(r.land);
       for (const id of ids) { const l = M.lands.find(z => z.id === id); if (!l) continue; let c = proj(l.c, 1.004);
         // On the far side: aim at its place on the whole-world map in the corner instead.
         if (!c.vis) { if (M.lands.length < 2) continue; const [lo, la] = lonlat(l.c); c = { x: W - 162 + 8 + ((wrap(lo - HOME) + Math.PI) / TAU) * 134, y: 104 + 37 - la / 1.1 * 29 }; }
-        g.save(); g.strokeStyle = C.accent; g.globalAlpha = .5; g.lineWidth = 1.4; g.setLineDash([3, 6]); g.lineDashOffset = reduce ? 0 : -t / 30; g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo((x + c.x) / 2, Math.min(y, c.y) - 30, c.x, c.y); g.stroke(); g.restore(); } }
+        LINE({ a: { x, y }, b: c, c: { x: (x + c.x) / 2, y: Math.min(y, c.y) - 30 }, share: .35, from: cssHue(hue, 66), to: landTint(l), state: 'live', t }); } }
     const tip = [a.name, (a.kind === 'app' ? 'AI app' : 'Agent') + (a.use ? ` · ${a.use} ${a.unit}${a.use === 1 ? '' : 's'}${a.kind === 'app' ? ' this month' : ''}` : '') + ' · click to follow its connections'];
     take(x - size * 2.4, y - size - 4, size * 4.8, size * 2 + 8); if (label) { take(lx0, ly - 8, lw, 16); hit(lx0, ly - 8, lw, 16, { dock: a.key }, tip); }
     hit(x - size * 2.4, y - size - 4, size * 4.8, size * 2 + 8, { dock: a.key }, tip);
@@ -610,11 +615,14 @@ function select(o, fly = true) { lastTouch = performance.now(); if (sel === o) r
       ramp = null; caption({ kicker: fed.length ? 'What feeds this goal' : 'How this goal has moved', title: o.name, sub: fed.length ? `${goalText(o)} · fed by ${fed.map(l => l.name).slice(0, 3).join(', ')}` : `${goalText(o)} · nothing is linked to it yet` }, 5600); } } cb.select?.(sel); }
 function tour() { stopShow(); select(null); const top = M.things.slice().sort((a, b) => b.changes - a.changes || b.seen - a.seen)[0], f = M.finds.find(x => !x.need), nd = [...M.things, ...M.finds].find(x => x.need), done = M.goals.filter(G => G.reached).length;
   const steps = [{ kicker: 'Your world', title: `This is ${M.name}.`, sub: 'Everything AURA keeps for you, drawn as one world.' },
-    M.goals.length && { kicker: 'Rings', title: 'Each ring is a goal.', sub: `It fills as real progress is recorded. ${done} of ${M.goals.length} ${done === 1 ? 'is' : 'are'} complete.` },
+    M.goals.length && { kicker: 'Rings', title: 'Each ring is a goal.', sub: `They all start at the same point and fill as real progress is recorded, so the longest is closest to done. ${done} of ${M.goals.length} ${done === 1 ? 'is' : 'are'} complete.` },
+    M.lands.filter(l => !l.unch).length > 1 && { kicker: 'Colour', title: 'Colour is the area.', sub: 'Each place keeps its colour in every view, so you can follow it from here to Connections, Time and AI effort.' },
+    { kicker: 'Lines', title: 'A bright line is work that flowed.', sub: 'Thicker carried more. A pulse along it is happening now; a fine dashed line is linked, with nothing along it yet.' },
+    M.actors.length && { kicker: 'Satellites', title: 'Your AI apps and agents circle the world.', sub: 'One that is working lights up and sends a pulse to the places it is working on.' },
     top && { pos: top.p, alt: .75, kicker: 'Lights', title: 'Each light is something you track.', sub: `This one is ${top.name}, in ${top.land.name}.` },
     f && { pos: f.p, alt: .5, kicker: 'Findings', title: 'Smaller lights are what you have learned.', sub: `“${f.name}”` },
     nd && { pos: nd.p, alt: .8, kicker: 'Amber', title: 'Amber means it needs a look.', sub: nd.name },
-    { kicker: 'Yours to explore', title: 'Drag to turn it. Scroll to fly down.', sub: 'Click anything to open it.' }].filter(Boolean);
+    { kicker: 'Yours to explore', title: 'Drag to turn it. Scroll to fly down.', sub: 'Click anything to open it. Connections, Time and AI effort take the whole picture; the world waits in the corner.' }].filter(Boolean);
   show = { type: 'steps', steps, i: -1, stepAt: -1e9, pos: null }; cb.remember?.({ toured: '1' }); }
 /* Fly to each of the given things in turn (the Time lens hands over what changed), newest first, at most six. */
 function visit(keys) { stopShow(); select(null); flat = false; barEl.querySelector('[data-w=flat]').setAttribute('aria-pressed', 'false'); const steps = [], seen = new Set();
@@ -666,7 +674,7 @@ range.addEventListener('input', () => { stopShow(); S.day = M.T * range.value / 
 barEl.addEventListener('click', e => { const w = e.target.closest('[data-w]')?.dataset.w; if (w === 'play') show?.type === 'play' ? stopShow() : play(); if (w === 'live') { stopShow(); ramp = null; S.day = dday = M.T; range.value = 1000; dirty = true; } if (w === 'tour') tour(); if (w === 'flat') { flat = !flat; e.target.closest('[data-w]').setAttribute('aria-pressed', String(flat)); stopShow(); } if (w === 'home') { stopShow(); select(null); home(); } if (w === 'share') share(); });
 shareEl.addEventListener('click', e => { const w = e.target.closest('[data-w]')?.dataset.w; if (w === 'close' || e.target === shareEl) shareEl.hidden = true; if (w === 'png') shareEl._c.toBlob(b => save(b, (M.name || 'aura').replace(/[^\w -]+/g, '').trim() + ' ' + shareEl._kind + '.png'), 'image/png'); if (w === 'card' || w === 'year') share(w); if (w === 'clip') clip(); });
 capEl.addEventListener('click', () => { if (capOpen) { const o = capOpen; stopShow(); o(); } });
-function frame(t) { raf = 0; if (!stage || !stage.isConnected) { stage = null; return; } raf = requestAnimationFrame(frame); if (document.hidden || stage.closest('.world-expanded') || (document.body.classList.contains('world-chat-open') && matchMedia('(max-width:860px)').matches)) {last=t;return;} const dt = Math.min(50, t - (last || t)); last = t; const r = stage.getBoundingClientRect(); if (Math.abs(r.width - W) > .5 || Math.abs(r.height - H) > .5) fit(); theme(); if (dirty) sync();
+function frame(t) { raf = 0; if (!stage || !stage.isConnected) { stage = null; return; } raf = requestAnimationFrame(frame); if (document.hidden || (document.body.classList.contains('world-chat-open') && matchMedia('(max-width:860px)').matches)) {last=t;return;} const dt = Math.min(50, t - (last || t)); last = t; const r = stage.getBoundingClientRect(); if (Math.abs(r.width - W) > .5 || Math.abs(r.height - H) > .5) fit(); theme(); if (dirty) sync();
   stepShow(t); const k = reduce ? 1 : 1 - Math.pow(.0025, dt / 1000); /* A slow turn while the world is left alone (about four minutes a revolution, as in the first preview). It stops while you
      move the pointer over it, select anything or are close in, and never runs for reduced motion. */
   const spinning = !reduce && !pd && !sel && !show && !flat && !peek && !ramp && cam.alt > 2.2 && performance.now() - lastTouch > 6000 && S.day >= M.T;
@@ -721,6 +729,14 @@ window.auraWorld = { available: !!renderer,
   bench(n = 20) { const t0 = performance.now(); for (let i = 0; i < n; i++) { cancelAnimationFrame(raf); drawn = ''; frame(performance.now()); } return (performance.now() - t0) / n; },
   idle(n = 20) { const t0 = performance.now(); for (let i = 0; i < n; i++) { cancelAnimationFrame(raf); frame(performance.now()); } return (performance.now() - t0) / n; },
   /* For checks only: jump straight to where the camera is heading. */
+  // A place's colour as the world draws it, so every view colours an area the same way.
+  tint(id, light = 72) { const l = M?.lands.find(z => z.id === id); return l && !l.unch ? cssHue(l.hue, light) : null; },
+  /* Small, beside another view: the whole planet in view, no labels or controls; back to where you were afterwards. */
+  mini(on) { on = !!on; if (on === mini) return; mini = on;
+    if (on) { miniCam = { lon: cam.to.lon, lat: cam.to.lat, alt: cam.to.alt }; cam.to.alt = Math.max(cam.to.alt, 3.2); }
+    else if (miniCam) { Object.assign(cam.to, miniCam); miniCam = null; }
+    dirty = true; },
+  dockFocus(key) { dockFocus = key || null; dirty = true; },
   region(r) { region = r && r.lands?.length ? { lands: r.lands, name: r.name || 'Project' } : null; dirty = true; },
   settle() { lastTouch = performance.now(); cam.lon = cam.to.lon; cam.lat = cam.to.lat; cam.alt = cam.to.alt; cam.v = [0, 0]; dday = S.day; ramp = null; if (M) for (const l of M.lands) { U.uR.value[l.i] = l.rto; U.uDim.value[l.i] = l.dim; } for (const R of rings) R.shown = gdone(R.G, S.day); }, state: () => ({ alt: cam.alt, day: S.day, sel: sel ? { kind: sel.kind || sel.kindOf, id: sel.id } : null, show: show?.type || null, kit, hits: hits.length, draws, dock: dockSpots }) };
 document.dispatchEvent(new Event('aura-world-ready'));

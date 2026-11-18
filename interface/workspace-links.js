@@ -176,5 +176,38 @@ window.auraLinks = (() => {
     for (const [k, n] of ix.nodes) if (['land', 'goal'].includes(n.kind) && !score.has(k)) score.set(k, 0);
     return {edges, score, node:known};
   }
-  return {KIND, COLUMN, COLUMNS, ORDER, group, index, key, words, sentence, trace, places, sides, overview, measures, live, services, CHATS};
+  /* One line for every view, on the globe and in the diagrams alike:
+       a recorded flow    a fine bright core inside a soft glow, coloured from where it starts to the area it reaches,
+                          a small dot at each end, and wider for more of whatever the view measures;
+       happening now      the same line, with a bright pulse travelling along it;
+       nothing along it   a fine dashed hairline, so the link is known but nothing has flowed yet.
+     share is 0..1 of the busiest line shown. */
+  const coreWidth = share => 1.1 + 2.6 * Math.sqrt(Math.max(0, Math.min(1, share || 0)));
+  const reduced = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const along = (a, c, b, u) => { const v = 1 - u; return c ? { x: v * v * a.x + 2 * v * u * c.x + u * u * b.x, y: v * v * a.y + 2 * v * u * c.y + u * u * b.y } : { x: a.x + (b.x - a.x) * u, y: a.y + (b.y - a.y) * u }; };
+  function stroke(g, { a, b, c = null, share = .3, from, to, state = 'flow', t = 0, alpha = 1, dots = true, stage = '#000' }) {
+    const path = () => { g.beginPath(); g.moveTo(a.x, a.y); c ? g.quadraticCurveTo(c.x, c.y, b.x, b.y) : g.lineTo(b.x, b.y); };
+    g.save(); g.lineCap = 'round'; g.lineJoin = 'round';
+    if (state === 'idle') { g.globalAlpha = .5 * alpha; g.strokeStyle = to || from; g.lineWidth = 1; g.setLineDash([2, 5]); path(); g.stroke(); g.restore(); return; }
+    const grad = g.createLinearGradient(a.x, a.y, b.x, b.y), w = coreWidth(share); grad.addColorStop(0, from || to); grad.addColorStop(1, to || from);
+    g.strokeStyle = grad; g.globalAlpha = .16 * alpha; g.lineWidth = w * 3 + 4; path(); g.stroke();
+    g.globalAlpha = .95 * alpha; g.lineWidth = w; path(); g.stroke();
+    if (dots) for (const [p, col] of [[a, from || to], [b, to || from]]) { g.globalAlpha = alpha; g.fillStyle = stage; g.beginPath(); g.arc(p.x, p.y, w + 2.2, 0, Math.PI * 2); g.fill(); g.fillStyle = col; g.beginPath(); g.arc(p.x, p.y, w + 1, 0, Math.PI * 2); g.fill(); }
+    if (state === 'live') { const u = reduced() ? .5 : (t / 1500) % 1, p = along(a, c, b, u), r = w + 3;
+      const glow = g.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 2.4); glow.addColorStop(0, 'rgba(255,255,255,.95)'); glow.addColorStop(.35, to || from); glow.addColorStop(1, 'rgba(0,0,0,0)');
+      g.globalAlpha = alpha; g.fillStyle = glow; g.beginPath(); g.arc(p.x, p.y, r * 2.4, 0, Math.PI * 2); g.fill(); }
+    g.restore();
+  }
+  let ids = 0;
+  /* The same line as SVG, for the diagrams. d is the path; a and b its ends; data and title are added to its group. */
+  function svg({ d, a, b, share = .3, from, to, state = 'flow', data = '', title = '', square = false }) {
+    if (state === 'idle') return `<g class="ln idle" ${data}><path d="${d}" class="ln-core" style="stroke:${to || from}"/>${title ? `<title>${title}</title>` : ''}</g>`;
+    const id = 'ln' + (++ids), w = coreWidth(share).toFixed(2), cap = square ? 'square' : 'round';
+    const grad = `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"><stop offset="0" stop-color="${from || to}"/><stop offset="1" stop-color="${to || from}"/></linearGradient>`;
+    const dot = (p, col) => `<circle cx="${p.x}" cy="${p.y}" r="${(+w + 2.2).toFixed(2)}" class="ln-ring"/><circle cx="${p.x}" cy="${p.y}" r="${(+w + 1).toFixed(2)}" fill="${col}"/>`;
+    const pulse = state === 'live' && !reduced() ? `<circle r="${(+w + 2.5).toFixed(2)}" class="ln-pulse" style="fill:${to || from}"><animateMotion dur="1.5s" repeatCount="indefinite" path="${d}"/></circle>` : '';
+    return `<g class="ln${state === 'live' ? ' live' : ''}" ${data}><defs>${grad}</defs><path d="${d}" class="ln-glow" stroke="url(#${id})" stroke-width="${(w * 3 + 4).toFixed(1)}" stroke-linecap="${cap}"/><path d="${d}" class="ln-core" stroke="url(#${id})" stroke-width="${w}" stroke-linecap="${cap}"/>${dot(a, from || to)}${dot(b, to || from)}${pulse}${title ? `<title>${title}</title>` : ''}</g>`;
+  }
+  const line = { stroke, svg, coreWidth, along };
+  return {KIND, COLUMN, COLUMNS, ORDER, group, index, key, words, sentence, trace, places, sides, overview, measures, live, services, CHATS, line};
 })();

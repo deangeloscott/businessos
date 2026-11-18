@@ -279,6 +279,18 @@ A chat's details (⋯) and Ctrl+K offer **Continue in another app** for an idle 
 
 Both chats link to each other. The original shows "You continued this work in OMP. Messages here start a separate version." with a link; the new chat shows where it came from and offers **Back to Codex, caught up**. Catching up sends what happened since, the latest exchanges and a check of the current state into the existing linked chat, which then continues; it never makes another copy. The Continue dialog lists linked chats first with **Catch up**. The plan-limit **backup app** uses the same handoff, and offers the full conversation when the backup app can import the chat; automatic limit recovery always uses the handoff.
 
+### Your aura: the world and its views
+
+**Your aura** draws the business's saved work as one world, with four views over the same read-only feed (`/api/world`): **Your world**, **Connections**, **Time** and **AI effort**. Your world is the globe; the other three take the whole picture, with the world still turning small in the corner (click it to go back) and lighting what the view points at. The panel beside them holds the context and the details: the list for Connections, what changed for Time, ranked bars for AI effort. Drag the panel's edge, or use the arrow keys on it, to make it wider or narrower; the width is remembered in this browser.
+
+One visual language runs through every view, and the tour teaches it:
+
+- **Colour is the area.** Each place keeps its colour on the globe, as a stripe on Connections boxes, on Time's rows and marks, and on AI effort's blocks. Amber always means something needs a look.
+- **Lines.** A recorded flow is a fine bright line inside a soft glow, coloured from where it starts to the area it reaches, with a dot at each end; thicker carried more of what the view measures. A pulse travelling along it is happening now. A fine dashed hairline is a recorded link with nothing along it yet. Faint dotted roads join places a finding ties together. The same drawing is used on the globe and in the diagrams (`window.auraLinks.line`).
+- **Connections** reads left to right: what your AI used, the work, what it saved, the goals. Boxes carry their area's colour and how much went through them. It zooms (buttons or Ctrl+scroll) and pans (drag the background).
+- **Time** has a row for each goal, decision, piece of work, scheduled task and place, a date axis, and a bright line for today with what is coming (next runs, deadlines) to its right. Drag sideways to move through time. Beside it, what changed since your last visit, or in the last two weeks when nothing is new.
+- **AI effort** is this month's reported use as one chart, grouped by AI app, by what it was for or by model, and sized by requests, tokens, cost or saved work, with last month for comparison and cost per saved record where cost was reported. On the globe, an app's or agent's wires show when you point at it or select it.
+
 ### Built-in terminal
 
 **Ctrl+`** or **Ctrl+K → Open terminal** opens a real terminal on this computer in a dock under the work area. It stays while you move around AURA and has tabs (+ for another). Windows uses its built-in pseudo console through ctypes; macOS and Linux use Python's standard pty support; nothing is installed, and Windows versions without a pseudo console keep using their own terminal. The screen is xterm.js, bundled with the other interface components and loaded only when a terminal opens. Output streams through the token-protected local API by long polling; a reloaded page reattaches to running terminals.

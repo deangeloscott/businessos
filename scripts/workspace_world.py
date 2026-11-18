@@ -8,7 +8,7 @@ no scores, no guesses. It writes nothing. Bounded on purpose, with counts of wha
 import argparse
 import hashlib
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from _common import workspace_root, workspace_scope, object_index
@@ -208,7 +208,7 @@ def _world(bid, at=None, app=None):
     feed = {'business': {**base['business'], 'since': business.get('created_at')}, 'as_of': base['as_of'], 'focus': base['focus'],
             'lands': lands, 'findings': findings[:MAX_FINDINGS], 'changes': changes[:MAX_CHANGES], 'goals': goals, 'decisions': decisions[:MAX_DECISIONS],
             'uncharted': uncharted if len(lands) < 8 else [], 'lands_more': len(grouped), 'findings_hidden': hidden + max(0, len(findings) - MAX_FINDINGS), 'tasks': _tasks(bid, bound, known), 'chat_lands': {b['id']: b['collection_id'] for b in bound if b.get('kind') == 'chat' and b.get('collection_id') in known},
-            'effort': _effort(bid, app, bound, known, at), 'methods': given_counts['library'], 'work': _work(bid, app, at), 'work_by': _work_by(bid, app, bound, known, at), 'apps': _apps(bid, app, bound, known), 'attention': base['attention'], 'deadlines': base['deadlines'], 'suggestions': base['suggestions'],
+            'effort': _effort(bid, app, bound, known, at), 'effort_last': _effort(bid, app, bound, known, at, previous=True), 'methods': given_counts['library'], 'work': _work(bid, app, at), 'work_by': _work_by(bid, app, bound, known, at), 'apps': _apps(bid, app, bound, known), 'attention': base['attention'], 'deadlines': base['deadlines'], 'suggestions': base['suggestions'],
             'totals': {'lands': watches_total + len(areas), 'items': sum(len(l['items']) + l['more'] for l in lands), 'findings': len(findings) + hidden, 'changes': len(changes),
                        'goals': base['totals']['goals'], 'attention': base['totals']['attention'], 'decisions': len(decisions)},
             'empty': base['empty']}
@@ -337,10 +337,12 @@ def _work_by(bid, app, bound, known, at, weeks=26):
     return [{'kind': k[0], 'id': k[1], 'weeks': v} for k, v in sorted(rows.items(), key=lambda kv: -sum(kv[1]))][:12]
 
 
-def _effort(bid, app, bound, known, at):
-    """This month's AI requests by the collection or project their chat is tied to, exactly as each app reported them."""
+def _effort(bid, app, bound, known, at, previous=False):
+    """This month's AI requests (or last month's, for comparing) by the collection or project their chat is tied to,
+    exactly as each app reported them."""
     if app is None:return None
-    start = at.replace(day=1, hour=0, minute=0, second=0, microsecond=0).timestamp()
+    month = at.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    start, end = ((month - timedelta(days=1)).replace(day=1).timestamp(), month.timestamp() - 1e-6) if previous else (month.timestamp(), at.timestamp())
     chats = {b['id']: b for b in bound if b.get('kind') == 'chat'}
     groups = {}
     titles = {c['id']: c.get('title') or 'Untitled chat' for c in app.preferences.get('chats', [])
@@ -348,7 +350,7 @@ def _effort(bid, app, bound, known, at):
     for receipt in app.preferences.get('usage_receipts', []):
         if receipt.get('business_id') != bid or not isinstance(receipt.get('at'), (int, float)):
             continue
-        if not start <= receipt['at'] <= at.timestamp():
+        if not start <= receipt['at'] <= end:
             continue
         chat_id = receipt.get('chat_id') or ''
         link = chats.get(chat_id, {})

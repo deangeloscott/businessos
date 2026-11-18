@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **One visual language for the aura.** Colour means the area in every view, and one line is drawn everywhere: a fine bright core in a soft glow, coloured from where it starts to the area it reaches, with end dots; a pulse travels along it while work runs; a dashed hairline means linked with nothing along it yet. It replaces five different line styles. The tour now teaches these rules.
+- **Connections, Time and AI effort take the stage**, as the prototype's views did, with the world turning small in the corner and lighting what the view points at; the panel beside holds context and details and can be resized from its edge. "Give it the whole screen" is no longer needed.
+- **Connections** boxes carry their area's colour and how much went through them, and the diagram's lines take their areas' colours.
+- **Time** is a real timeline: rows for goals, decisions, work, scheduled tasks and places in their colours, a date axis, a bright line for today, what is coming to its right, and dragging sideways. When nothing is new since your last visit, it shows the last two weeks instead of an empty page.
+- **AI effort** is a large readable chart with grouping and measure as chips, this month against last month, ranked bars beside it, and wires on the globe only for the app or agent you point at or select.
+- Goal ring names sit in small pills so they read over bright land.
+
 - **Getting around the world is simpler.** Find stays; the "Show what belongs to" list is gone, because selecting anything already lights what belongs to it. Area chips show the busiest few and fold the rest into "+N more". Back, Show everything and the whole-screen switch sit in one row, and the browser's own Back steps back through what you selected.
 - **More on the world.** A selected project outlines each area it spans and names itself. Three or more scheduled tasks on one area gather into one clock with their count. In the middle distance, faint roads join named places that a saved finding ties together. More than a dozen apps and agents fold into one "+N" mark that opens them in Connections.
 - **The full-screen Connections diagram zooms and pans** (buttons, Ctrl+scroll, drag the background). The older styles draw it their own way: square boxes and right-angled connectors in the 90s, console and mono styles.

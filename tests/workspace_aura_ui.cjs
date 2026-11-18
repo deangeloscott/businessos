@@ -132,11 +132,12 @@ assert.equal(v.tools(feed).keys,'','area chips appear once there is more than on
 
 /* Time. */
 const time=v.timelineView(feed);
-assert.ok(time.includes('class="wt-mark item"')&&time.includes('data-world-go="item:col_1|a"')&&time.includes('data-world-go="finding:F1"')&&!time.includes('finding:F0'),'replaced findings are left off the timeline');
-assert.ok(time.includes('Reach 100 reviews: 87')&&time.includes('Decided: Hold the price')&&time.includes('Coming up')&&time.includes('Next run: Weekly check'));
+assert.ok(time.includes('class="tl-mark item"')&&time.includes('data-world-go="item:col_1|a"')&&time.includes('data-world-go="finding:F1"')&&!time.includes('finding:F0'),'replaced findings are left off the timeline');
+assert.ok(time.includes('Reach 100 reviews: 87')&&time.includes('Decided: Hold the price')&&time.includes('Next run: Weekly check')&&time.includes('class="tl-today"'),'goals, decisions, what is coming and today are on one timeline');
+assert.ok(time.indexOf('>Goals<')<time.indexOf('>Scheduled tasks<')&&time.indexOf('>Scheduled tasks<')<time.indexOf('>Places<'),'rows are grouped: goals, work, scheduled tasks, places');
 assert.ok(v.timelineView({...feed,lands:[],findings:[],changes:[],goals:[],decisions:[],tasks:[]}).includes('Nothing has been saved yet'));
 const split=v.timelineView({...feed,work:[{start:'2026-10-05T00:00:00Z',requests:3,tokens:0}],work_by:[{kind:'land',id:'col_1',weeks:[3]}]});
-assert.ok(split.includes('Work: Local competitors')&&split.includes('wt-bar')&&!split.includes('>AI requests<'),'work is drawn per project or collection when AURA can tell which it was for');
+assert.ok(split.includes('>Work<')&&split.includes('tl-bar')&&!split.includes('>AI requests<'),'work is drawn per project or collection when AURA can tell which it was for');
 const comparison={...feed,lands:[{...feed.lands[0],items:[{id:'a',title:'Crumb & Co',first_seen:'2026-09-01T00:00:00Z',history:[{at:'2026-10-01T00:00:00Z',values:{price:49}},{at:'2026-10-15T00:00:00Z',values:{price:59}}]}]}]};
 assert.ok(v.changesSince(comparison,'2026-10-10').some(c=>c.detail==='price: 49 → 59'),'comparison uses saved measurements');
 assert.ok(!v.changesSince(comparison,'2026-09-01').some(c=>c.detail.includes('price:')),'no invented baseline when no earlier measurement exists');
@@ -148,7 +149,10 @@ assert.ok(proof.includes('Challenges this finding')&&proof.includes('data-record
 /* AI effort: one chart, grouped one way at a time, only what apps reported. */
 const effort=v.effortView(feed,null);
 assert.ok(effort.includes('5 requests this month')&&effort.includes('cost not reported for 3')&&effort.includes('class="we-block"')&&effort.includes('Codex')&&effort.includes('Pi'),'by AI app by default, a missing cost is said, not estimated');
-assert.ok(effort.includes('id="world-effort-by"')&&effort.includes('Select a block'),'one grouping at a time, with the conversations behind a block on request');
+assert.ok(effort.includes('id="world-effort-by"')&&effort.includes('data-effort-metric="saved"')&&effort.includes('Select a block'),'one grouping at a time, with the conversations behind a block on request');
+const lastMonth={...feed,effort_last:[{kind:'land',id:'col_1',chats:[{id:'c1',title:'Research chat',agent:'Codex',model:'m-1',requests:1,tokens:100,cost_usd:.01,missing_costs:0,missing_tokens:0}]}]};
+assert.ok(v.effortView(lastMonth,null).includes('Last month: 1 request'),'this month is compared with last month');
+assert.ok(v.effortSide(lastMonth,null).includes('class="we-bar"')&&v.effortSide(lastMonth,null).includes('vs last month'),'beside the chart, ranked bars say how each changed');
 assert.ok(v.effortView(feed,v.recordFor(feed,'goal','G1')).includes('3 requests this month'),'a selection counts only the conversations in its chain');
 assert.ok(v.effortView(feed,v.recordFor(feed,'goal','G3')).includes('No AI use this month is recorded for anything in this chain'));
 assert.ok(v.effortView({...feed,effort:[]},null).includes('No AI requests have been recorded this month'));
