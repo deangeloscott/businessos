@@ -2065,7 +2065,7 @@ class Workspace:
         return chat
 
     def chat_busy(self,bid,chat):
-        if chat.get('status')=='working' or any(j.get('chat_id')==chat['id'] for j in self.running_jobs()):return True
+        if chat.get('status')=='working' or any(j.get('chat_id')==chat['id'] for j in self.running_jobs()) or self.resumed_in_terminal(chat['id']):return True
         session=self.native_sessions.items.get((str(workspace_root().resolve()),bid,chat['id']))
         return bool(session and session.pending())
 
@@ -2178,6 +2178,53 @@ class Workspace:
         return [*workspace_agents.base_command(choice['argv']),*args],self.agent_environment(choice)
 
     def terminal_title(self,name):return self.TERMINAL_PRESETS.get(name,(None,None,'Terminal'))[2]
+
+    TERMINAL_APPS=('claude','codex','pi','omp','hermes')
+
+    def services_used(self,bid,chat_id='',session='',app_kind=''):
+        """The connected services this business's conversations called, busiest first, as their apps recorded them.
+        One chat or one direct app session when asked; see workspace_services."""
+        import workspace_services,workspace_library
+        if session:sessions={session:app_kind}
+        else:
+            with self.lock:
+                chats=[c for c in self.preferences['chats'] if c['business_id']==bid and c.get('workspace',self.workspace_path)==self.workspace_path and c.get('native_id')]
+            sessions={str(c['native_id']):c.get('agent') for c in chats if not chat_id or c['id']==chat_id}
+        by={}
+        for called in workspace_services.used(sessions,workspace_root()).values():
+            for name,calls in called.items():
+                row=by.setdefault(name,{'name':name,'key':workspace_library.service_key(name),'calls':0,'conversations':0})
+                row['calls']+=calls;row['conversations']+=1
+        return {'services':sorted(by.values(),key=lambda r:(-r['calls'],r['name']))}
+
+    def resumed_in_terminal(self,chat_id):
+        """The open terminal that has this chat in its app's own screen, if any."""
+        import workspace_terminal
+        return next((t for t in workspace_terminal.TERMINALS.list() if t['alive'] and t.get('purpose')=='resume:'+chat_id),None)
+
+    def open_in_terminal(self,bid,chat_id):
+        """Continue a chat in its own app's full screen, in a built-in terminal: the app's resume command for this exact
+        session, in the chat's folder, run as AURA runs that app. While it is open AURA does not send to the chat, so the
+        two never write to one session at once; when it closes, AURA reads what happened there."""
+        import workspace_terminal
+        with self.lock:
+            chat=self.source_chat(bid,chat_id);kind=chat.get('agent');native_id=chat.get('native_id')
+        open_now=self.resumed_in_terminal(chat_id)
+        if open_now:return open_now
+        if kind not in self.TERMINAL_APPS:raise ValueError('This chat’s app has no terminal screen to continue in.')
+        if not native_id:raise ValueError('This chat has no saved app session yet. Send it a message first.')
+        if self.chat_busy(bid,chat):raise ValueError('This chat is still working. Stop it or let it finish before opening it in the terminal.')
+        if not workspace_terminal.available():raise ValueError('This computer cannot open a built-in terminal.')
+        choice=self.native_choice(kind)
+        if not choice:raise ValueError('Reconnect the app that owns this chat.')
+        root=workspace_root().resolve();folder=Path(chat.get('native_workspace') or root);folder=folder if folder.is_dir() else root
+        env=self.agent_environment(choice)
+        args=workspace_agents.resume_command(kind,workspace_agents.session_reference(kind,native_id,env) if kind=='pi' else native_id)[1:]
+        # AURA's own idle connection to this session closes first, so only the terminal holds it.
+        self.native_sessions.release_idle((str(root),bid,chat_id))
+        terminal=workspace_terminal.TERMINALS.start([*workspace_agents.base_command(choice['argv']),*args],str(folder),env,cols=120,rows=32,
+                                                    title=(chat.get('title') or 'Chat')[:40],purpose='resume:'+chat_id)
+        return terminal.summary()
 
     def linked_chats(self,bid,chat):
         """Chats this one continued from or into, each shown once."""
@@ -2970,6 +3017,8 @@ class Workspace:
         return self.schedule_state(bid)
 
     def start_chat(self, bid, text, history, welcome=False, schedule_id=None, organization_id=None, keep_warm_id=None, chat_id=None, files=None, connection=None, assistant_id=None,references=None,goal_id=None,permission_mode=None,native_goal=None,project=None,account_id=None,limit_recovery=False,source_task=None,native_workspace=None,catch_up_from=None):
+        # A chat open in its app's own screen (Continue in terminal) is that screen's until it closes.
+        if chat_id and self.resumed_in_terminal(chat_id):raise ValueError('This chat is open in the terminal. Close it there to continue here.')
         with self.lock:
             owner=copy.copy(self)
             owner.agent=dict(self.agent) if self.agent else None

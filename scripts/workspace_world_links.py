@@ -16,6 +16,7 @@ never an inferred cause or a completion. The interface words each type for the d
   feeds          a collection linked to a goal
   member         something a project holds
   used           the AI app or agent a conversation ran in
+  called         a connected service (Gmail, Stripe...) a conversation called, counted from its app's own log
   delegated      work a conversation or agent handed on
   lineage        an earlier record an asset was made from
 
@@ -33,8 +34,9 @@ OUTPUTS = {'Insight', 'DecisionRecord', 'Learning', 'Asset'}
 RECORD_KIND = {'Asset': 'output', 'Insight': 'finding', 'DecisionRecord': 'decision', 'Learning': 'decision'}
 
 
-def relationships(feed, registry, bound, objects, references, item_sources=None, assistants=(), origins=None, library_types=None):
-    """origins: {record id: producer} found later in a harness's own log (workspace_origins); library_types: {key: type}."""
+def relationships(feed, registry, bound, objects, references, item_sources=None, assistants=(), origins=None, library_types=None, services=None):
+    """origins: {record id: producer} found later in a harness's own log (workspace_origins); library_types: {key: type};
+    services: a function from {session id: app} to {session id: {service: calls}} (workspace_services.used)."""
     nodes, edges = {}, {}
     bid = feed['business']['id']
     titles = {}  # 'land|item' -> title, so a result can become a node when something is recorded about it
@@ -207,4 +209,16 @@ def relationships(feed, registry, bound, objects, references, item_sources=None,
         if kind in {'saved', 'updated'} and nodes[b]['kind'] != 'land':
             for land in nodes[b].get('lands', []):
                 edge(a, 'land:' + land, 'into')
+    # The connected services each conversation called. One service is one node, however many apps it is connected in.
+    if services:
+        sessions = {ident: next((c.get('agent') for c in references if str(c.get('native_id')) == ident), '') for ident in native}
+        sessions.update({n['key'][8:]: n['action']['session']['app'] for n in nodes.values() if n['kind'] == 'session'})
+        from workspace_library import normalized, service_key
+        for ident, called in services(sessions).items():
+            target = native.get(ident) or 'session:' + ident
+            for name, calls in sorted(called.items()):
+                library = service_key(name)
+                key = node('service', normalized(name), name, {'method': library} if library in (library_types or {}) else None, sub='Connected service')
+                edge(key, target, 'called')
+                edges[(key, target, 'called')]['calls'] = calls
     return {'nodes': list(nodes.values()), 'edges': list(edges.values())}

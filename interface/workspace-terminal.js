@@ -37,6 +37,8 @@ window.auraTerminal=(()=>{
   }
   function ended(t,code,reason=''){
     t.ended=true;t.term.write(`\r\n\x1b[2m[${reason||('Ended'+(code!=null?' · exit code '+code:''))}]\x1b[0m\r\n`);paintTabs();
+    // A chat continued in its app's own screen: AURA reads what happened there once it closes.
+    if(String(t.info.purpose||'').startsWith('resume:'))window.dispatchEvent(new CustomEvent('aura-chat-terminal-closed',{detail:{chat_id:t.info.purpose.slice(7)}}));
   }
   function restream(){waiting?.abort();if(!streaming)stream();}
   async function stream(){
@@ -110,6 +112,12 @@ window.auraTerminal=(()=>{
     if(!tabs.size){try{const list=await api('/api/terminals');for(const info of list.items||[])if(!tabs.has(info.id)&&info.alive)await attach(info);}catch{}}
     if(options.existing&&tabs.has(options.existing)){select(options.existing);return tabs.get(options.existing);}
     if(options.reuse&&tabs.size&&!options.command&&!options.chat_id){select(active||[...tabs.keys()][0]);return tabs.get(active);}
+    if(options.resume){
+      // The chat in its own app's screen. Opening it again returns to the same terminal.
+      const info=await api('/api/terminal',{business:state.business,action:'resume',chat_id:options.resume});
+      if(tabs.has(info.id)){select(info.id);return tabs.get(info.id);}
+      return attach(info);
+    }
     const ui=await create();let info;
     try{info=await api('/api/terminal',{business:state.business,action:'start',command:options.command||'shell',chat_id:options.chat_id||'',cols:ui.term.cols,rows:ui.term.rows});}
     catch(error){ui.discard();if(!tabs.size)hide();else select(active);throw error;}

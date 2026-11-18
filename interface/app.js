@@ -916,6 +916,7 @@ function chatControls() {
   const update=$('#send-update');if(update){update.hidden=!(state.busy&&state.liveJob?.native_controls?.steer);update.disabled=state.stopping||state.steering||state.navigating;update.textContent=state.steering?'Sending…':'Send update';}
   const location=$('#chat-location-note');if(location)location.hidden=!previousFolder;
   $('#stop-request').hidden=!state.busy;$('#stop-request').disabled=state.stopping;$('#stop-request').textContent=state.stopping?'Stopping…':'Stop';
+  const inTerminal=$('#terminal-chat');if(inTerminal){inTerminal.hidden=!(state.chatMeta&&terminalApp(state.chatMeta));inTerminal.disabled=state.busy||state.navigating||state.starting;}
   const handoff=$('#handoff-chat');if(handoff){handoff.hidden=!state.chatMeta;handoff.disabled=state.navigating||state.starting;}
   const headerHandoff=$('#header-handoff');if(headerHandoff){headerHandoff.hidden=!state.chatMeta;headerHandoff.disabled=state.navigating||state.starting;}
   $('#business').disabled=false;$('#new-chat').disabled=!state.business;$('#chats').disabled=!state.business;renderComposerConnection();
@@ -1070,7 +1071,8 @@ async function openLibrary(key,option='',returning=false){
   const metadata=`<div class="item-summary"><p class="item-type">${esc(identity)}${!inventory&&apps.length?' · '+apps.map(appName).map(esc).join(' · '):''}</p>${statuses}${!inventory&&variants.length>1?`<label class="library-option">Version<select id="library-option">${variants.map((v,i)=>`<option value="${esc(v.key)}" ${v.key===chosen.key?'selected':''}>${esc((v.apps||v.sources?.map(s=>s.app)||[]).map(appName).join(', ')||'Version '+(i+1))}</option>`).join('')}</select></label>`:''}${description?`<p>${esc(description)}</p>`:''}${chosen.requirements?`<p class="small-note">Needs: ${esc(chosen.requirements)}</p>`:''}${partOf}${actions}</div>`;
   if(inventory){
     const related=[...(item.members||[]),...(item.related||[]).map(key=>state.library.find(r=>r.key===key)).filter(Boolean)].filter((r,i,all)=>all.findIndex(v=>v.key===r.key)===i);
-    details(item.title,metadata+(related.length?`<h3>Included items</h3><div class="capability-tools">${related.map(m=>`<button type="button" class="row" data-method="${esc(m.key)}"><span class="row-text"><strong>${esc(m.title)}</strong><small>${esc(m.description||m.kind)}</small></span><span>→</span></button>`).join('')}</div>`:'')+(locationMarkup?'<h3>Where it lives</h3>'+locationMarkup:''),'context');
+    if(item.group==='Connected services')setTimeout(fillServices,0);
+    details(item.title,metadata+(item.group==='Connected services'?`<p class="small-note" data-service-use="${esc(item.key)}"></p>`:'')+(related.length?`<h3>Included items</h3><div class="capability-tools">${related.map(m=>`<button type="button" class="row" data-method="${esc(m.key)}"><span class="row-text"><strong>${esc(m.title)}</strong><small>${esc(m.description||m.kind)}</small></span><span>→</span></button>`).join('')}</div>`:'')+(locationMarkup?'<h3>Where it lives</h3>'+locationMarkup:''),'context');
   }else if(doc.location?.endsWith('.md')||item.kind==='Skill'&&locations.length){
     await openFileWorkspace('library/'+root.key,chosen.key,{title:item.title,summary:metadata,hideTitle:true});
   }else{
@@ -1804,6 +1806,7 @@ function shellCommands(){
     {label:'Schedules',hint:'Go to',words:'schedules automations open',run:click({'data-view':'tools'})},
     {label:'Usage & spend',hint:'Plan limits',words:'cost tokens limits',run:()=>$('#usage-open').click()},
     {label:'Open terminal',hint:'Ctrl `',words:'shell command line console powershell bash prompt',run:()=>attempt(()=>window.auraTerminal.open({reuse:true}))},
+    {label:'Continue in terminal',hint:'This chat',words:'terminal native screen commands slash resume claude codex pi omp hermes',run:()=>state.chatMeta?.id?attempt(()=>continueInTerminal(state.chatMeta.id)):notice('Open a chat first.')},
     {label:'Continue in another app',hint:'This chat',words:'move switch handoff import codex claude omp pi hermes',run:()=>state.chatMeta?.id?attempt(()=>openContinue(state.chatMeta.id)):notice('Open a chat first.')},
     {label:'Archived & deleted',hint:'Restore',words:'trash restore undo',run:()=>$('#shell-search-archive').click()},
     {label:'All settings',hint:'Ctrl ,',words:'preferences options',run:openSettings},
@@ -1893,14 +1896,32 @@ function workedOutDetails(r,location){
 function madeIn(data,file=''){
   const p=data?.extensions?.businessos?.work?.producer;
   if(p?.kind==='chat'){const chat=(state.chatList||[]).find(c=>c.id===p.id)||(state.preferences?.chats||[]).find(c=>c.id===p.id)||{},title=chat.title?` · “${chat.title.length>60?chat.title.slice(0,59)+'…':chat.title}”`:'';
-    return `<p class="small-note made-in">Made in ${esc(chat.agent?appName(chat.agent)+', in AURA':'a conversation in AURA')}${esc(title)} · <button class="text-button" data-chat="${esc(p.id)}">Open it</button></p>`;}
+    setTimeout(fillServices,0);
+    return `<p class="small-note made-in">Made in ${esc(chat.agent?appName(chat.agent)+', in AURA':'a conversation in AURA')}${esc(title)}<span data-made-services="chat=${esc(encodeURIComponent(p.id))}"></span> · <button class="text-button" data-chat="${esc(p.id)}">Open it</button></p>`;}
   if(p?.kind==='task')return `<p class="small-note made-in">Made by a scheduled task · <button class="text-button" data-open-schedule="${esc(p.id)}">Open it</button></p>`;
   if(p?.kind==='agent')return '<p class="small-note made-in">Made by an agent</p>';
-  if(p?.kind==='session')return `<p class="small-note made-in">Made directly in ${esc(p.app||'an AI app')}</p>`;
+  if(p?.kind==='session'){setTimeout(fillServices,0);return `<p class="small-note made-in">Made directly in ${esc(p.app||'an AI app')}<span data-made-services="session=${esc(encodeURIComponent(p.id))}&amp;app=${esc(encodeURIComponent(p.app||''))}"></span></p>`;}
   const target=data?.id?`data-made-in-record="${esc(data.id)}"`:file?`data-made-in-file="${esc(file)}"`:'';
   return target?`<p class="small-note made-in"><button type="button" class="text-button" ${target}>Where was this made?</button></p>`:'';
 }
 window.auraMadeIn=madeIn;
+/* The connected services behind a piece of work (Gmail, Stripe...), counted from its AI app's own records of the calls
+   it made. Read after the page is drawn; nothing shows when none were called or the app's records cannot be read. */
+async function fillServices(){
+  const scope=JSON.stringify([state.data?.workspace,state.business]),get=query=>api('/api/services?business='+encodeURIComponent(state.business)+(query?'&'+query:''));
+  for(const el of document.querySelectorAll('[data-made-services]:not([data-filled])')){
+    el.dataset.filled='1';
+    try{const names=(await get(el.dataset.madeServices)).services.map(s=>s.name);
+      if(names.length&&el.isConnected&&scope===JSON.stringify([state.data?.workspace,state.business]))el.textContent=' · used '+names.slice(0,3).join(', ')+(names.length>3?` and ${names.length-3} more`:'');}catch{}
+  }
+  const uses=[...document.querySelectorAll('[data-service-use]:not([data-filled])')];
+  if(!uses.length)return;
+  let all=[];try{all=(await get('')).services;}catch{return;}
+  for(const el of uses){
+    el.dataset.filled='1';const s=all.find(x=>x.key===el.dataset.serviceUse);if(!el.isConnected)continue;
+    el.textContent=s?`Your AI called it ${s.calls===1?'once':s.calls+' times'} in ${s.conversations===1?'1 conversation':s.conversations+' conversations'} for this business.`:'No calls to it found in this business’s Claude Code or Codex conversations.';
+  }
+}
 function resultOrigin(asset,ref=''){
   const plain=ref&&!ref.startsWith('library/')&&!ref.startsWith('asset/')?ref:'';
   return asset?madeIn(asset.data):plain?madeIn(null,plain):'';
@@ -2187,6 +2208,9 @@ document.addEventListener('click',event=>attempt(async()=>{
     if(openAnchoredSurface(menu,b,{width:244}))menu.querySelector('button:not([hidden])')?.focus();
   }
   if(b.id==='header-handoff')await handoffChat();
+  if(b.id==='terminal-chat'){
+    if(anchoredSurface?.dialog.id==='chat-tools-menu')closeAnchoredSurface(false);if(state.chatMeta?.id)await continueInTerminal(state.chatMeta.id);
+  }
   if(b.id==='handoff-chat'){
     if(anchoredSurface?.dialog.id==='chat-tools-menu')closeAnchoredSurface(false);await handoffChat();
   }
@@ -2531,7 +2555,7 @@ async function showChatDetails(id,note=''){
   const fullRequest=state.chatMeta?.id===id?request(state.chat):'';
   const label=chat.summary?'Where things stand':fullRequest?'Latest request':chat.latest_request?'Latest request (preview)':'About this chat';
   const status=({working:'Working',error:'Needs attention',stopped:'Stopped',complete:'Reply ready'})[chat.status]||'Saved';
-  details(chat.title,`<div class="chat-detail"><div class="chat-detail-meta"><p>${esc(appName(chat.agent))} · ${esc(chat.model||'App default')} · ${esc(chatDate(chat.updated))} · ${esc(status)}</p></div><div class="chat-detail-project"><button type="button" class="project-trigger" data-choose-project="${esc(id)}" aria-haspopup="dialog">${folderIcon()}<span>${esc(chat.project||'Add to project')}</span>${chevronIcon()}</button></div><form id="chat-title-form" class="chat-title-editor" hidden><input type="hidden" name="id" value="${esc(id)}"><label for="chat-title-input">Chat title</label><div class="chat-title-controls"><input id="chat-title-input" name="title" required maxlength="80" value="${esc(chat.title)}"><button class="secondary">Save title</button><button type="button" class="text-button" data-cancel-rename="${esc(id)}">Cancel</button></div></form><section class="chat-description-section" aria-label="${esc(label)}"><h3>${esc(label)}</h3><p class="chat-full-description">${esc(chat.summary||fullRequest||description)}</p>${chat.summary?`<p class="chat-description-date">${esc(chat.summary_source==='App'?'App summary':'Description')} · ${esc(chatDate(chat.summary_updated))}${chat.summary_stale?' · May need updating':''}</p>`:''}</section>${note?`<p class="chat-detail-note" role="status">${esc(note)}</p>`:''}${continuationNote(chat)?`<div class="chat-continuation">${continuationNote(chat)}</div>`:''}<div class="chat-detail-actions"><button class="text-button" data-continue-chat="${esc(id)}" ${chat.status==='working'?'disabled':''}>Continue in another app</button><button class="text-button" data-archive-chat="${esc(id)}" data-archived="${!chat.archived}" ${!chat.archived&&chat.status==='working'?'disabled':''}>${chat.archived?'Restore chat':'Archive chat'}</button><div class="chat-detail-primary-actions"><button class="secondary" data-refresh-chat="${esc(id)}">Refresh from app</button><button class="primary" data-chat="${esc(id)}">Open chat →</button></div></div></div>`);
+  details(chat.title,`<div class="chat-detail"><div class="chat-detail-meta"><p>${esc(appName(chat.agent))} · ${esc(chat.model||'App default')} · ${esc(chatDate(chat.updated))} · ${esc(status)}</p></div><div class="chat-detail-project"><button type="button" class="project-trigger" data-choose-project="${esc(id)}" aria-haspopup="dialog">${folderIcon()}<span>${esc(chat.project||'Add to project')}</span>${chevronIcon()}</button></div><form id="chat-title-form" class="chat-title-editor" hidden><input type="hidden" name="id" value="${esc(id)}"><label for="chat-title-input">Chat title</label><div class="chat-title-controls"><input id="chat-title-input" name="title" required maxlength="80" value="${esc(chat.title)}"><button class="secondary">Save title</button><button type="button" class="text-button" data-cancel-rename="${esc(id)}">Cancel</button></div></form><section class="chat-description-section" aria-label="${esc(label)}"><h3>${esc(label)}</h3><p class="chat-full-description">${esc(chat.summary||fullRequest||description)}</p>${chat.summary?`<p class="chat-description-date">${esc(chat.summary_source==='App'?'App summary':'Description')} · ${esc(chatDate(chat.summary_updated))}${chat.summary_stale?' · May need updating':''}</p>`:''}</section>${note?`<p class="chat-detail-note" role="status">${esc(note)}</p>`:''}${continuationNote(chat)?`<div class="chat-continuation">${continuationNote(chat)}</div>`:''}<div class="chat-detail-actions">${terminalApp(chat)?`<button class="text-button" data-terminal-chat="${esc(id)}" ${chat.status==='working'?'disabled':''} title="Opens this chat in ${esc(appName(chat.agent))}’s own screen, with all of its commands">Continue in terminal</button>`:''}<button class="text-button" data-continue-chat="${esc(id)}" ${chat.status==='working'?'disabled':''}>Continue in another app</button><button class="text-button" data-archive-chat="${esc(id)}" data-archived="${!chat.archived}" ${!chat.archived&&chat.status==='working'?'disabled':''}>${chat.archived?'Restore chat':'Archive chat'}</button><div class="chat-detail-primary-actions"><button class="secondary" data-refresh-chat="${esc(id)}">Refresh from app</button><button class="primary" data-chat="${esc(id)}">Open chat →</button></div></div></div>`);
   $('#detail').dataset.chatDetails=id;
   setDetailTitleActions(`<button type="button" class="icon-button chat-pin-toggle" data-pin-chat="${esc(id)}" aria-pressed="${!!chat.pinned}" aria-label="${chat.pinned?'Unpin chat':'Pin chat'}" title="${chat.pinned?'Unpin chat':'Pin chat'}">${pinIcon()}</button><button class="icon-button" id="chat-rename" aria-label="Rename chat" title="Rename chat" aria-controls="chat-title-form">${editIcon()}</button>`);
   if(chat.summary||fullRequest)return;
@@ -2661,6 +2685,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.dataset.archiveChat){const business=state.business,root=state.data.workspace,id=button.dataset.archiveChat,archived=button.dataset.archived==='true';button.disabled=true;try{await api('/api/chats/archive',{business,id,archived});if(business!==state.business||root!==state.data.workspace)return;if(archived&&state.chatMeta?.id===id)await newShellChat();await renderShell();await showChats(archived);notice(archived?'Chat archived. Find it under All → Archived.':'Chat restored to Recent chats.');}finally{if(button.isConnected)button.disabled=false;}}
   if(button.dataset.editChat)await showChatDetails(button.dataset.editChat);
   if(button.dataset.continueChat)await openContinue(button.dataset.continueChat,button.dataset.continueApp||'');
+  if(button.dataset.terminalChat){if($('#detail').open)$('#detail').close();await continueInTerminal(button.dataset.terminalChat);}
   if(button.dataset.catchUp)await catchUp(button.dataset.catchUp,button.dataset.catchUpInto);
   if(button.id==='chat-rename'){const form=$('#chat-title-form');form.hidden=false;button.hidden=true;$('#detail-content [data-refresh-chat]').disabled=true;$('#chat-title-input').focus();}
   if(button.dataset.cancelRename)await showChatDetails(button.dataset.cancelRename);
@@ -3035,6 +3060,17 @@ async function newShellChat(draft=null,home=false){
   try{await api('/api/chats/new',{business});if(ticket!==state.navigationTicket||root!==state.data.workspace||business!==state.business)return;await refresh();if(ticket!==state.navigationTicket||root!==state.data.workspace||business!==state.business)return;if(draft){$('#request').value=draft.text;state.selectedFiles=draft.files;state.newChatConnection=draft.connection;state.newChatPermission=draft.permission||null;state.newChatProject=draft.project||'';window.auraCompose?.restore(draft);rememberChatDraft();renderComposerFiles();renderComposerConnection();}recordShellRoute();closeMobileSidebar();}
   finally{if(ticket===state.navigationTicket){state.navigating=false;chatControls();$('#request').focus();}}
 }
+
+/* Continue in terminal: the same chat in its own app's full screen (every command, dialog and plugin the app has), in
+   AURA's built-in terminal. While it is open, AURA leaves the chat to it; when it closes, AURA reads what happened there. */
+function terminalApp(chat){return !!chat?.native_id&&['claude','codex','pi','omp','hermes'].includes(chat.agent);}
+async function continueInTerminal(id){
+  if(!window.auraTerminal)throw new Error('The built-in terminal is not available here.');
+  await window.auraTerminal.open({resume:id});
+}
+window.addEventListener('aura-chat-terminal-closed',event=>{
+  if(event.detail?.chat_id&&event.detail.chat_id===state.chatMeta?.id)attempt(()=>refreshChat());
+});
 
 /* Every "continue elsewhere" control opens the one Continue in another app dialog, which moves the full
    conversation where the receiving app can import it, or a brief with the latest exchanges otherwise. */

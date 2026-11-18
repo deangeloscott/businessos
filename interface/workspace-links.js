@@ -3,7 +3,8 @@
    the target (see scripts/workspace_world_links.py for what each type records). Nothing here guesses a link. */
 window.auraLinks = (() => {
   const KIND = {land:'Area', item:'Tracked result', finding:'Finding', decision:'Decision', goal:'Goal', record:'Evidence', output:'Saved output',
-    file:'File', method:'Library item', chat:'Conversation', session:'AI app session', agent:'Agent', task:'Scheduled task', app:'AI app', project:'Project'};
+    file:'File', method:'Library item', chat:'Conversation', session:'AI app session', agent:'Agent', task:'Scheduled task', app:'AI app', project:'Project',
+    service:'Connected service'};
   /* How the other end of a link reads from the selected thing: [when the other end is the source, when it is the target]. */
   const WORDS = {
     in:['Kept here', 'Where this is kept'],
@@ -21,21 +22,22 @@ window.auraLinks = (() => {
     feeds:['Feeds this goal', 'The goal this feeds'],
     member:['Project holding this', 'In this project'],
     used:['Ran this conversation', 'Conversation it ran'],
+    called:['Connected service it called', 'Conversation that called it'],
     delegated:['Handed this on', 'Work it handed on'],
     lineage:['Made from this', 'Made from it']
   };
   /* A sentence for a single line, read left to right. */
   const SENTENCE = {in:'is kept in', attached:'was given to', saved:'saved', updated:'changed', into:'saved work into', supports:'supports', challenges:'challenges',
     basis:'is a basis for', extends:'extends', source:'is a source for', shares_source:'rests on the same source as', assigned:'is assigned to',
-    feeds:'feeds', member:'holds', used:'ran', delegated:'handed work to', lineage:'is an earlier version of'};
-  const COLUMN = {file:0, record:0, method:0, app:0, chat:1, session:1, agent:1, task:1, project:1, land:2, item:2, finding:2, decision:2, output:2, goal:3};
+    feeds:'feeds', member:'holds', used:'ran', called:'was called by', delegated:'handed work to', lineage:'is an earlier version of'};
+  const COLUMN = {file:0, record:0, method:0, app:0, service:0, chat:1, session:1, agent:1, task:1, project:1, land:2, item:2, finding:2, decision:2, output:2, goal:3};
   const COLUMNS = ['Inputs', 'Work', 'Saved work', 'Goals'];
   /* Groups inside a column, in the order they are drawn. A Library item is grouped by its own type. */
-  const GROUP = {app:'AI apps', file:'Files', record:'Evidence', chat:'Conversations', session:'Conversations', agent:'Agents', task:'Scheduled tasks',
+  const GROUP = {app:'AI apps', service:'Connected services', file:'Files', record:'Evidence', chat:'Conversations', session:'Conversations', agent:'Agents', task:'Scheduled tasks',
     project:'Projects', land:'Areas', item:'Tracked results', finding:'Findings', decision:'Decisions', output:'Saved outputs', goal:'Goals'};
   const PLURAL = {Playbook:'Playbooks', Workflow:'Workflows', Skill:'Skills', Recipe:'Recipes', Tool:'Tools', Plugin:'Plugins'};
   const group = n => n.kind === 'method' ? PLURAL[n.sub] || 'Library' : GROUP[n.kind] || KIND[n.kind] || n.kind;
-  const ORDER = ['AI apps', 'Playbooks', 'Workflows', 'Skills', 'Recipes', 'Tools', 'Plugins', 'Library', 'Files', 'Evidence', 'Agents', 'Conversations', 'Scheduled tasks', 'Projects', 'Areas', 'Tracked results', 'Findings', 'Decisions', 'Saved outputs', 'Goals'];
+  const ORDER = ['AI apps', 'Connected services', 'Playbooks', 'Workflows', 'Skills', 'Recipes', 'Tools', 'Plugins', 'Library', 'Files', 'Evidence', 'Agents', 'Conversations', 'Scheduled tasks', 'Projects', 'Areas', 'Tracked results', 'Findings', 'Decisions', 'Saved outputs', 'Goals'];
 
   const indexes = new WeakMap();
   function index(feed) {
@@ -131,6 +133,13 @@ window.auraLinks = (() => {
     }
     return {carried, weigh, held};
   }
+  /* The connected services behind something, busiest first: the ones its own conversations called, or the conversations
+     whose work reached it. Counted from the apps' own logs; a service only shows once something called it. */
+  function services(feed, start) {
+    const ix = index(feed), t = trace(feed, start), calls = new Map();
+    for (const e of ix.edges) if (e.type === 'called' && t.all.has(e.source) && t.all.has(e.target)) calls.set(e.source, (calls.get(e.source) || 0) + (e.calls || 1));
+    return [...calls].sort((a, b) => b[1] - a[1]).map(([k, n]) => ({key:k, name:ix.nodes.get(k)?.name || k, calls:n}));
+  }
   /* What is moving right now: the chains of the conversations that are running. */
   function live(feed, running) {
     const out = new Set();
@@ -151,7 +160,7 @@ window.auraLinks = (() => {
       for (const e of ix.into.get(k) || []) if (e.type === 'attached' && ix.nodes.get(e.source)?.kind === 'land') outs.add(e.source);
       if (!outs.size) continue;
       chats++; if (!extra.size) extra.set(CHATS, {key:CHATS, kind:'chat', name:'Conversations', virtual:true});
-      for (const i of ins) { const kind = ix.nodes.get(i)?.kind; if (['app', 'method'].includes(kind)) add(i, CHATS, m.carried(k, measure)); else if (kind === 'agent') for (const o of outs) add(i, o, o.startsWith('land:') ? m.carried(k, measure, o.slice(5)) : m.carried(k, measure)); }
+      for (const i of ins) { const kind = ix.nodes.get(i)?.kind; if (['app', 'method', 'service'].includes(kind)) add(i, CHATS, m.carried(k, measure)); else if (kind === 'agent') for (const o of outs) add(i, o, o.startsWith('land:') ? m.carried(k, measure, o.slice(5)) : m.carried(k, measure)); }
       for (const o of outs) add(CHATS, o, o.startsWith('land:') ? m.carried(k, measure, o.slice(5)) : m.carried(k, measure));
     }
     if (chats) extra.get(CHATS).name = chats === 1 ? '1 conversation' : chats + ' conversations';
@@ -167,5 +176,5 @@ window.auraLinks = (() => {
     for (const [k, n] of ix.nodes) if (['land', 'goal'].includes(n.kind) && !score.has(k)) score.set(k, 0);
     return {edges, score, node:known};
   }
-  return {KIND, COLUMN, COLUMNS, ORDER, group, index, key, words, sentence, trace, places, sides, overview, measures, live, CHATS};
+  return {KIND, COLUMN, COLUMNS, ORDER, group, index, key, words, sentence, trace, places, sides, overview, measures, live, services, CHATS};
 })();

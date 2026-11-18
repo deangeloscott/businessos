@@ -190,6 +190,19 @@ def main():
             assert caught['references'][0]['label'].startswith('Catch-up from') and 'Earlier coverage is unknown' in caught['text'] and 'Moved; six projects show.' in caught['text']
             assert app.terminal_command('claude-login')[0][-2:]==['auth','login'] and app.terminal_command('codex-login')[0][-1]=='login'
 
+            # Continue in terminal: the same chat in its app's own screen, resumed by its exact session in its folder. While it is
+            # open AURA does not send to that chat, so two never write to one session; closing it gives the chat back.
+            resumer={'id':'codex','name':'Codex','argv':[sys.executable,'-c','import sys,time;print("resumed",*sys.argv[1:],flush=True);time.sleep(30)']}
+            with patch.object(app,'native_choice',return_value=resumer):
+                opened=app.open_in_terminal(bid,source['id']);held=terminals.TERMINALS.get(opened['id'])
+                assert terminals.wait_for(held,'resumed resume '+source['native_id'],20) and held.cwd==str(project),held.screen()
+                assert app.open_in_terminal(bid,source['id'])['id']==opened['id'],'opening it again returns to the same terminal'
+                assert app.chat_busy(bid,source)
+                rejects(lambda:app.start_chat(bid,'Hello',None,chat_id=source['id']),'open in the terminal')
+                rejects(lambda:app.open_in_terminal(bid,'chat-new'),'no saved app session')
+                terminals.TERMINALS.remove(held.id)
+                assert not app.chat_busy(bid,source),'closing the terminal gives the chat back'
+
             # Plain terminals never receive AURA's saved keys; only named app commands run with that app's environment.
             assert app.terminal_command('shell')==(None,None)
             argv,env=app.terminal_command('omp-login');assert argv[-1]=='login' and env['BUSINESSOS_WORKSPACE']

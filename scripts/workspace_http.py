@@ -198,6 +198,10 @@ def handler_for(app):
                                             'assistant_id':(chats.get(j.get('chat_id')) or {}).get('assistant_id','')}
                                            for j in owner.running_jobs(workspace_root()) if j.get('business_id')==bid]
                     self.send(200,result)
+                elif route=='/api/services':
+                    with app.lock:root=app.workspace_path
+                    with workspace_scope(root):
+                        self.send(200,app.services_used(selected(query.get('business')),query.get('chat',''),query.get('session',''),query.get('app','')))
                 elif route=='/api/origin':
                     # Where one record or file was made, from the AI apps' own local logs. Only on request; see workspace_origins.
                     with app.lock:root=app.workspace_path
@@ -529,7 +533,10 @@ def handler_for(app):
                 if route == '/api/terminal':
                     import workspace_terminal
                     terminals=workspace_terminal.TERMINALS;action=data.get('action')
-                    if action=='start':
+                    if action=='resume':
+                        with app.lock:root=app.workspace_path
+                        with workspace_scope(root):result=app.open_in_terminal(selected(data.get('business')),data.get('chat_id') or '')
+                    elif action=='start':
                         with app.lock:root=app.workspace_path
                         with workspace_scope(root):
                             bid=selected(data.get('business'));folder=Path(root)

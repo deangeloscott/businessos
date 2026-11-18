@@ -206,12 +206,14 @@ def world(bid, at=None, app=None):
             'empty': base['empty']}
     from workspace_world_links import relationships
     import workspace_origins
+    import workspace_services
     catalog = [r for r in (getattr(app, 'catalog', None) or []) if isinstance(r, dict) and r.get('key')]
     types = {r['key']: r.get('kind') for r in catalog if r.get('kind')}
     feed['library_totals'] = {}
     for kind in types.values():feed['library_totals'][kind] = feed['library_totals'].get(kind, 0) + 1
     feed['relationships'] = relationships(feed, registry, bound, objects, given_counts['references'], item_sources,
-        app.preferences.get('assistants', {}).get(bid, []) if app else [], origins=workspace_origins.known(), library_types=types)
+        app.preferences.get('assistants', {}).get(bid, []) if app else [], origins=workspace_origins.known(), library_types=types,
+        services=lambda sessions: workspace_services.used(sessions, workspace_root()))
     feed['revision'] = revision(feed)
     return feed
 

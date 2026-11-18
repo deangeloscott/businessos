@@ -72,6 +72,12 @@ const overview=L.overview(feed);
 assert.ok(overview.edges.some(e=>e.source==='app:Codex'&&e.target==='chats:all')&&overview.edges.some(e=>e.source==='chats:all'&&e.target==='land:col_1'),'with nothing selected, apps flow into the conversations and they flow to where their work went');
 assert.equal(overview.node('chats:all').name,'1 conversation','conversations are one step in the flow, counted, not drawn one by one');
 assert.ok(!overview.edges.some(e=>e.source==='chat:c2'||e.target==='chat:c2'),'a conversation whose work went nowhere recorded is not drawn');
+/* A connected service a conversation called is one of what fed that work, and of the places it reached. */
+const called={...feed,relationships:{nodes:[...feed.relationships.nodes,{key:'service:stripe',kind:'service',name:'Stripe'},{key:'service:gmail',kind:'service',name:'Gmail'}],
+  edges:[...feed.relationships.edges,{source:'service:stripe',target:'chat:c1',type:'called',calls:5},{source:'service:gmail',target:'chat:c1',type:'called',calls:2},{source:'service:gmail',target:'chat:c2',type:'called',calls:9}]}};
+assert.equal(L.services(called,'land:col_1').map(s=>s.name+':'+s.calls).join(),'Stripe:5,Gmail:2','a place relies on the services its own work called, busiest first, not on other conversations’ calls');
+assert.ok(L.sides(called,'chat:c1').direct[0].some(x=>x.node.key==='service:stripe'&&x.how==='Connected service it called'));
+assert.ok(L.overview(called).edges.some(e=>e.source==='service:stripe'&&e.target==='chats:all'),'services flow into the conversations, beside the apps');
 
 /* The panel. */
 const home=v.home(feed);

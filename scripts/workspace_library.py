@@ -108,8 +108,22 @@ def merge(rows):
     return list(seen.values())
 
 
+def service_title(name):
+    """A connected service's readable name, the same wherever AURA shows it."""
+    title=re.sub(r'\s+',' ',re.sub(r'[_-]+|(?<=[a-z])(?=[A-Z])',' ',str(name))).strip()
+    whole={'cua repl':'Browser & computer','node repl':'JavaScript'}.get(title.casefold())
+    if whole:return whole
+    words={'github':'GitHub','openai':'OpenAI','gitlab':'GitLab','hubspot':'HubSpot','youtube':'YouTube','linkedin':'LinkedIn','api':'API','ai':'AI'}
+    return ' '.join(words.get(w.casefold(),w[:1].upper()+w[1:]) for w in title.split(' '))
+
+
 def normalized(value):
     return ''.join(c for c in value.casefold() if c.isalnum()) or hashlib.sha256(value.encode()).hexdigest()
+
+
+def service_key(name):
+    """The Library item for a connected service, by name, as organize() keys it."""
+    return 'tool:'+hashlib.sha256(('service:'+normalized(name)).encode()).hexdigest()[:24]
 
 
 def retain_catalog(previous, current, incomplete):
@@ -151,8 +165,7 @@ def organize(rows, group_services=True, scope=''):
     result=[combined(candidates,key) for key,candidates in families.items()]
     for key,candidates in services.items():
         name=next((s.get('service') or s.get('connection') for r in candidates for s in r.get('sources',[]) if s.get('service') or s.get('connection')))
-        title=re.sub(r'[_-]+',' ',name).strip()
-        title={'github':'GitHub','openai':'OpenAI','google drive':'Google Drive','gmail':'Gmail','cua repl':'Browser & computer','node repl':'JavaScript'}.get(title.casefold(),title.title())
+        title=service_title(name)
         item=combined(candidates,key,title)
         actions=[r for r in candidates if any(s.get('type')=='Tool' for s in r.get('sources',[]))]
         connections=[r for r in candidates if r not in actions]
@@ -294,13 +307,40 @@ def plugins(workspace, home, bases, apps):
     return rows,notes
 
 
+def app_homes(home):
+    return {'codex':Path(os.environ.get('CODEX_HOME',home/'.codex')),
+            'claude':Path(os.environ.get('CLAUDE_CONFIG_DIR',home/'.claude')),
+            'pi':Path(os.environ.get('PI_CODING_AGENT_DIR',home/'.pi/agent')),
+            'omp':home/'.omp/agent','hermes':Path(os.environ.get('HERMES_HOME',home/'.hermes')),
+            'antigravity':home/'.gemini'}
+
+
+def connections(workspace, apps, home=None, notes=None):
+    """The services each app has been connected to in its own settings: (app, name, disabled). Only names and the
+    on/off switch are read. Commands, headers and credentials stay private."""
+    home=Path(home or Path.home());workspace=Path(workspace);bases=app_homes(home);found=[]
+    for app,path,field in [('codex',bases['codex']/'config.toml','mcp_servers'),
+                           ('claude',workspace/'.mcp.json','mcpServers'),
+                           ('claude',home/'.claude.json','mcpServers'),
+                           ('pi',bases['pi']/'mcp.json','mcpServers'),
+                           ('omp',bases['omp']/'mcp.json','mcpServers'),
+                           ('antigravity',bases['antigravity']/'antigravity/mcp_config.json','mcpServers')]:
+        if app not in apps or not path.is_file() or path.is_symlink() or path.stat().st_size>2*1024*1024:continue
+        try:
+            if path.suffix=='.toml':
+                import tomllib
+                data=tomllib.loads(path.read_text(encoding='utf-8'))
+            else:data=json.loads(path.read_text(encoding='utf-8'))
+            for name,config in (data.get(field) or {}).items():
+                if isinstance(config,dict):found.append((app,str(name),config.get('disabled') is True or config.get('enabled') is False))
+        except (OSError,ValueError,AttributeError,ImportError):
+            if notes is not None:notes.append(APPS[app]+': connection details could not be read.')
+    return found
+
+
 def local(workspace, apps, home=None):
     home=Path(home or Path.home());workspace=Path(workspace)
-    bases={'codex':Path(os.environ.get('CODEX_HOME',home/'.codex')),
-           'claude':Path(os.environ.get('CLAUDE_CONFIG_DIR',home/'.claude')),
-           'pi':Path(os.environ.get('PI_CODING_AGENT_DIR',home/'.pi/agent')),
-           'omp':home/'.omp/agent','hermes':Path(os.environ.get('HERMES_HOME',home/'.hermes')),
-           'antigravity':home/'.gemini'}
+    bases=app_homes(home)
     rows=[];notes=[]
     roots=[]
     for app in apps:
@@ -324,25 +364,9 @@ def local(workspace, apps, home=None):
                 row=skill(base/'SKILL.md',app,scope+':'+base.relative_to(folder).as_posix())
                 if row:rows.append(row)
             except OSError:notes.append('Some local skill files could not be read.')
-    # Only server names/status are exposed. Commands, headers and credentials stay private.
-    for app,path,field in [('codex',bases['codex']/'config.toml','mcp_servers'),
-                           ('claude',workspace/'.mcp.json','mcpServers'),
-                           ('claude',home/'.claude.json','mcpServers'),
-                           ('pi',bases['pi']/'mcp.json','mcpServers'),
-                           ('omp',bases['omp']/'mcp.json','mcpServers'),
-                           ('antigravity',bases['antigravity']/'antigravity/mcp_config.json','mcpServers')]:
-        if app not in apps or not path.is_file() or path.is_symlink() or path.stat().st_size>2*1024*1024:continue
-        try:
-            if path.suffix=='.toml':
-                import tomllib
-                data=tomllib.loads(path.read_text(encoding='utf-8'))
-            else:data=json.loads(path.read_text(encoding='utf-8'))
-            for name,config in (data.get(field) or {}).items():
-                if not isinstance(config,dict):continue
-                disabled=config.get('disabled') is True or config.get('enabled') is False
-                rows.append(entry('Tool',str(name),'A configured connection. Access is checked by its AI app.',app,
-                                  app+':connection:'+str(name),'Disabled' if disabled else 'Configured',type='Connection'))
-        except (OSError,ValueError,AttributeError,ImportError):notes.append(APPS[app]+': connection details could not be read.')
+    for app,name,disabled in connections(workspace,apps,home,notes):
+        rows.append(entry('Tool',name,'A configured connection. Access is checked by its AI app.',app,
+                          app+':connection:'+name,'Disabled' if disabled else 'Configured',type='Connection'))
     for command,title,description in [('ffmpeg','FFmpeg','Process video and audio.'),('ffprobe','FFprobe','Inspect video and audio files.'),
                                       ('git','Git','Work with versioned files and repositories.'),('python','Python','Run Python scripts.'),('node','Node.js','Run JavaScript tools.')]:
         if shutil.which(command):rows.append(entry('Tool',title,description,'','local:'+command,'Installed',type='Local tool'))

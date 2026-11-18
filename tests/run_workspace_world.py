@@ -236,6 +236,27 @@ print(json.dumps({'full':full,'tight':tight}))
         assert wo.find(file_path='C:/w/out/other.csv',file_time=at('2026-11-17T11:00:00Z')) is None,'a file no app wrote is not attributed'
         (claude/'cc-2.jsonl').write_text(line(type='user',timestamp='2026-11-17T10:07:00Z',message={'role':'user','content':'ins_abc again'}),encoding='utf-8')
         assert wo.find(record_id='ins_abc',created_at='2026-11-17T10:05:00Z') is None,'two sessions match: not certain, so no answer'
+        # The connected services a conversation called, counted from the same logs. Only services the person connected.
+        import workspace_services as ws;importlib.reload(ws)
+        space=base/'ws';space.mkdir();(space/'.mcp.json').write_text(json.dumps({'mcpServers':{'stripe':{'command':'x'}}}),encoding='utf-8')
+        (base/'codex/config.toml').write_text('[mcp_servers.gmail]'+chr(10)+'command = "x"'+chr(10),encoding='utf-8')
+        call=lambda name:line(type='assistant',timestamp='2026-11-17T12:00:00Z',message={'content':[{'type':'tool_use','name':name,'input':{}}]})
+        (claude/'cc-3.jsonl').write_text(call('mcp__stripe__create_invoice')+call('mcp__stripe__list_customers')+call('mcp__claude_ai_Google_Calendar__list_events')
+            +call('mcp__ccd_turn__wrap_up')+call('Bash'),encoding='utf-8')
+        (claude/'cc-3/subagents').mkdir(parents=True);(claude/'cc-3/subagents/agent-1.jsonl').write_text(call('mcp__stripe__refund'),encoding='utf-8')
+        cx='aaaaaaaa-2222-3333-4444-555555555555'
+        (codex/f'rollout-2026-11-17T12-00-00-{cx}.jsonl').write_text(
+            line(timestamp='2026-11-17T12:00:00Z',type='response_item',payload={'type':'custom_tool_call','name':'exec','input':'text(await tools.mcp__gmail__search_threads({q:1}))'})
+            +line(timestamp='2026-11-17T12:01:00Z',type='response_item',payload={'type':'function_call','name':'mcp__gmail__send','arguments':'{}'})
+            +line(timestamp='2026-11-17T12:02:00Z',type='response_item',payload={'type':'function_call','name':'mcp__codex_app__create_thread','arguments':'{}'}),encoding='utf-8')
+        got=ws.used({'cc-3':'claude',cx:'Codex','missing-1':'claude'},space,home=base)
+        assert got=={'cc-3':{'Stripe':3,'Google Calendar':1},cx:{'Gmail':2}},('services the person connected are counted, delegated agents included; app built-ins are not',got)
+        with (claude/'cc-3.jsonl').open('a',encoding='utf-8') as log:log.write(call('mcp__stripe__void')+'{"type":"assistant","message":{"content":[{"type":"tool_use","name":"mcp__stripe__x"')
+        assert ws.used({'cc-3':'claude'},space,home=base)['cc-3']['Stripe']==4,'only what was added is read, and a line still being written waits'
+        called=relationships(graph_feed,{'projects':[]},[],[],[{'id':'c3','title':'Billing','agent':'claude','native_id':'cc-3','references':[]}],
+                             services=lambda sessions:ws.used(sessions,space,home=base))
+        edges3={(e['source'],e['target'],e['type']):e for e in called['edges']}
+        assert edges3[('service:stripe','chat:c3','called')]['calls']==4 and ('service:googlecalendar','chat:c3','called') in edges3,'a conversation links to each service it called, once per service'
     import shutil
     if shutil.which('node'):subprocess.run(['node',str(ROOT/'tests/workspace_aura_ui.cjs'),str(ROOT/'interface/workspace-aura.js')],check=True)
     print('workspace world: ok')
