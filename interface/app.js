@@ -1893,7 +1893,7 @@ function workedOutDetails(r,location){
 function madeIn(data,file=''){
   const p=data?.extensions?.businessos?.work?.producer;
   if(p?.kind==='chat'){const chat=(state.chatList||[]).find(c=>c.id===p.id)||(state.preferences?.chats||[]).find(c=>c.id===p.id)||{},title=chat.title?` · “${chat.title.length>60?chat.title.slice(0,59)+'…':chat.title}”`:'';
-    return `<p class="small-note made-in">Made in ${esc(chat.agent?chat.agent+', in AURA':'a conversation in AURA')}${esc(title)} · <button class="text-button" data-chat="${esc(p.id)}">Open it</button></p>`;}
+    return `<p class="small-note made-in">Made in ${esc(chat.agent?appName(chat.agent)+', in AURA':'a conversation in AURA')}${esc(title)} · <button class="text-button" data-chat="${esc(p.id)}">Open it</button></p>`;}
   if(p?.kind==='task')return `<p class="small-note made-in">Made by a scheduled task · <button class="text-button" data-open-schedule="${esc(p.id)}">Open it</button></p>`;
   if(p?.kind==='agent')return '<p class="small-note made-in">Made by an agent</p>';
   if(p?.kind==='session')return `<p class="small-note made-in">Made directly in ${esc(p.app||'an AI app')}</p>`;

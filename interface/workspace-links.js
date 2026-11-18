@@ -40,7 +40,9 @@ window.auraLinks = (() => {
   const indexes = new WeakMap();
   function index(feed) {
     if (indexes.has(feed)) return indexes.get(feed);
-    const graph = feed?.relationships || {nodes:[], edges:[]}, nodes = new Map(graph.nodes.map(n => [n.key, n])), into = new Map(), from = new Map();
+    // AI apps are recorded by AURA's own key for them (codex, claude…); show the name people know.
+    const named = n => n.kind === 'app' && typeof window.appName === 'function' ? {...n, name: window.appName(n.name)} : n;
+    const graph = feed?.relationships || {nodes:[], edges:[]}, nodes = new Map(graph.nodes.map(n => [n.key, named(n)])), into = new Map(), from = new Map();
     for (const edge of graph.edges) {
       if (!into.has(edge.target)) into.set(edge.target, []);
       if (!from.has(edge.source)) from.set(edge.source, []);

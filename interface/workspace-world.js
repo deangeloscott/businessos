@@ -260,7 +260,7 @@ function relatedLands(feed, lands, li) {
 }
 /* Who does the work: AI apps and agents, in the sky beside the world. Busiest first. */
 function actorsOf(feed) {
-  const L = window.auraLinks, out = (feed.apps || []).map(a => ({ key: 'app:' + a.name, kind: 'app', name: a.name, use: a.requests || 0, unit: 'request' }));
+  const L = window.auraLinks, shown = n => typeof window.appName === 'function' ? window.appName(n) : n, out = (feed.apps || []).map(a => ({ key: 'app:' + a.name, kind: 'app', name: shown(a.name), raw: a.name, use: a.requests || 0, unit: 'request' }));
   if (L) for (const [key, node] of L.index(feed).nodes) if (node.kind === 'agent' && !key.includes('|')) out.push({ key, kind: 'agent', name: node.name, id: key.slice(6), use: (L.index(feed).from.get(key) || []).filter(e => e.type === 'used').length, unit: 'conversation' });
   return out.sort((a, b) => b.use - a.use);
 }
@@ -446,7 +446,7 @@ function overlay(t, dd) { placed = []; hits = []; const alt = cam.alt, playing =
 const initials = name => { const words = String(name).split(/\s+/).filter(w => /^[A-Za-z0-9]/.test(w)); return ((words[0]?.[0] || '?') + (words[1]?.[0] || words[0]?.[1] || '')).toUpperCase(); };
 function shareOf(a) {
   if (lens !== 'effort') return null; const chats = (M.feed.effort || []).flatMap(g => g.chats || []), total = chats.reduce((t, c) => t + (c[effortMetric] || 0), 0); if (!total) return null;
-  const mine = a.kind === 'app' ? chats.filter(c => c.agent === a.name) : chats.filter(c => c.id && (window.auraLinks?.index(M.feed).from.get(a.key) || []).some(e => e.target === 'chat:' + c.id));
+  const mine = a.kind === 'app' ? chats.filter(c => c.agent === a.raw) : chats.filter(c => c.id && (window.auraLinks?.index(M.feed).from.get(a.key) || []).some(e => e.target === 'chat:' + c.id));
   return mine.reduce((t, c) => t + (c[effortMetric] || 0), 0) / total;
 }
 /* Where a satellite orbits: above the places its conversations' work reached, nudged apart so two never sit on each other.
@@ -462,7 +462,7 @@ function effortWires(a) {
   if (effortWires.feed !== M.feed || effortWires.metric !== effortMetric) {
     effortWires.feed = M.feed; effortWires.metric = effortMetric; effortWires.cache = new Map(); effortWires.most = 1e-9;
     const L = window.auraLinks, chats = (M.feed.effort || []).flatMap(g => g.chats || []).filter(c => c.id);
-    for (const actor of M.actors) { const mine = actor.kind === 'app' ? chats.filter(c => c.agent === actor.name) : chats.filter(c => (L?.index(M.feed).from.get(actor.key) || []).some(e => e.target === 'chat:' + c.id)), by = new Map();
+    for (const actor of M.actors) { const mine = actor.kind === 'app' ? chats.filter(c => c.agent === actor.raw) : chats.filter(c => (L?.index(M.feed).from.get(actor.key) || []).some(e => e.target === 'chat:' + c.id)), by = new Map();
       for (const c of mine) for (const id of L ? L.places(M.feed, 'chat:' + c.id) : []) by.set(id, (by.get(id) || 0) + (c[effortMetric] || 0));
       effortWires.cache.set(actor.key, by); for (const w of by.values()) effortWires.most = Math.max(effortWires.most, w); }
   }
@@ -470,7 +470,7 @@ function effortWires(a) {
 }
 function dock(t, playing) {
   // An app that is working shows even before it has any recorded use.
-  const actors = [...running.filter(r => r.app && !M.actors.some(a => a.kind === 'app' && a.name === r.app)).map(r => ({ key: 'app:' + r.app, kind: 'app', name: r.app, use: 0, unit: 'request' })).filter((a, i, all) => all.findIndex(b => b.key === a.key) === i), ...M.actors];
+  const actors = [...running.filter(r => r.app && !M.actors.some(a => a.kind === 'app' && a.raw === r.app)).map(r => ({ key: 'app:' + r.app, kind: 'app', name: typeof window.appName === 'function' ? window.appName(r.app) : r.app, raw: r.app, use: 0, unit: 'request' })).filter((a, i, all) => all.findIndex(b => b.key === a.key) === i), ...M.actors];
   if (W < 560 || playing || !actors.length) return;
   // Satellites ride a ring just outside the world's edge, at the angle where their work lies, so they turn with the world
   // without ever covering it. One whose places are round the back dims. None sits under the headline or the controls,
@@ -479,7 +479,7 @@ function dock(t, playing) {
   // With room around the world they ride a ring outside its edge; zoomed in, where the world fills the view, they ride the
   // edge of the view instead, at the same angle, so they never sit on the planet.
   const room = rs * 1.38 + 26 <= Math.min(cx, cy) - 30, R = room ? rs * 1.38 + 26 : Math.min(cx, cy) - 30, headline = cam.alt > 3.4 && !show && !sel && shareEl.hidden, deg = Math.PI / 180, gap = Math.max(.2, 44 / R);
-  for (const a of list) if (!a.dir) a.dir = orbitOf(a, running.filter(r => r.app === a.name).map(r => 'chat:' + r.id));
+  for (const a of list) if (!a.dir) a.dir = orbitOf(a, running.filter(r => r.app === a.raw).map(r => 'chat:' + r.id));
   const at = list.map(a => { const q = proj(a.dir, 1.004), d = Math.hypot(q.x - cx, q.y - cy); return { a, ang: d > 6 ? Math.atan2(q.y - cy, q.x - cx) : a.ang ?? -Math.PI / 2, front: q.vis }; });
   // The ring has room everywhere except under the headline (when it shows) and down by the controls. Each satellite goes to
   // the nearest free stretch, then each stretch is laid out in order with a fixed gap, squeezed evenly when it is crowded.
@@ -500,7 +500,7 @@ function dock(t, playing) {
   const spots = list.map(a => { const p = at.find(x => x.a === a); a.ang = p.ang; const [x, y] = room ? [cx + Math.cos(p.ang) * R, cy + Math.sin(p.ang) * R] : edge(p.ang); return { x, y, front: p.front, ang: p.ang }; });
   dockSpots = list.map((a, k) => spots[k] && { key: a.key, x: spots[k].x, y: spots[k].y }).filter(Boolean);
   list.forEach((a, k) => {
-    const { x, y, front, ang } = spots[k], work = running.filter(r => a.kind === 'app' ? r.app === a.name : r.agent === a.id), on = work.length > 0, over = hov?.dock === a.key || (peek?.docks || []).includes(a.key), share = shareOf(a);
+    const { x, y, front, ang } = spots[k], work = running.filter(r => a.kind === 'app' ? r.app === a.raw : r.agent === a.id), on = work.length > 0, over = hov?.dock === a.key || (peek?.docks || []).includes(a.key), share = shareOf(a);
     const hue = hashS(a.name) % 360, size = 9 * (share == null ? 1 : .8 + share * .9);
     g.save(); g.globalAlpha = on || over ? 1 : front ? .9 : .4; g.lineWidth = 1.5; g.strokeStyle = on ? C.accent : C.muted; g.fillStyle = kit ? `hsl(${hue},45%,88%)` : `hsl(${hue},38%,${on ? 34 : 22}%)`; g.beginPath();
     if (a.kind === 'app') {
