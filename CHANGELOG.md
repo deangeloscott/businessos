@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.6.0 Alpha — 2026-11-18
+
+- **Your aura, rebuilt around what your work produced.** Connections, Time and AI effort each take the whole picture while your world keeps turning small in the corner. One period choice (quick picks or your own dates) applies to all of them, each compared fairly with the period before. Click anything for its own card; each view opens with a few plain takeaways.
+- **One visual language.** Colour is the area everywhere, one line style shows what flowed (a pulse while work runs), and the world grows, blends and stays readable from a handful of records to tens of thousands.
+- **Where work came from.** "Made in" names the AI app and conversation behind saved work, including work done directly in Claude Code, Codex, Pi, OMP, Hermes or Antigravity, and the connected services it relied on, with a warning when one of those services is turned off or removed.
+- **AI use you can act on.** AI effort shows what spending produced, each app's plan limits and each task's share of them, and, if you turn it on, estimated cost at API prices for apps that report only tokens.
+- **Smoother work across apps.** Continue any chat in its own app's screen from the built-in terminal; the bell tells you when work was saved outside AURA's chat.
 
 - **Plan use in AI effort.** Each app's current plan limits show as they last reported them ("Codex weekly limit 62% used · resets Friday"), and "Plan use" sizes the chart by how much of each limit the work used. Each request's share is measured from the plan level just before it and the last level it reported, which the apps already send; where that isn't clean (an older level, or two requests at once) the share is split by tokens and marked ≈. A nearly used-up plan gets a takeaway.
 - **Cost says whose number it is.** A cost the app estimated itself shows with ≈. Settings has an opt-in, off by default, to estimate cost at API prices where an app reports only tokens: AURA downloads OpenRouter's public price list (nothing about you is sent) on the Library's Refresh and at most weekly, keeps only price changes with their dates, estimates each request at its day's price, and leaves unknown models as tokens. Estimates show as "≈ $X at API prices", apart from reported cost.
