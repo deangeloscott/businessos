@@ -423,20 +423,25 @@ window.auraView=(()=>{
     return {...feed,lands:feed.lands.map(l=>({...l,items:l.items.filter(item=>itemKeys.has(l.id+'|'+item.id))})),findings,changes:feed.changes.filter(c=>itemKeys.has(c.land+'|'+c.item_id)),goals:[],decisions:feed.decisions.filter(d=>d.basis?.some(id=>ids.has(id)))};
   }
   const sinceDate=f=>ctx?.compare||(ctx?.since||fallbackSince(f)).slice(0,10);
+  /* What changed in a period, grouped the way the world is: goals first, then each place with its count, busiest first.
+     The world shows the same period: each place says how many of its things changed, and those things stay lit. */
   function comparisonView(feed){
-    const date=sinceDate(feed),changes=changesSince(comparisonFeed(feed,ctx.sel),date),visible=changes.slice(0,ctx.compareLimit||60);
-    const entries=visible.map(c=>{const [kind,...id]=c.key.split(':');return row(recordFor(ctx.feed,kind,id.join(':'))?go(c.key):c.land?`data-collection="${esc(c.land)}"`:'',c.title,c.detail,when(c.at),c.land?hueOf(c.land):null,kind);}).join('');
+    const date=sinceDate(feed),changes=changesSince(comparisonFeed(feed,ctx.sel),date);
+    const rows=list=>list.map(c=>{const [kind,...id]=c.key.split(':');return row(recordFor(ctx.feed,kind,id.join(':'))?go(c.key):c.land?`data-collection="${esc(c.land)}"`:'',c.title,c.detail,when(c.at),c.land?hueOf(c.land):null,kind);}).join('');
+    const groups=new Map();for(const c of changes){const k=c.land||'';if(!groups.has(k))groups.set(k,[]);groups.get(k).push(c);}
+    const name=k=>k?feed.lands.find(l=>l.id===k)?.name||'A place':'Goals and decisions';
+    const ordered=[...groups].sort((a,b)=>(a[0]==='')?-1:(b[0]==='')?1:b[1].length-a[1].length);
+    const body=ordered.map(([k,list],i)=>`<details class="world-group"${i<2||ordered.length<=3?' open':''}><summary><b>${esc(name(k))}</b> <span class="small-note">${count(list.length,'change')}</span></summary>${rows(list.slice(0,8))}${list.length>8?`<p class="small-note">and ${list.length-8} more here</p>`:''}</details>`).join('');
     return `<section class="world-comparison"><label>Changes since <input id="world-compare-date" type="date" value="${esc(date)}" max="${esc(feed.as_of.slice(0,10))}"></label>
-      <p class="small-note">Lit on the world. Earlier values appear where a dated measurement was kept.</p>
-      ${changes.length?`<button type="button" class="text-button" data-world-fly>Fly through them</button>`:''}
-      ${entries||'<p>No saved changes in this selection for this period.</p>'}
-      ${changes.length>visible.length?`<button class="text-button" data-world-more-changes>Show more changes (${changes.length-visible.length} remaining)</button>`:''}</section>`;
+      <p class="small-note">${changes.length?`${count(changes.length,'change')} in ${count(groups.size,'place')}, lit on the world; each place there says how many it holds.`:'No saved changes in this selection for this period.'} Earlier values appear where a dated measurement was kept.</p>
+      ${changes.length?`<button type="button" class="text-button" data-world-fly>Fly through them</button>`:''}${body}</section>`;
   }
+
 
   function showTab(tab){
     if(!ctx||!$('#world-stage'))return;ctx.tab=tab;ctx.expanded=false;
     document.querySelectorAll('[data-world-tab]').forEach(button=>{const on=button.dataset.worldTab===tab;button.setAttribute('aria-selected',String(on));button.tabIndex=on?0:-1;});
-    world()?.lens?.(tab==='map'?'links':tab==='effort'?'effort':'');paintSide();
+    world()?.lens?.(tab==='map'?'links':tab==='effort'?'effort':tab==='timeline'?'time':'');paintSide();
   }
   /* The last visit and the tour are kept with the other aura choices, so they follow the person between browsers. */
   const remember=patch=>{state.data.aura_preferences={...(state.data.aura_preferences||{}),...patch};api('/api/preferences',{business:state.business,aura:patch}).then(()=>{hq().paintMark?.();hq().paint?.(true);}).catch(()=>{});};
@@ -444,7 +449,7 @@ window.auraView=(()=>{
     const host=$('#world-stage');if(!host||!ctx)return;
     let ok=false;try{ok=!!world()?.available&&world().mount(host,ctx.feed,{select:o=>{if(ctx){world()?.filter?.(ctx.filter);selectionChanged(o,!ctx.restoring);}},seen:ctx.seen,toured:ctx.toured,remember,running:runningNow,poster:()=>drawPoster(ctx.feed,host),go:key=>{const [kind,...rest]=String(key).split(':');selectRecord(kind,rest.join(':'));},links:()=>ctx?.feed});if(ok)world().filter(ctx.filter);}catch(error){console.error(error);ok=false;}
     if(!ok)host.innerHTML='<p class="world-fallback">This computer cannot draw the 3D world. Everything in it is listed beside this, and in the other views.</p>';
-    ctx.seen=ctx.feed.as_of;ctx.toured=true;world()?.lens?.(ctx.tab==='map'?'links':ctx.tab==='effort'?'effort':'');paintSide();
+    ctx.seen=ctx.feed.as_of;ctx.toured=true;world()?.lens?.(ctx.tab==='map'?'links':ctx.tab==='effort'?'effort':ctx.tab==='timeline'?'time':'');paintSide();
   }
   function paintChrome(){
     if(!ctx||!$('#world-tools'))return;const {top,keys}=tools(ctx.feed);
@@ -635,7 +640,6 @@ window.auraView=(()=>{
     if(on('[data-world-dismiss]')){ctx.outcome=null;ctx.receipts=[];ctx.receiptOpen=null;paintSide();}
     const receipt=on('[data-world-receipt]');if(receipt){const i=Number(receipt.dataset.worldReceipt);ctx.receiptOpen=ctx.receiptOpen===i?null:i;paintSide();}
     const mode=on('[data-world-time]');if(mode){ctx.timeMode=mode.dataset.worldTime;paintSide();}
-    if(on('[data-world-more-changes]')){ctx.compareLimit=(ctx.compareLimit||60)+60;paintSide();}
     if(on('[data-world-end-week]')){ctx.week=null;paintSide();}
     const week=on('[data-world-week]');if(week){if(week.dataset.weekLand)selectRecord('land',week.dataset.weekLand);ctx.week=week.dataset.worldWeek;paintSide();$('#world-week')?.focus();}
     const block=on('[data-effort-key]');if(block){ctx.effortOpen=ctx.effortOpen===block.dataset.effortKey?null:block.dataset.effortKey;const shown=ctx.effortOpen&&blockPeek(ctx.effortOpen);

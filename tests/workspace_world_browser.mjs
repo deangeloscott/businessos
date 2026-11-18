@@ -52,7 +52,8 @@ try {
   if (has3d) {
     // An AI app in the sky beside the world opens its connections when clicked.
     await evaluate(`document.querySelector('[data-world-tab="world"]').click()`); await sleep(300);
-    await evaluate(`window.auraWorld.settle()`); await sleep(300);
+    // Satellites orbit above the places their work reached, so turn the world to face the app first.
+    await evaluate(`(()=>{const w=window.auraWorld,a=w.model().actors.find(x=>x.kind==='app');const d=a.dir;w.restoreCamera({lon:Math.atan2(d.x,d.z),lat:Math.asin(d.y),alt:5.2});w.settle();w.idle(2);return true;})()`); await sleep(300);
     const spot = await evaluate(`(()=>{const r=document.querySelector('#world-stage canvas.world-ui').getBoundingClientRect(),d=window.auraWorld.state().dock[0];return d&&{x:r.left+d.x,y:r.top+d.y};})()`);
     check(spot, 'the sky shows the AI app');
     for (const type of ['mouseMoved', 'mousePressed', 'mouseReleased']) await page('Input.dispatchMouseEvent', { type, x: spot.x, y: spot.y, button: 'left', clickCount: 1 });

@@ -1501,3 +1501,5 @@ body.in-aura .world-bar [hidden] { display:none }
 @media (prefers-reduced-motion:reduce) { .wm-lines path.live { animation:none; stroke-dasharray:none } }
 .world-flow { display:flex; align-items:center; gap:8px; font-size:var(--text-sm) }
 .world-found { border-bottom:1px solid var(--line); padding-bottom:8px }
+.world-group { border-bottom:1px solid var(--line); padding:4px 0 }
+.world-group>summary { cursor:pointer; display:flex; align-items:baseline; gap:8px; padding:6px 2px; list-style-position:inside }

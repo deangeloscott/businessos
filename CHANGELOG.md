@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **Satellites around the world.** AI apps (a satellite with its initials) and agents (a small robot) ride a ring just outside the world's edge, at the angle where their work lies, so they turn with the world without covering it; zoomed in, they ride the edge of the view. They keep clear of the goal headline and the corner map, spread so none touch, and dim when their places are round the back.
+- **A gentle turn.** Left alone, the world turns slowly (about four minutes a revolution). It stops while you move the pointer over it, select anything or zoom in, never runs for reduced motion, and draws only as often as such a slow turn needs.
+- **Goal rings start from the same point**, so how close each goal is to done compares at a glance. A working one sends a current down to its places; in the effort lens each sends wires to where its AI use went, as thick as the use.
+- **Every lens shows on the world.** In Time, each place says how many of its things changed in the period, and the list beside the world is grouped by place (goals first), not one long stream. In AI effort, the wires and each satellite's share are on the world.
+- **Goal rings take the colour of the place that feeds them**; a goal nothing feeds yet is neutral. Uncharted areas move to open water instead of overlapping charted land.
+
 - **Readable at any size.** From orbit the world names only places (and what needs you); in the middle distance it names a few "cities", the busiest tracked things with how much is recorded about each; up close it names things, still within a budget. Small lights can only be pointed at once you are close enough to see them, so a crowded world never fights for the pointer. Light is shared out across what is visible, so a large world is lively rather than blown out.
 - **Colours that mean something.** Places in the same operating area share a colour family in their own shades, so competitors read as competitors; a big world has a handful of colours, not dozens. A collection with no findings yet keeps a quieter colour until it earns a family.
 - **Land grows with knowledge.** How much of the world is land follows how much is known, from a few islands to one landmass with soft regions. Bridges now mark only unusually strong links between places that do not already touch, so they stay meaningful as everything connects.
