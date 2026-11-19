@@ -348,6 +348,8 @@ def history(command, kind, cwd, env, native_id, source_file=''):
 
 
 def tool_activity(name):
+    if workspace_chats.uses_screen(name):
+        return 'Using your screen'
     name = str(name or '').lower()
     if any(word in name for word in ('search', 'browse', 'fetch', 'web')):
         return 'Researching with a connected tool'

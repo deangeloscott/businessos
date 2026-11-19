@@ -1610,3 +1610,8 @@ body.in-aura .world-main:not(.lens-on) .world-ask{left:auto;right:14px;transform
 /* AI app versions: one row per app, its version and its own update. */
 .app-version{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}.app-version>div{display:grid;gap:2px;min-width:0}
 .app-version small{color:var(--muted);font-size:var(--text-xs)}.app-new{color:var(--accent);font-weight:600}.app-problem{color:var(--warn)}
+
+/* Phone chats name where they came from; the latest reply's shortcuts sit with its other actions. */
+.sidebar-chat .chat-from{font-size:.68rem;opacity:.7;margin-left:auto;padding-left:.35rem;white-space:nowrap}
+.reply-extras{gap:.75rem;flex-wrap:wrap}
+#phone-chats-business{margin:0 0 .75rem 1.6rem;max-width:calc(100% - 1.6rem)}

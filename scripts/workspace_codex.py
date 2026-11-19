@@ -192,6 +192,8 @@ def run(command, cwd, prompt, native_id, model, effort, update, env=None, execut
                 else:
                     label = {'command_execution': 'Running a command', 'file_change': 'Updating files',
                              'web_search': 'Searching the web', 'mcp_tool_call': 'Using a connected tool'}.get(item.get('type'))
+                    if item.get('type') == 'mcp_tool_call' and workspace_chats.uses_screen(item.get('tool')):
+                        label = 'Using your screen'
                     if label:
                         update(progress=label)
             elif kind == 'turn.completed':

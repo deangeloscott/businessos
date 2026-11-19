@@ -277,7 +277,8 @@ async function showAccounts(){
       <details><summary>Add a Claude account</summary><ol class="small-note"><li>Run <code>claude setup-token</code> <button type="button" class="text-button" data-terminal-run="claude-setup-token">Run in terminal</button> and sign in with the other account.</li><li>Paste the token it prints.</li></ol>
       <form id="claude-account-form" class="form-grid"><label>Nickname<input name="nickname" maxlength="40" placeholder="Work"></label><label>Token<input name="token" type="password" autocomplete="off" required></label><button class="primary">Add account</button></form></details></section>
     <section class="accounts-section"><h3>Codex</h3>${data.codex_supported?(codex.map(row).join('')||'<p class="small-note">Save the account Codex uses now, then add another.</p>')+`<div class="inline-actions"><button type="button" class="secondary" data-codex-capture>Save current account</button><button type="button" class="secondary" data-codex-login>Sign in to another account</button></div><p class="small-note">Switching also switches the account in your Codex app. Your chats stay.</p>`:`<p class="small-note">${esc(data.codex_reason)}</p>`}</section>
-    <section class="accounts-section"><h3>Other apps</h3>${Object.entries(data.native).map(([k,v])=>`<p class="small-note"><strong>${esc(limitAppName(k))}:</strong> ${esc(v)}${k==='pi'&&data.pi?(data.pi.installed?' <span class="row-meta">· Installed</span> <button type="button" class="text-button" data-terminal-run="pi-login">Open Pi to sign in</button>':' <button type="button" class="text-button" data-pi-install>Set it up</button>'):''}${k==='omp'?' <button type="button" class="text-button" data-terminal-run="omp-login">Run omp login</button>':''}</p>`).join('')}<p class="small-note">See <a href="https://github.com/deangeloscott/businessos/blob/main/docs/tools-and-services.md#several-accounts-or-subscriptions" target="_blank" rel="noopener noreferrer">several accounts ↗</a> for setup.</p></section>`);
+    <section class="accounts-section"><h3>Other apps</h3>${Object.entries(data.native).map(([k,v])=>`<p class="small-note"><strong>${esc(limitAppName(k))}:</strong> ${esc(v)}${k==='pi'&&data.pi?(data.pi.installed?' <span class="row-meta">· Installed</span> <button type="button" class="text-button" data-terminal-run="pi-login">Open Pi to sign in</button>':' <button type="button" class="text-button" data-pi-install>Set it up</button>'):''}${k==='omp'?' <button type="button" class="text-button" data-terminal-run="omp-login">Run omp login</button>':''}</p>`).join('')}<p class="small-note">See <a href="https://github.com/deangeloscott/businessos/blob/main/docs/tools-and-services.md#several-accounts-or-subscriptions" target="_blank" rel="noopener noreferrer">several accounts ↗</a> for setup.</p></section>
+    ${data.histories?.length?`<section class="accounts-section"><h3>Your apps’ conversations</h3><p class="small-note">AURA’s backup keeps your business and saved work. Each app keeps its full conversations in its own folder; include these in your computer’s backup.</p>${data.histories.map(h=>`<p class="small-note"><strong>${esc(h.app)}:</strong> <code>${esc(h.folder)}</code></p>`).join('')}</section>`:''}`);
   const host=$('#detail');
   host.querySelectorAll('[data-policy]').forEach(select=>select.addEventListener('change',()=>attempt(async()=>{await api('/api/accounts',{business:state.business,action:'policy',changes:{[select.dataset.policy]:select.value}});notice('Saved.');await loadLimitOptions();})));
   $('#claude-account-form')?.addEventListener('submit',event=>{event.preventDefault();attempt(async()=>{const f=new FormData(event.target);await api('/api/accounts',{business:state.business,action:'claude_add',token:f.get('token'),nickname:f.get('nickname')});notice('Claude account added.');await showAccounts();});});
@@ -561,6 +562,8 @@ function usageLabel(usage) {
 /* Activity: work running now and notifications live together behind the bell. */
 function paintRunning(){
   const running=state.data?.running_chats||[],host=$('#activity-running');
+  state.screenTold??=new Set();
+  for(const j of running)if(j.progress==='Using your screen'&&!state.screenTold.has(j.id)){state.screenTold.add(j.id);notice(`${appName(j.agent)} is using your screen. Leave the mouse and keyboard until it's done.`);}
   $('#background-work').hidden=true;$('#notification-bell').classList.toggle('working',running.length>0);paintAuraStatus();
   if(!host)return;host.hidden=!running.length;
   host.innerHTML=running.length?`<h3>Working now</h3>${running.map(j=>`<button type="button" class="notification-item" data-working-chat="${esc(j.chat_id)}" data-working-workspace="${esc(j.workspace)}" data-working-business="${esc(j.business_id)}"><span class="activity-spinner" aria-hidden="true"></span><span><strong>${esc(j.title||(state.chatList||[]).find(c=>c.id===j.chat_id)?.title||appName(j.agent)+' chat')}</strong><small>${esc(j.progress||'Working')} · ${esc(appName(j.agent))}${j.model?' · '+esc(j.model):''}</small></span><span aria-hidden="true">→</span></button>`).join('')}<h3>Notifications</h3>`:'';
@@ -1767,7 +1770,7 @@ $('#detail').addEventListener('close',()=>{delete $('#detail').dataset.expanded;
 /* Settings: one page, grouped by what people are trying to do, with search. Each row opens the existing panel. */
 const settingsGroups=[
   ['General',[['account-settings','Profile','Your name, picture and how you like your AI to work','name avatar preferences'],['personalize-menu','Personalization','Style, appearance, accent colour, text size and density','theme dark light colour color font size compact retro style look'],['startup-settings','Startup & updates','Open AURA at sign-in and keep it up to date','update version launch']]],
-  ['AI & accounts',[['connection','AI connections','Which AI apps AURA uses, and their default models','claude codex chatgpt gemini model app connect'],['accounts-settings','Accounts & backups','Several accounts per app, plan limits and switching','limit usage reset backup account'],['harness-permissions','AI permissions','What your AI may do without asking','approve permissions safety'],['api-connections','API connections','Keys for model providers and other services','api key provider llm'],['app-versions','AI app versions','Versions, updates, and anything that changed','update version upgrade new models commands']]],
+  ['AI & accounts',[['connection','AI connections','Which AI apps AURA uses, and their default models','claude codex chatgpt gemini model app connect'],['accounts-settings','Accounts & backups','Several accounts per app, plan limits and switching','limit usage reset backup account'],['harness-permissions','AI permissions','What your AI may do without asking','approve permissions safety'],['api-connections','API connections','Keys for model providers and other services','api key provider llm'],['app-versions','AI app versions','Versions, updates, and anything that changed','update version upgrade new models commands'],['hermes-messages','Phone messages','Chat with Hermes from your phone, and get notices there','telegram discord whatsapp hermes gateway phone mobile notify text']]],
   ['Workspace',[['workspace-manager','Add or open a workspace','Switch between businesses or start a new one','business folder new'],['share-settings','Share or import','Copy information, files or projects between workspaces','export import package share copy'],['workspace-reading','Reading across workspaces','Let your other workspaces use what this one knows','share read other workspaces research knowledge findings'],['workspace-history','Version history','Earlier versions of your files','undo restore previous version'],['workspace-backups','Back up or restore','Keep a copy of your workspace somewhere safe','backup restore copy']]],
   ['Help',[['review-setup','Quick setup & tour','Connect an AI and see where things are','onboarding tour setup'],['support-report','Feedback & troubleshooting','Suggest a feature or get help with a problem','bug help report feature support']]],
 ];
@@ -1799,6 +1802,34 @@ async function openAppVersions(check=false){
 document.addEventListener('click',event=>{if(event.target.closest?.('[data-app-check]')){attempt(async()=>{await openAppVersions(true);notice('Checking your AI apps. This takes a moment.');setTimeout(()=>attempt(()=>openAppVersions()),15000);});}});
 // An app's update finished in the terminal: check it now rather than in a few hours.
 window.addEventListener('aura-terminal-ended',event=>{if(String(event.detail?.purpose||'').startsWith('app-update:'))api('/api/app-status?check=1').catch(()=>{});});
+/* Phone messages: Hermes's own gateway brings your Telegram, Discord or WhatsApp chats in, and AURA sends short
+   notices back out through Hermes while you're away. Hermes keeps the bot and its sign-in; its buttons run Hermes's
+   own commands in the built-in terminal. */
+async function openPhoneMessages(){
+  const d=await api('/api/hermes-messages'),g=d.gateway||{};
+  if(!d.installed){details('Phone messages','<p>Install Hermes to chat with it from Telegram, Discord or WhatsApp, and get notices there.</p>');return;}
+  const links=(g.platforms||[]).map(p=>`${esc(p.name)} ${p.problem?'<span class="app-problem">needs attention</span>':esc(p.state)}`).join(' · ');
+  const status=!g.set_up?'Not set up yet':`${links?links+' · ':''}${g.running?'Running':'<span class="app-problem">Not running</span>'}`;
+  const businesses=(state.data?.businesses||[]).map(b=>`<option value="${esc(b.id)}" ${d.chats?.business===b.id?'selected':''}>${esc(b.name)}</option>`).join('');
+  details('Phone messages',`<p class="small-note">Hermes runs the connection to your phone. AURA shows those chats here and can text you when something needs you.</p>
+    <div class="app-version"><div><b>Hermes messages</b><small>${status}</small></div><div class="inline-actions">${g.set_up?`<button type="button" class="secondary compact" data-terminal-run="${g.running?'hermes-gateway-stop':'hermes-gateway-start'}">${g.running?'Stop':'Start'}</button>`:''}<button type="button" class="secondary compact" data-terminal-run="hermes-gateway-setup">Set up</button></div></div>
+    <label class="check-label settings-check"><input type="checkbox" id="phone-chats" ${d.chats?.business?'checked':''} ${g.set_up?'':'disabled'}><span>Show my phone chats with Hermes in</span></label>
+    <select id="phone-chats-business" aria-label="Business for phone chats" ${d.chats?.business?'':'disabled'}>${businesses}</select>
+    <label class="check-label settings-check"><input type="checkbox" id="phone-notices" ${d.phone?.on?'checked':''} ${g.home?'':'disabled'}><span>Text me when work finishes, waits for me, or has a problem, while I'm away from AURA</span></label>
+    ${d.phone?.problem?`<p class="small-note app-problem">${esc(d.phone.problem)}</p>`:''}`);
+  const chats=$('#phone-chats'),pick=$('#phone-chats-business'),phone=$('#phone-notices');
+  const save=(change,undo)=>attempt(async()=>{try{await api('/api/hermes-messages',change);notice('Saved.');}catch(error){undo();throw error;}});
+  chats.onchange=()=>{pick.disabled=!chats.checked;save({chats:chats.checked?pick.value||state.business:''},()=>{chats.checked=!chats.checked;pick.disabled=!chats.checked;});};
+  pick.onchange=()=>save({chats:pick.value},()=>{});
+  phone.onchange=()=>save({phone:phone.checked},()=>{phone.checked=!phone.checked;});
+}
+// Phone notices wait until you're away: any use of an AURA window says you're here (at most twice a minute).
+let presenceSent=0;
+const present=()=>{if(document.hidden||Date.now()-presenceSent<30000)return;presenceSent=Date.now();api('/api/presence',{}).catch(()=>{});};
+['pointerdown','keydown','focus'].forEach(type=>window.addEventListener(type,present,{passive:true}));
+document.addEventListener('visibilitychange',present);
+// A chat from your phone updates within seconds while it's open (Hermes's records are checked, not re-read).
+setInterval(()=>{if(state.chatMeta?.gateway&&!document.hidden)checkNativeChanges();},5000);
 function openSettings(query=''){
   closeAnchoredSurface(false);if($('#more-dialog').open)$('#more-dialog').close();state.settingsReturn=false;
   const update=$('#update-menu-status')?.textContent.trim();
@@ -1810,6 +1841,7 @@ document.addEventListener('click',event=>{
   const b=event.target.closest('#open-settings,[data-settings-open]');if(!b)return;
   if(b.id==='open-settings'){openSettings();return;}
   if(b.dataset.settingsOpen==='app-versions'){attempt(()=>openAppVersions());return;}
+  if(b.dataset.settingsOpen==='hermes-messages'){attempt(()=>openPhoneMessages());return;}
   const target=$('#'+b.dataset.settingsOpen);if(!target)return;
   state.settingsQuery=$('#settings-find')?.value||'';state.settingsReturn=!!b.closest('#detail');closeAnchoredSurface(false);if($('#more-dialog').open)$('#more-dialog').close();
   target.click();
@@ -2639,6 +2671,20 @@ function nativeMedia(items){
   return (items||[]).length?`<div class="native-output-media">${items.map(m=>`<button type="button" class="text-button" data-file="${esc(m.path)}" aria-label="Open ${esc(m.name||'image')}"><img class="media-preview" src="${esc(mediaURL(m.path))}" alt="${esc(m.name||'Image from your AI')}" loading="lazy"></button>`).join('')}</div>`:'';
 }
 const signInCommand={claude:'claude-login',codex:'codex-login',omp:'omp-login',pi:'pi-login',hermes:'hermes-setup'};
+/* What the latest reply points to: a site to look at (one on this computer opens as a preview), and another AI app
+   it suggests continuing in. Both are just shortcuts; the reply itself is unchanged. */
+const LOCAL_SITE=/\bhttps?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(?::\d+)?[^\s)\]>"'`]*/gi,WEB_LINK=/\bhttps?:\/\/[^\s)\]>"'`]+/gi;
+function replyExtras(r){
+  const text=String(r.text||''),local=text.match(LOCAL_SITE),web=text.match(WEB_LINK);let out='';
+  const url=(local?local.at(-1).replace('0.0.0.0','localhost'):web?web.at(-1):'').replace(/[.,;:!?*]+$/,'');
+  if(url){try{out+=`<a class="text-button" href="${esc(new URL(url).href)}" target="_blank" rel="noopener noreferrer">${local?'Open preview':'Open '+esc(new URL(url).host)} ↗</a>`;}catch{}}
+  const here=state.chatMeta?.agent,apps=(state.data?.connection?.choices||[]).filter(c=>c.available&&c.id!==here&&!['configured','handoff'].includes(c.id));
+  const words=a=>[...new Set([a.name,a.name.replace(/^Google /,''),a.name.replace(/ Code$/,'')])].map(n=>n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'));
+  const named=state.chatMeta?.id&&apps.find(a=>words(a).some(n=>new RegExp(`\\b(?:continu\\w*|switch\\w*|mov\\w*|try|use)\\b[^.\\n]{0,40}\\b${n}\\b`,'i').test(text)));
+  if(named)out+=`<button type="button" class="text-button" data-continue-in="${esc(named.id)}">Continue in ${esc(named.name)}</button>`;
+  return out?`<div class="message-actions reply-extras">${out}</div>`:'';
+}
+document.addEventListener('click',event=>{const b=event.target.closest?.('[data-continue-in]');if(b&&state.chatMeta?.id)attempt(()=>openContinue(state.chatMeta.id,b.dataset.continueIn));});
 function showMessages(latest=false) {
   paintContinuation();
   const failed=!state.busy&&(state.chatMeta?.status==='error'||(!state.chatMeta&&state.liveJob?.status==='error'));
@@ -2654,7 +2700,8 @@ function showMessages(latest=false) {
   const formatKey=JSON.stringify([chat,state.chat.length,state.data?.connection.name]);
   if(state.formattedSource!==state.chat||state.formattedKey!==formatKey){
     const started=performance.now();
-    state.formattedHistory=state.chat.map((r,index)=>`<div class="message ${r.role}"><strong>${r.role==='user'?'YOU':esc(r.agent||state.data?.connection.name||'YOUR AGENT')}${r.at?` <time>${esc(clockTime(r.at))}</time>`:''}${r.role==='assistant'&&r.model?` · ${esc(r.model)}${r.effort?' · '+esc(human(r.effort)):''}`:''}</strong>${r.role==='assistant'?chatMarkdown(r.text):esc(r.text)}${nativeMedia(r.native_media)}${window.auraCompose?.actions(r,index)||''}</div>`).join('');
+    const lastReply=state.chat.findLastIndex(m=>m.role==='assistant');
+    state.formattedHistory=state.chat.map((r,index)=>`<div class="message ${r.role}"><strong>${r.role==='user'?'YOU':esc(r.agent||state.data?.connection.name||'YOUR AGENT')}${r.at?` <time>${esc(clockTime(r.at))}</time>`:''}${r.role==='assistant'&&r.model?` · ${esc(r.model)}${r.effort?' · '+esc(human(r.effort)):''}`:''}</strong>${r.role==='assistant'?chatMarkdown(r.text):esc(r.text)}${nativeMedia(r.native_media)}${window.auraCompose?.actions(r,index)||''}${index===lastReply?replyExtras(r):''}</div>`).join('');
     state.formattedSource=state.chat;state.formattedKey=formatKey;clientPerformance.message_formats++;clientPerformance.message_format_ms+=performance.now()-started;
   }
   const markup=state.formattedHistory;
@@ -3306,14 +3353,14 @@ async function renderShell(force=true){
   const owned=new Set(state.runningChats.filter(j=>j.workspace===root).map(j=>j.chat_id));
   const recent=list.items.filter(c=>!c.archived);
   state.homeRecent={scope:JSON.stringify([business,root]),chat:recent[0]};if(state.home)window.auraHQ?.sync();
-  const limit=state.chatLimit||20,signature=JSON.stringify([recent.map(c=>[c.id,c.title,c.status,c.updated,c.pinned,c.project]),[...owned],state.projects,state.chatMeta?.id,limit,state.inbox?.items?.map(n=>[n.chat_id,n.read])]);
+  const limit=state.chatLimit||20,signature=JSON.stringify([recent.map(c=>[c.id,c.title,c.status,c.updated,c.pinned,c.project,c.gateway]),[...owned],state.projects,state.chatMeta?.id,limit,state.inbox?.items?.map(n=>[n.chat_id,n.read])]);
   if(signature===state.sidebarSignature)return;state.sidebarSignature=signature;
   state.sidebarProjectGroups??={};
   document.querySelectorAll('#sidebar-chat-list details[data-project-group]').forEach(group=>{state.sidebarProjectGroups[group.dataset.projectGroup]=group.open;});
   const chatRow=c=>{
     const working=owned.has(c.id),check=c.status==='working'&&!working,unread=state.inbox?.items?.some(n=>n.chat_id===c.id&&!n.read);
     const status=c.needs_input?'Needs input':working?'Working':check?'Review work':c.status==='error'?'Needs attention':unread?'Reply ready':'';
-    return `<div class="sidebar-chat-row"><button type="button" class="sidebar-chat" data-chat="${esc(c.id)}" aria-current="${c.id===state.chatMeta?.id}" title="${esc(c.title+(status?' · '+status:''))}"><span class="chat-indicator ${working?'working':check||c.status==='error'?'attention':unread?'ready':''}" aria-label="${esc(status)}"></span>${c.pinned?pinIcon():''}<span class="chat-name"><span>${esc(c.title||'New chat')}</span></span>${check?'<small>Check</small>':''}</button><button type="button" class="chat-options" data-edit-chat="${esc(c.id)}" aria-label="Chat options for ${esc(c.title)}" title="Chat options">⋯</button></div>`;
+    return `<div class="sidebar-chat-row"><button type="button" class="sidebar-chat" data-chat="${esc(c.id)}" aria-current="${c.id===state.chatMeta?.id}" title="${esc(c.title+(status?' · '+status:''))}"><span class="chat-indicator ${working?'working':check||c.status==='error'?'attention':unread?'ready':''}" aria-label="${esc(status)}"></span>${c.pinned?pinIcon():''}<span class="chat-name"><span>${esc(c.title||'New chat')}</span></span>${c.gateway?`<small class="chat-from" title="From ${esc(c.gateway)}">${esc(c.gateway)}</small>`:''}${check?'<small>Check</small>':''}</button><button type="button" class="chat-options" data-edit-chat="${esc(c.id)}" aria-label="Chat options for ${esc(c.title)}" title="Chat options">⋯</button></div>`;
   };
   const projectKey=name=>JSON.stringify([root,business,name]);
   const pinned=recent.filter(c=>c.pinned),ungrouped=recent.filter(c=>!c.pinned&&!c.project);

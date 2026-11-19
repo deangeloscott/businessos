@@ -204,6 +204,9 @@ def handler_for(app):
                                             'assistant_id':(chats.get(j.get('chat_id')) or {}).get('assistant_id','')}
                                            for j in owner.running_jobs(workspace_root()) if j.get('business_id')==bid]
                     self.send(200,result)
+                elif route=='/api/hermes-messages':
+                    with app.lock:root=app.workspace_path
+                    with workspace_scope(root):self.send(200,app.hermes_messages_status())
                 elif route=='/api/app-status':
                     with app.lock:root=app.workspace_path
                     with workspace_scope(root):
@@ -386,7 +389,7 @@ def handler_for(app):
                     watched=app.chat_job(bid,query.get('chat_id')) if query.get('chat_id') else None
                     events={k:watched.get(k) for k in ('id','chat_id','workspace','business_id','created','status','updated','requests','native_notices','native_editor','native_controls')} if watched else None
                     self.send(200, {'workspace':str(workspace_root()),'items': sorted(({k:v for k,v in c.items() if k not in {'brief_token','subagents'}} for c in app.preferences['chats'] if c['business_id'] == bid),key=workspace_chat_organization.sort_key,reverse=True),
-                                    'projects':workspace_chat_organization.projects(app,bid),'active': app.preferences['active_chats'].get(bid), 'native_events':events, 'running': [{k:j.get(k) for k in ('id','chat_id','workspace','business_id','status','agent','model')} for j in app.running_jobs()]})
+                                    'projects':workspace_chat_organization.projects(app,bid),'active': app.preferences['active_chats'].get(bid), 'native_events':events, 'running': [{k:j.get(k) for k in ('id','chat_id','workspace','business_id','status','agent','model','progress')} for j in app.running_jobs()]})
                 elif route == '/api/projects':
                     self.send(200,{'projects':workspace_chat_organization.projects(app,selected(query.get('business')))})
                 elif route == '/api/chats/native':
@@ -660,6 +663,12 @@ def handler_for(app):
                     return
                 if route == '/api/accounts':
                     self.send(200,app.accounts_action(selected(data.get('business')),data));return
+                if route == '/api/presence':
+                    app.ui_active_at=time.time();self.send(200,{'ok':True});return
+                if route == '/api/hermes-messages':
+                    with app.lock:root=app.workspace_path
+                    with workspace_scope(root):self.send(200,app.hermes_messages_settings(data))
+                    return
                 if route == '/api/task-recover':
                     self.send(200,app.task_recover(selected(data.get('business')),data.get('task_id'),data.get('action'),data.get('target',''),
                         confirmed=data.get('confirm_destination') is True,expected_basis=data.get('task_basis')));return

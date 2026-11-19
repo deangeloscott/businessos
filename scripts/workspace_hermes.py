@@ -291,7 +291,9 @@ def run(command,cwd,env,prompt,native_id,model,effort,update,execution):
                 else:update(progress=text)
             elif typ=='error':raise ValueError(p.get('message') or 'Hermes needs attention.')
             elif typ=='notice':notice(execution,update,p.get('message',''))
-            elif typ=='tool.start':update(progress='Using '+str(p.get('name') or 'a native tool'),native_tool=p.get('name'))
+            elif typ=='tool.start':
+                import workspace_chats
+                update(progress='Using your screen' if workspace_chats.uses_screen(p.get('name')) else 'Using '+str(p.get('name') or 'a native tool'),native_tool=p.get('name'))
             elif typ=='tool.complete':update(progress='Native tool finished')
             elif typ in {'subagent.spawn_requested','subagent.start','subagent.complete'}:
                 ident=p.get('subagent_id') or p.get('child_session_id') or p.get('delegation_id')

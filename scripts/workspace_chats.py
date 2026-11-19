@@ -97,3 +97,12 @@ def update(chat, messages, candidate=None, native_summary='', native_title='', n
         if latest:chat['latest_request']=latest
     chat['summary_stale']=bool(chat.get('summary') and chat.get('summary_basis')!=basis)
     return chat
+
+
+SCREEN = re.compile(r'computer|mouse|keyboard|screen|left_click|right_click|double_click', re.I)
+
+
+def uses_screen(tool):
+    """A tool that controls the real screen, mouse or keyboard (computer use), not a separate browser it runs itself."""
+    name = str(tool or '')
+    return bool(SCREEN.search(name)) and not re.search(r'browser|playwright|puppeteer|chrome', name, re.I)

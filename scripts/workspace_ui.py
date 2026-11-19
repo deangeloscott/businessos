@@ -560,6 +560,7 @@ class Workspace:
         self.library_native = {}
         self.library_refresh_lock = threading.Lock()
         self.app_check_lock = threading.Lock()
+        self.hermes_check_lock = threading.Lock()
         self.library_checked = 0
         self.verified_business = None
         self.read_cache = {}
@@ -1576,6 +1577,15 @@ class Workspace:
             chat=dict(original);revision=self.chat_revision(chat)
             if any(j.get('chat_id')==ident for j in self.running_jobs()):return {'changed':False,'supported':False,'workspace':owner.workspace_path}
         # Even the first source-file lookup stays outside the shared UI lock.
+        if chat.get('gateway'):
+            import workspace_hermes_messages as hm
+            choice=owner.native_choice('hermes')
+            stamp=hm.marker(owner.agent_environment(choice),chat.get('native_id')) if choice else None
+            if not stamp or stamp==chat.get('gateway_marker'):return {'changed':False,'supported':bool(stamp),'workspace':owner.workspace_path}
+            with workspace_scope(owner.workspace_path):result=owner.conversation(bid,ident,True)
+            with self.lock:
+                if not result.get('history_note'):original['gateway_marker']=stamp
+            return {'changed':not result.get('history_note'),'conversation':result,'workspace':owner.workspace_path}
         with workspace_scope(owner.workspace_path):
             path=chat.get('source_file') or workspace_native_chats.source_hint(chat['agent'],owner.agent_environment(owner.native_choice(chat['agent'])),chat.get('native_id'))
             old=chat.get('source_marker');stamp=workspace_native_chats.marker(path)
@@ -2173,7 +2183,9 @@ class Workspace:
 
     TERMINAL_PRESETS={'claude-update':('claude',['update'],'Claude Code update'),'codex-update':('codex',['update'],'Codex update'),
                       'omp-update':('omp',['update'],'OMP update'),'pi-update':('pi',['update','--self'],'Pi update'),
-                      'hermes-update':('hermes',['update'],'Hermes update'),'antigravity-update':('antigravity',['update'],'Antigravity update'),
+                      'hermes-update':('hermes',['update'],'Hermes update'),
+                      'hermes-gateway-setup':('hermes',['gateway','setup'],'Hermes messages setup'),'hermes-gateway-start':('hermes',['gateway','start'],'Start Hermes messages'),
+                      'hermes-gateway-stop':('hermes',['gateway','stop'],'Stop Hermes messages'),'antigravity-update':('antigravity',['update'],'Antigravity update'),
                       'claude-setup-token':('claude',['setup-token'],'Claude token'),'claude-login':('claude',['auth','login'],'Claude sign-in'),
                       'codex-login':('codex',['login'],'Codex sign-in'),'omp-login':('omp',['login'],'OMP sign-in'),'pi-login':('pi',[],'Pi'),
                       'hermes-setup':('hermes',['setup'],'Hermes setup')}
@@ -2387,6 +2399,112 @@ class Workspace:
                          'checked_at':v.get('checked_at'),'problems':v.get('problems',[]),'updated_from':v.get('updated_from'),'update':a['id']+'-update'})
         return {'apps':apps,'retired':self.retired_choices()}
 
+    # ---- Hermes messages: phone chats in AURA, and notices back to the phone -------------------------------------
+    PHONE_AWAY=180  # no AURA window in use for this long counts as away from the computer
+
+    def hermes_messages_status(self):
+        """Hermes's gateway as Hermes reports it, and the two opt-in settings."""
+        import workspace_hermes_messages as hm
+        choice=self.native_choice('hermes')
+        with self.lock:chats=dict(self.preferences.get('hermes_messages') or {});phone=dict(self.preferences.get('phone_notices') or {})
+        if not choice:return {'installed':False,'chats':chats,'phone':phone}
+        return {'installed':True,'gateway':hm.gateway(self.agent_environment(choice)),'chats':chats,'phone':phone,'workspace':self.workspace_path}
+
+    def hermes_messages_settings(self,data):
+        """Turn phone chats (into one business) and phone notices on or off. Turning chats on brings in the past week."""
+        import workspace_hermes_messages as hm
+        choice=self.native_choice('hermes')
+        if not choice:raise ValueError('Install Hermes to use it from your phone.')
+        with self.lock:
+            if 'chats' in data:
+                bid=data['chats']
+                if bid:
+                    if not (workspace_root()/'instances'/str(bid)).is_dir():raise ValueError('Choose a business in this workspace.')
+                    old=self.preferences.get('hermes_messages') or {}
+                    self.preferences['hermes_messages']={'business':bid,'workspace':self.workspace_path,'since':old.get('since') if old.get('business') else time.time()-7*86400}
+                else:self.preferences.pop('hermes_messages',None)
+            if 'phone' in data:
+                if data['phone'] is True:
+                    home=hm.gateway(self.agent_environment(choice))['home']
+                    if not home:raise ValueError("Set up Hermes messages first, so Hermes knows your chat.")
+                    self.preferences['phone_notices']={'on':True,'platform':home,'since':time.time()}
+                else:self.preferences.pop('phone_notices',None)
+            self.save_preferences()
+        if data.get('chats'):threading.Thread(target=self.check_hermes_messages,daemon=True,name='aura-hermes-messages').start()
+        return self.hermes_messages_status()
+
+    def check_hermes_messages(self):
+        """Bring your new phone conversations into the chosen business, each once, with one bell note. Conversations
+        from anyone else stay in Add existing, named by sender. Reads Hermes's records only; no AI request."""
+        import workspace_hermes_messages as hm
+        if not self.hermes_check_lock.acquire(blocking=False):return
+        try:
+            with self.lock:setting=dict(self.preferences.get('hermes_messages') or {})
+            bid=setting.get('business');choice=self.native_choice('hermes')
+            if not bid or not choice or setting.get('workspace')!=self.workspace_path:return
+            found=hm.conversations(self.agent_environment(choice),setting.get('since',0))
+            with self.lock:
+                chats={c.get('native_id'):c for c in self.preferences['chats'] if c.get('agent')=='hermes'}
+                seen=set(self.preferences.get('hermes_seen',[]));tries=self.preferences.setdefault('hermes_tries',{})
+                for c in found:  # chats added by hand earlier also say where they came from
+                    if c['id'] in chats and not chats[c['id']].get('gateway'):chats[c['id']]['gateway']=c['from'];self.save_preferences()
+            for c in reversed(found):
+                if c['id'] in chats or c['id'] in seen:continue
+                if c['yours']:
+                    try:added=self.native_chats(bid,'hermes',c['id'],add=True)
+                    except (OSError,ValueError,subprocess.SubprocessError):
+                        with self.lock:
+                            tries[c['id']]=tries.get(c['id'],0)+1  # a conversation Hermes can't export is left to Add existing
+                            if tries[c['id']]<3:self.save_preferences();continue
+                        added=None
+                    with self.lock:
+                        chat=next((x for x in self.preferences['chats'] if added and x['id']==added['id']),None)
+                        if chat:chat.update(gateway=c['from'],gateway_marker=hm.marker(self.agent_environment(choice),c['id']))
+                with self.lock:
+                    self.preferences['hermes_seen']=[*self.preferences.get('hermes_seen',[]),c['id']][-500:];tries.pop(c['id'],None);self.save_preferences()
+                if c['yours'] and chat:self.notify(bid,chat['id'],f"New chat from {c['from']}: {chat.get('title') or 'Hermes conversation'}",kind='phone_chat')
+        finally:self.hermes_check_lock.release()
+
+    def phone_line(self,item):
+        """The one line a bell item becomes on the phone, or '' when it isn't one of the three kinds worth it."""
+        kind=item.get('kind');chat=next((c for c in self.preferences['chats'] if c['id']==item.get('chat_id')),None) if item.get('chat_id') else None
+        title=(chat or {}).get('title') or item.get('title') or ''
+        if not kind and item.get('status')=='complete':label='Finished'
+        elif not kind and item.get('status')=='error':label='Stopped with a problem'
+        elif kind=='input':label='Waiting for you'
+        elif kind in {'app_problem','service'}:label='Problem';title=item.get('title') or title
+        else:return ''
+        try:name=json.loads((workspace_root()/'instances'/item['business_id']/'context/business.json').read_text(encoding='utf-8')).get('name')
+        except (OSError,ValueError,KeyError,TypeError):name=''
+        return f"AURA{' · '+name if name else ''}: {label}{' · '+title if title else ''}"
+
+    def send_phone_notices(self):
+        """While you're away from AURA, send finished work, waits for you and problems to your own chat, once each."""
+        import workspace_hermes_messages as hm
+        with self.lock:setting=dict(self.preferences.get('phone_notices') or {})
+        if not setting.get('on') or time.time()-getattr(self,'ui_active_at',0)<self.PHONE_AWAY:return
+        choice=self.native_choice('hermes')
+        if not choice:return
+        now=time.time()
+        with self.lock:
+            due=[(n,line) for n in self.preferences['notification_items'] if not n.get('phone') and not n.get('read') and setting.get('since',now)<=n.get('at',0)<=now-30
+                 and now-n.get('at',0)<6*3600 for line in [self.phone_line(n)] if line]
+            for n,_ in due:n['phone']=True
+            if due:self.save_preferences()
+        argv=self.interactive_command('hermes',choice);env=self.agent_environment(choice)
+        for _,line in due[:5]:
+            problem=hm.send(argv,env,setting.get('platform','telegram'),line)
+            with self.lock:
+                saved=self.preferences.get('phone_notices')
+                if saved:saved['problem']=problem;self.save_preferences()
+            if problem:break
+
+    def hermes_answering(self,chat):
+        """A phone conversation Hermes is answering right now takes one message at a time."""
+        import workspace_hermes_messages as hm
+        choice=self.native_choice('hermes')
+        return bool(choice and chat.get('gateway') and hm.answering(self.agent_environment(choice),chat.get('native_id')))
+
     def service_problems(self,bid):
         """Connected services this business's work relied on that its app's settings now show as turned off, or that were
         connected there before and are gone. Connections an app keeps elsewhere (claude.ai connectors) are never flagged."""
@@ -2562,6 +2680,16 @@ class Workspace:
                 'busy':self.chat_busy(bid,source),'continued_to':source.get('continued_to'),'apps':sorted(apps,key=lambda a:(a['method']!='import',a['name'])),
                 'privacy':'The carried conversation is copied into the other app’s storage on this computer.'}
 
+    def app_histories(self):
+        """Where each installed app keeps its full conversations. AURA's backup covers the business, not these."""
+        out=[]
+        for a in installed_agents():
+            if not a.get('argv') or a['id'] not in workspace_native_chats.KINDS:continue
+            try:folder=workspace_native_chats.storage(a['id'],self.agent_environment(a))
+            except (OSError,ValueError):continue
+            out.append({'app':a['name'],'folder':str(folder.parent if a['id']=='hermes' else folder)})
+        return out
+
     def accounts_action(self, bid, data):
         """Several accounts per app through each app's own sign-in. Secrets never leave this computer."""
         action=data.get('action','list')
@@ -2633,7 +2761,7 @@ class Workspace:
                                 stdin=subprocess.DEVNULL,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
             if done.returncode:raise ValueError('Pi could not install the extension. Try `pi install '+workspace_accounts.PI_PACKAGE+'` in a terminal.')
             result=workspace_accounts.public()
-        elif action=='list':result=workspace_accounts.public()
+        elif action=='list':result={**workspace_accounts.public(),'histories':self.app_histories()}
         else:raise ValueError('Choose an account action.')
         supported,reason=workspace_accounts.codex_supported()
         pi=None
@@ -3015,6 +3143,12 @@ class Workspace:
                 'running':[j['chat_id'] for j in self.running_jobs(workspace_root()) if j['business_id']==bid],
                 'workspace':str(workspace_root())}
 
+    def other_apps_line(self):
+        """Which other AI apps are on this computer: information, so the AI can say when one suits the request better."""
+        here=(self.agent or {}).get('id') or self.connection_kind
+        others=[a['name'] for a in installed_agents() if a.get('argv') and a['id']!=here and a['id']!='configured']
+        return f"Other AI apps on this computer: {', '.join(others)}. The user can continue this chat in one of them. " if others else ''
+
     def request_text(self, bid, text, history=None, schedule_id=None, organization_id=None):
         if not isinstance(text, str) or not text.strip() or len(text) > 1024*1024:
             raise ValueError('Enter a request of up to 1 million characters, or attach a file for larger text.')
@@ -3061,6 +3195,7 @@ class Workspace:
                 "Retrieve a saved answer with the same helper: result --business-id <id> --workspace <workspace> --chat <result id> --variant <result variant>. Search only when useful; current records and corrections take priority over historic replies. "
                 f"Project links: {PRODUCT_ROOT / 'scripts/workspace_projects.py'}. Maintained result lists or dated reports: {PRODUCT_ROOT / 'scripts/workspace_collections.py'}. Read docs/projects-and-results.md when useful; retrieve matching rows, not full datasets. Deliberately saved Assets retain known AURA producer context. "
                 "Preserve native memory and skills in their owning app; do not mirror private native stores or treat incidental conversation as established truth. "
+                +self.other_apps_line()+
                 "Preserve useful business meaning, not this chat transcript. "
                 "Reply in everyday language, focusing on what the user can use or do next. "
                 "Keep record types, internal IDs, validation receipts, and explanations of which records you did not create out of normal replies. "
@@ -3298,6 +3433,8 @@ class Workspace:
     def start_chat(self, bid, text, history, welcome=False, schedule_id=None, organization_id=None, keep_warm_id=None, chat_id=None, files=None, connection=None, assistant_id=None,references=None,goal_id=None,permission_mode=None,native_goal=None,project=None,account_id=None,limit_recovery=False,source_task=None,native_workspace=None,catch_up_from=None):
         # A chat open in its app's own screen (Continue in terminal) is that screen's until it closes.
         if chat_id and self.resumed_in_terminal(chat_id):raise ValueError('This chat is open in the terminal. Close it there to continue here.')
+        phone=next((c for c in self.preferences['chats'] if c['id']==chat_id and c.get('gateway')),None) if chat_id else None
+        if phone and self.hermes_answering(phone):raise ValueError(f"Hermes is still answering your {phone['gateway']} message. Send again when it's done.")
         with self.lock:
             owner=copy.copy(self)
             owner.agent=dict(self.agent) if self.agent else None
@@ -3678,6 +3815,10 @@ def main():
                         app.resume_checked=time.time();app.resume_due()
                     if time.time()-getattr(app,'collections_checked',0)>60:
                         app.collections_checked=time.time();app.check_collection_changes();app.check_saved_work()
+                    if app.preferences.get('hermes_messages') and time.time()-getattr(app,'hermes_checked',0)>20:
+                        app.hermes_checked=time.time();threading.Thread(target=app.check_hermes_messages,daemon=True,name='aura-hermes-messages').start()
+                    if app.preferences.get('phone_notices') and time.time()-getattr(app,'phone_checked',0)>15:
+                        app.phone_checked=time.time();threading.Thread(target=app.send_phone_notices,daemon=True,name='aura-phone').start()
                     if time.time()-getattr(app,'apps_checked',0)>900:
                         app.apps_checked=time.time();threading.Thread(target=app.check_apps,daemon=True,name='aura-app-check').start()
                     if time.time()-getattr(app,'task_limits_checked',0)>600:

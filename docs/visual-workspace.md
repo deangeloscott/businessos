@@ -246,6 +246,18 @@ Returning to an idle conversation or foregrounding the tab compares cheap local 
 
 The same helpers back `/api/chats/native`, `/api/chats/import` (explicit confirmation) and `/api/chats/changes`. Read-only CLI discovery/inspection is available through `scripts/workspace_native_chats.py list|show --kind <app> [--id <exact-id>] --workspace <folder>`; normal native resume remains host-owned.
 
+### Phone messages (Hermes)
+
+**Settings → Phone messages** is for Hermes's own messaging gateway, which connects Telegram, Discord, WhatsApp and other platforms. Its row shows what Hermes reports (each platform's connection, and whether the gateway is running). **Set up**, **Start** and **Stop** run `hermes gateway setup|start|stop` in the built-in terminal; Hermes keeps the bot, its token and its sign-in.
+
+- **Show my phone chats with Hermes in** a chosen business: about every 20 seconds AURA reads Hermes's `state.db` read-only and adds your new gateway conversations from the past week onward, each once, marked with the platform ("Telegram"), with one bell note. "Yours" is the home channel Hermes's setup recorded. Conversations from anyone else are not added; they stay in Add existing, named by sender. A conversation Hermes continues under a new session after compressing it stays one chat. Chats you added by hand earlier get the platform label too.
+- An open phone chat checks Hermes's latest message every 5 seconds and refreshes only when it changed. Each Hermes turn reloads the conversation, so taking turns on the phone and in AURA keeps one ordered conversation. While Hermes is still answering a phone message (within 10 minutes), AURA's Send says so and waits.
+- **Text me when work finishes, waits for me, or has a problem**: bell items of those kinds (a finished or failed request, a request waiting for input, an app or service problem) go to your own chat through `hermes send -t <platform>`, once each, newest 6 hours, only after no AURA window has been used for 3 minutes. No AI request; AURA holds no token. If Hermes can't send, the reason shows under the setting.
+
+The latest reply offers **Open preview** for a site on this computer (localhost) or **Open <site>** for its last web link, and **Continue in <app>** when it suggests continuing in another installed AI app; that opens Continue in another app with the app chosen. Each request mentions the other AI apps on the computer as plain information. When an app starts a screen, mouse or keyboard tool, its progress reads "Using your screen" and AURA says so once. Browser tools that run their own browser don't count.
+
+**Accounts & backups** lists where each app keeps its full conversations (Claude Code, Codex, Pi, OMP, Hermes), for your computer's backup.
+
 ### Large workspaces and repeated reads
 
 Saved message formatting is reused until the conversation changes; live replies continue updating separately. Completed requests can ask for workspace state with the previous `records_revision`. A metadata check detects added, edited or removed JSON/JSONL records, reuses parsed records when unchanged, and returns `records_unchanged` with no duplicate records payload. The browser retains its current records in that case. Full reload remains available. This is a small in-memory optimization, without a persistent index or new database.
