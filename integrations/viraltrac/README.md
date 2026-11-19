@@ -1,5 +1,43 @@
 # ViralTrac integration
 
+## Connect from the interface or your AI app
+
+In AURA, select the intended business and open **Settings → API connections → ViralTrac**. Continue to ViralTrac, sign in and approve the intended business in its existing **Connected AI Agents → Use with AURA** section. No new navigation page is required. The temporary pairing window closes its local listener after success or ten minutes.
+
+Starting in ViralTrac, the same **Use with AURA** section provides the AURA settings location and CLI entry below. A website cannot silently start a local AURA installation; if it is not running, open it or use the CLI. The existing sign-in return path preserves the pairing request.
+
+Without AURA's interface, run from the product folder (use `--workspace` when the business lives elsewhere):
+
+```sh
+python scripts/workspace_viraltrac.py --workspace /path/to/workspace --business-id my-business pair
+python scripts/workspace_viraltrac.py --workspace /path/to/workspace --business-id my-business status --live
+python scripts/workspace_viraltrac.py --workspace /path/to/workspace --business-id my-business discover
+python scripts/workspace_viraltrac.py --workspace /path/to/workspace --business-id my-business discover --group measurement
+python scripts/workspace_viraltrac.py --workspace /path/to/workspace --business-id my-business call --tool performance_summary --input arguments.json
+```
+
+`pair --no-browser` prints a short-lived local URL instead of opening it. For an existing authorized service/user-agent token, use `connect --token-stdin`: send the secret through stdin from your secret manager, never as a command argument or chat message. Saved credentials use the existing OS-protected storage mechanism; Linux needs an unlocked supported keyring. No plaintext fallback is created. The CLI needs no running AURA or ViralTrac dashboard after authorization. A truly remote/cloud host must use its own authorized ViralTrac connection; it cannot read a local computer's keyring.
+
+`mcp-config` prints a secret-free stdio MCP configuration bound to this exact workspace and business. Add it through your host's supported MCP settings. AURA supplies the same stdio configuration to its ACP sessions; other local hosts can use the CLI directly, and native ViralTrac connections remain valid. The adapter forwards requests to ViralTrac's current tools rather than duplicating a tool registry. Use `discover --group` where a host cannot expand tool groups itself.
+
+On a headless machine without an OS keyring, `connect --token-stdin --no-store` verifies and saves only the business association. Supply `AURA_VIRALTRAC_TOKEN` through your process's secret manager, together with `AURA_VIRALTRAC_ORG_ID` and, for non-production services, `AURA_VIRALTRAC_API_ORIGIN`. The helper checks both the association and the token's actual organization before use. A token for a different business is rejected rather than silently reused. Never put these secrets in shared workspace configuration. Local disconnect cannot remove credentials supplied by an external process environment; remove them there or revoke remotely.
+
+The shared Business record contains only the ViralTrac service origin, organization ID and display name. Authorization is separate per computer/OS user/workspace/business. A different person opening the shared workspace must authorize their own access. Different businesses do not share an environment token. Do not treat the manifest's legacy workspace field or semantic-query `default` scope as interchangeable with organization identity; `connection.scopes` identifies these meanings.
+
+**Disconnect on this computer** removes the local credential, preserving the shared business association and saved findings. **Unlink business** also removes that association for everyone sharing the workspace. Revoke the user-agent connection in ViralTrac to invalidate it remotely. Expired/revoked credentials require reconnection; this implementation does not silently renew a user's grant.
+
+## Save and refresh useful evidence
+
+Tool responses retain ViralTrac's reporting windows, coverage, source/evidence handles and limitations. CLI calls add a small `aura_source` origin/retrieval descriptor, not an assertion that every response includes platform-account lineage or user attribution. Tool errors are not observations of zero activity.
+
+Use existing `SourceRecord`, `MetricDefinition`, `MetricObservation`, findings and decisions with `scripts/remember.py` or the existing research bundle helper. Preserve the measurement window separately from retrieval time; retain currency, attribution definition and available source-connection references when material. Distinguish provider results from model conclusions. Do not save credentials or bulk operational histories.
+
+Before refresh, retrieve the existing result and its query/source context. Reuse comparable definitions and explicit periods. Update the same observation for a provider restatement of the same period, with a correction summary; create a new dated observation for a genuinely different period. Use existing finding supersession and maintained collections rather than a separate synchronization service. ViralTrac artifact links can expire, so retain a stable query/receipt reference and an authorized bounded excerpt when necessary. Existing transfer/data policies still apply to what may be retained.
+
+## Verification scope
+
+`tests/run_viraltrac_connection.py` exercises real loopback HTTP, protected local storage where available, wrong-origin rejection, business mismatch, credential exclusion from workspace records, stdio forwarding, revocation, and existing measurement update behavior in an isolated workspace. This is integration fixture evidence, not a live customer marketing-data acceptance claim. Native host discovery and service-history coverage still follow each host's supported interfaces.
+
 ViralTrac is an optional first-party integration for ViralTrac AURA. It is **not** AURA's runtime, provider resolver, scheduler, event engine, permission system, or required execution path.
 
 ## Boundary

@@ -1855,7 +1855,9 @@ async function showApiConnections(origin=state.apiReturn) {
   $('#more-dialog').close();
   const services=result.items.filter(r=>origin!=='models'||r.category==='models');
   const saved=services.filter(r=>r.status!=='Not added');
+  const viraltrac=origin!=='models'&&state.business?await api('/api/viraltrac?business='+encodeURIComponent(state.business)):null;
   details(origin==='models'?'LLM connections':'API connections',`${origin==='models'?'<button class="text-button" id="back-to-models">← Back to models</button>':''}<p>${origin==='models'?'Add a provider key, then return to your models.':'Add services your AI can use for research, writing, images, video, or audio. Provider usage may be billed separately.'}</p>
+    ${viraltrac?`<div class="card"><h3>ViralTrac</h3><p>${viraltrac.name?esc(viraltrac.name)+' · '+esc(viraltrac.status):'Connect marketing evidence to this business.'}</p>${viraltrac.message?`<p role="status">${esc(viraltrac.message)}</p>`:''}<button type="button" id="viraltrac-pair">${viraltrac.status==='not_linked'?'Connect ViralTrac':'Reconnect'}</button> <button type="button" id="viraltrac-check" class="secondary">Check connection</button>${viraltrac.status!=='not_linked'?' <button type="button" id="viraltrac-disconnect" class="text-button">Disconnect on this computer</button> <button type="button" id="viraltrac-unlink" class="text-button">Unlink business</button>':''}<p id="viraltrac-status" class="small-note" role="status">Credentials stay on this computer. Saved findings stay in your workspace.</p></div>`:''}
     ${saved.length?`<div class="card">${saved.map(r=>`<div class="row"><span class="row-text"><span class="row-title">${esc(r.name)}</span><span class="row-meta">${esc(r.status)} · Not verified</span></span>${r.saved?`<button class="text-button" data-remove-api="${esc(r.id)}">Remove</button>`:''}</div>`).join('')}</div>`:''}
     ${result.storage_note?`<p class="small-note" role="status">${esc(result.storage_note)}</p><button type="button" id="session-keys-only" class="secondary">Continue without saved keys</button>`:''}<form id="api-key-form" class="form-grid" autocomplete="off"><label>Service<select id="api-provider" name="provider" required><option value="">Choose a service</option>${services.filter(r=>!r.id.startsWith('custom-')).map(r=>`<option value="${esc(r.id)}">${esc(r.name)}</option>`).join('')}<option value="other">${origin==='models'?'Other LLM provider':'Other service'}</option></select></label><input type="hidden" name="category" value="${origin==='models'?'models':'tools'}">
     <div id="custom-api-fields" class="form-grid" hidden><label>Service name<input name="name" maxlength="80"></label><label>API key variable<input name="env" placeholder="SERVICE_API_KEY" spellcheck="false" autocomplete="off"></label></div>
@@ -2769,6 +2771,17 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.dataset.method)await openLibrary(button.dataset.method);
   if(button.id==='more') openAnchoredSurface($('#more-dialog'),button,{width:330});
   if(button.id==='api-connections')await showApiConnections('');
+  if(button.id==='viraltrac-pair'){
+    const popup=window.open('about:blank','aura-viraltrac');
+    try{const result=await api('/api/viraltrac/pair',{business:state.business});if(popup)popup.location.href=result.url;else $('#viraltrac-status').innerHTML=`Allow pop-ups or <a href="${esc(result.url)}" target="_blank" rel="noopener">open the pairing window</a>.`;}
+    catch(error){if(popup)popup.close();throw error;}
+  }
+  if(button.id==='viraltrac-check'){const result=await api('/api/viraltrac?business='+encodeURIComponent(state.business)+'&live=1');$('#viraltrac-status').textContent=result.message||(result.status==='verified'?'Connection verified. Data coverage is checked when you ask a question.':human(result.status));}
+  if(button.id==='viraltrac-disconnect'||button.id==='viraltrac-unlink'){
+    const unlink=button.id==='viraltrac-unlink';
+    if(unlink&&!confirm('Unlink this business for everyone sharing this workspace? Saved findings remain.'))return;
+    await api('/api/viraltrac/disconnect',{business:state.business,unlink});await showApiConnections('');
+  }
   if(button.id==='accounts-settings')await showAccounts();
   if(button.id==='model-api-connections')await showApiConnections('models');
   if(button.id==='back-to-models')$('#detail').close();

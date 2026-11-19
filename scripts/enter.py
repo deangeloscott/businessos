@@ -135,6 +135,7 @@ def _prepare_work(task,business_id=None,workspace=None,focus=None,operator_ref=N
     return {
         'format_version':'4.2','status':'needs_judgment' if unresolved_focus or read_diagnostics or preferences['conflicts'] else 'ready','workspace':str(workspace_root()),'business_id':bid,'business_resolution':resolved.get('resolution'),'original_request':task,
         'organization_focus':focus_areas(bid),
+        'viraltrac':__import__('workspace_viraltrac').guidance(bid),
         'retrieval':{
             'focus_context':focus_context,'unresolved_focus':unresolved_focus,'saved_work_candidates':candidates[:saved_work_limit],
             'other_workspaces':{'items':other_workspaces,'read_only':'From your other workspaces that allow reading. Use as context and say where it came from; never write, copy or link it into this workspace unless the person asks to share a copy.'} if other_workspaces else None,

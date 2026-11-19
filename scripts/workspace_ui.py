@@ -3075,6 +3075,7 @@ class Workspace:
                 f"If asked to customize this visual interface, follow {PRODUCT_ROOT / 'docs/visual-workspace.md'}: "
                 "make an organization-owned copy outside product source and keep files/normal native-app use intact.\n"
                 + schedule_context + organization_context + self.connections.guidance()
+                + __import__('workspace_viraltrac').guidance(bid)
                 + ('\nUser-linked files/folders for this business (read only what is useful; keep originals in place):\n' +
                    '\n'.join(json.dumps({'name': item['name'], 'path': item['path']})
                              for item in self.preferences['file_locations'].get(bid, [])) + '\n')
@@ -3405,6 +3406,9 @@ class Workspace:
             native_spec=None
             permission=workspace_permissions.validate(self.connection_kind,(chat or {}).get('permission_mode') or getattr(self,'_request_permission_mode',None) or self.preferences.get('harness_permissions',{}).get(self.connection_kind,'native'),self.permission_modes(self.connection_kind,chat))
             native_options=dict(self.agent.get('native_options') or {})
+            if protocol_kind in {'hermes','antigravity','acp'}:
+                import workspace_viraltrac
+                native_options['mcpServers']=[*native_options.get('mcpServers',[]),*workspace_viraltrac.session_servers(bid)]
             if protocol_kind=='hermes' and (chat or {}).get('native_profile'):
                 native_options['session']={**native_options.get('session',{}),'profile':chat['native_profile']}
             if (chat or {}).get('native_settings'):native_options['config']={**native_options.get('config',{}),**chat['native_settings']}

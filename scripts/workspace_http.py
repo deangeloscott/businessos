@@ -345,6 +345,9 @@ def handler_for(app):
                     self.send(200, app.agent_efforts(query.get('kind'), query.get('model'),query.get('profile')))
                 elif route == '/api/connections':
                     self.send(200, app.connections.rows())
+                elif route == '/api/viraltrac':
+                    import workspace_viraltrac
+                    self.send(200, workspace_viraltrac.status(selected(query.get('business')), query.get('live') == '1'))
                 elif route == '/api/usage':
                     self.send(200,app.usage(selected(query.get('business')),query.get('period','chat'),query.get('refresh')=='1',query.get('offset','0'),query.get('since'),query.get('month_start')))
                 elif route == '/api/workspaces':
@@ -959,6 +962,13 @@ def handler_for(app):
                                              str(data.get('name', '')), str(data.get('env', '')), data.get('category', 'tools'))
                         app.option_cache.clear()
                         self.send(200, app.connections.rows())
+                    elif route == '/api/viraltrac/pair':
+                        from workspace_viraltrac_pair import start
+                        info, _, _ = start(selected(data.get('business')))
+                        self.send(200, info)
+                    elif route == '/api/viraltrac/disconnect':
+                        import workspace_viraltrac
+                        self.send(200, workspace_viraltrac.disconnect(selected(data.get('business')), data.get('unlink') is True))
                     elif route == '/api/connections/remove':
                         app.connections.remove(data.get('provider'))
                         app.option_cache.clear()

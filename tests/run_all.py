@@ -15,6 +15,7 @@ for name in ('CLAUDE_CODE_SESSION_ID','PI_SESSION_ID','PI_SESSION_FILE','HERMES_
 # workspace; individual external-workspace suites set their own isolated roots.
 env['BUSINESSOS_WORKSPACE']=str(ROOT)
 TESTS=[
+    'tests/run_viraltrac_connection.py',
     'tests/run_distribution.py',
     'tests/run_playbook_discovery.py',
     'tests/run_canonical_model_boundary.py',
