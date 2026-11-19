@@ -1,4 +1,5 @@
 'use strict';
+const viraltracEntry = new URLSearchParams(location.search);
 const $ = (s) => document.querySelector(s);
 const token = $('meta[name="aura-token"]').content;
 const state = {data:null, view:'home', business:new URLSearchParams(location.search).get('business') || '', library:[], files:[], chat:[], busy:false, urls:[], setupStep:'welcome', welcome:null, setupPrompted:new Set(), catalog:null, catalogLoading:false, chatMeta:null, polling:false, hydrated:false, tour:false, apiReturn:'', apiChanged:false};
@@ -149,7 +150,7 @@ async function refresh(light=false,preserveDetails=light) {
     if(ticket!==state.refreshTicket)return;
     await window.auraCompose?.sync();chatControls();
     if(state.data.organization?.status==='working'&&!state.organizationPolling){state.organizationWorking=true;notice(state.data.organization.progress);attempt(pollOrganization);}
-    if(state.business&&!state.suppressSetup&&!state.data.onboarding.seen&&!state.setupPrompted.has(state.business)&&!setupDismissed()) {
+    if(state.business&&viraltracEntry.get('connect')!=='viraltrac'&&!state.suppressSetup&&!state.data.onboarding.seen&&!state.setupPrompted.has(state.business)&&!setupDismissed()) {
       state.setupPrompted.add(state.business); openConnection();
     }
     await syncNotifications();
@@ -1857,7 +1858,7 @@ async function showApiConnections(origin=state.apiReturn) {
   const saved=services.filter(r=>r.status!=='Not added');
   const viraltrac=origin!=='models'&&state.business?await api('/api/viraltrac?business='+encodeURIComponent(state.business)):null;
   details(origin==='models'?'LLM connections':'API connections',`${origin==='models'?'<button class="text-button" id="back-to-models">← Back to models</button>':''}<p>${origin==='models'?'Add a provider key, then return to your models.':'Add services your AI can use for research, writing, images, video, or audio. Provider usage may be billed separately.'}</p>
-    ${viraltrac?`<div class="card"><h3>ViralTrac</h3><p>${viraltrac.name?esc(viraltrac.name)+' · '+esc(viraltrac.status):'Connect marketing evidence to this business.'}</p>${viraltrac.message?`<p role="status">${esc(viraltrac.message)}</p>`:''}<button type="button" id="viraltrac-pair">${viraltrac.status==='not_linked'?'Connect ViralTrac':'Reconnect'}</button> <button type="button" id="viraltrac-check" class="secondary">Check connection</button>${viraltrac.status!=='not_linked'?' <button type="button" id="viraltrac-disconnect" class="text-button">Disconnect on this computer</button> <button type="button" id="viraltrac-unlink" class="text-button">Unlink business</button>':''}<p id="viraltrac-status" class="small-note" role="status">Credentials stay on this computer. Saved findings stay in your workspace.</p></div>`:''}
+    ${viraltrac?`<div class="card"><h3>ViralTrac</h3><p>AURA business: <strong>${esc(state.data.businesses.find(b=>b.id===state.business)?.name||state.business)}</strong></p><p>${viraltrac.name?esc(viraltrac.name)+' · '+esc(viraltrac.status):'Connect marketing evidence to this business.'}</p>${viraltrac.message?`<p role="status">${esc(viraltrac.message)}</p>`:''}<button type="button" id="viraltrac-pair">${viraltrac.status==='not_linked'?'Connect ViralTrac':'Reconnect'}</button> <button type="button" id="viraltrac-check" class="secondary">Check connection</button>${viraltrac.status!=='not_linked'?' <button type="button" id="viraltrac-disconnect" class="text-button">Disconnect on this computer</button> <button type="button" id="viraltrac-unlink" class="text-button">Unlink business</button>':''}${viraltrac.status!=='not_linked'?'<p><button type="button" id="viraltrac-report" class="secondary">Marketing summary</button></p>':''}${viraltrac.reports?.length?`<details><summary>Saved reports</summary>${viraltrac.reports.map(r=>`<p><button type="button" class="text-button" data-viraltrac-refresh="${esc(r.id)}">Refresh ${esc(r.period.start_date)} – ${esc(r.period.end_date)}</button><small> · checked ${esc(stamp(r.retrieved_at))}</small></p>`).join('')}</details>`:''}<p id="viraltrac-status" class="small-note" role="status">Credentials stay on this computer. Saved findings stay in your workspace.</p></div>`:''}
     ${saved.length?`<div class="card">${saved.map(r=>`<div class="row"><span class="row-text"><span class="row-title">${esc(r.name)}</span><span class="row-meta">${esc(r.status)} · Not verified</span></span>${r.saved?`<button class="text-button" data-remove-api="${esc(r.id)}">Remove</button>`:''}</div>`).join('')}</div>`:''}
     ${result.storage_note?`<p class="small-note" role="status">${esc(result.storage_note)}</p><button type="button" id="session-keys-only" class="secondary">Continue without saved keys</button>`:''}<form id="api-key-form" class="form-grid" autocomplete="off"><label>Service<select id="api-provider" name="provider" required><option value="">Choose a service</option>${services.filter(r=>!r.id.startsWith('custom-')).map(r=>`<option value="${esc(r.id)}">${esc(r.name)}</option>`).join('')}<option value="other">${origin==='models'?'Other LLM provider':'Other service'}</option></select></label><input type="hidden" name="category" value="${origin==='models'?'models':'tools'}">
     <div id="custom-api-fields" class="form-grid" hidden><label>Service name<input name="name" maxlength="80"></label><label>API key variable<input name="env" placeholder="SERVICE_API_KEY" spellcheck="false" autocomplete="off"></label></div>
@@ -1866,6 +1867,43 @@ async function showApiConnections(origin=state.apiReturn) {
     <button class="primary" type="submit">Save key</button></form>
     <p id="api-save-status" role="status"></p><details><summary>How this works</summary><p>Keys stay out of your business files and chat prompts. The local server passes them to agent tools as environment variables. The agent still needs suitable tools and provider access. Saving a key does not make a generation request or verify an account.</p><p>Choosing a model remains separate. Codex is an AI app; OpenAI is its provider. OpenRouter is a provider gateway, while OpenCode is a separate AI app. Existing app sign-ins and provider routing remain under that app’s control.</p><p>${result.persistent?'Keys are kept in '+esc(result.storage_name)+'. Your operating system controls access.':'Persistent protected storage is not available here; session keys disappear when the local server closes.'} Removing a key here does not revoke it at the provider or remove keys set outside AURA.</p></details>`);
 }
+function showViraltracDestination(){
+  details('Connect ViralTrac to AURA',`<p>Choose the AURA business that should use this ViralTrac account. Names do not have to match.</p><label>AURA business<select id="viraltrac-business"><option value="">Choose a business</option>${state.data.businesses.map(b=>`<option value="${esc(b.id)}">${esc(b.name)}</option>`).join('')}</select></label><p><button id="viraltrac-destination">Continue</button></p><p class="small-note">If your business is in another folder, close this panel and open that workspace first. Then use Settings → API connections → ViralTrac.</p>`);
+  $('#viraltrac-destination').addEventListener('click',()=>attempt(async()=>{const bid=$('#viraltrac-business').value;if(!bid)return;await changeWorkspace(bid);await showApiConnections('');}));
+}
+async function showViraltracReport(source='') {
+  const business=state.business,workspace=state.data.workspace;
+  details('ViralTrac marketing summary','<p role="status">Reading current performance and source readiness…</p>');
+  const result=await api('/api/viraltrac/report',{business,...(source?{source}:{})});
+  if(business!==state.business||workspace!==state.data.workspace)return;
+  const performance=result.report.performance,readiness=result.report.readiness;
+  const data=performance.data||{},summary=data.summary;
+  const pretty=value=>esc(JSON.stringify(value,null,2));
+  const fields=value=>Object.entries(value||{}).map(([key,val])=>`<div class="row"><span class="row-text"><strong>${esc(human(key))}</strong><span class="row-meta">${esc(val===null?'Unknown':typeof val==='object'?JSON.stringify(val):String(val))}</span></span></div>`).join('');
+  details('ViralTrac marketing summary',`<p>${esc(performance.window_applied?.start_date||'Unknown start')} – ${esc(performance.window_applied?.end_date||'Unknown end')} · Coverage: ${esc(performance.coverage||'unknown')}</p>
+    ${result.message?`<p role="status">${esc(result.message)}</p>`:''}
+    ${summary?`<div class="card">${fields(summary.stats)}</div>`:'<p>No performance summary is available. This does not mean zero activity.</p>'}
+    <h3>Source readiness</h3><p>Coverage: ${esc(readiness.coverage||'unknown')}</p>${Array.isArray(readiness.data?.readiness)?(readiness.data.readiness.length?readiness.data.readiness.map(r=>`<div class="row"><span class="row-text"><strong>${esc(human(r.platform||'Connection'))}</strong><span class="row-meta">${esc(r.reauth_required?'Reconnect required':human(r.status||r.auth_state||'unknown'))}${r.connection_id?' · '+esc(r.connection_id):''}</span>${r.last_error?`<span class="row-meta">${esc(r.last_error)}</span>`:''}</span></div>`).join(''):'<p>No connected sources were reported. Connect a source in ViralTrac to start collecting evidence.</p>'):fields(readiness.data)}
+    ${[...new Set([...(performance.reason_codes||[]),...(readiness.reason_codes||[])])].map(reason=>`<p class="small-note">${esc(human(reason))}</p>`).join('')}
+    ${result.comparison?`<details open><summary>Changed for this reporting period</summary><p>Review these changes before updating conclusions based on the saved report.</p><h4>Previous</h4><pre style="white-space:pre-wrap;overflow-wrap:anywhere">${pretty(result.comparison.before)}</pre><h4>Current</h4><pre style="white-space:pre-wrap;overflow-wrap:anywhere">${pretty(result.comparison.after)}</pre></details>`:source?`<p>${result.status==='unchanged'?'No changes to measurements or coverage. The source check is up to date.':''}</p>`:''}
+    <details><summary>Evidence, source scope and freshness</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere">${pretty(result.report)}</pre></details>
+    <p class="small-note">Saving makes this evidence available to people who can read this AURA workspace. It does not grant them live ViralTrac access.</p>
+    <p>${!source&&result.status!=='unavailable'?'<button id="viraltrac-save-report">Save latest for this period</button> ':''}<button id="viraltrac-ask-report" class="secondary">Work with this in chat</button></p><p id="viraltrac-report-status" role="status"></p>`);
+  $('#viraltrac-save-report')?.addEventListener('click',()=>attempt(async()=>{
+    if(business!==state.business||workspace!==state.data.workspace)return;
+    const button=$('#viraltrac-save-report');button.disabled=true;
+    try{const saved=await api('/api/viraltrac/report',{business,start:result.period.start_date,end:result.period.end_date,save:true});
+      if(business!==state.business||workspace!==state.data.workspace)return;
+      $('#viraltrac-report-status').textContent=saved.saved?'Saved the latest report for this period. Refresh it from API connections → ViralTrac → Saved reports.':saved.message;
+      if(!saved.saved)button.disabled=false;
+    }catch(error){button.disabled=false;throw error;}
+  }));
+  $('#viraltrac-ask-report')?.addEventListener('click',()=>{
+    if(business!==state.business||workspace!==state.data.workspace)return;
+    $('#detail').close();$('#request').value='Help me understand my ViralTrac performance for '+(performance.window_applied?.start_date||'the requested period')+' to '+(performance.window_applied?.end_date||'now')+'. Use the connected ViralTrac tools, check source readiness, explain limitations, and suggest the most useful next action.';$('#request').focus();
+  });
+}
+
 function apiProviderHelp() {
   const id=$('#api-provider').value, item=apiConnections.find(r=>r.id===id);
   $('#custom-api-fields').hidden=id!=='other';
@@ -2772,11 +2810,13 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.id==='more') openAnchoredSurface($('#more-dialog'),button,{width:330});
   if(button.id==='api-connections')await showApiConnections('');
   if(button.id==='viraltrac-pair'){
-    const popup=window.open('about:blank','aura-viraltrac');
-    try{const result=await api('/api/viraltrac/pair',{business:state.business});if(popup)popup.location.href=result.url;else $('#viraltrac-status').innerHTML=`Allow pop-ups or <a href="${esc(result.url)}" target="_blank" rel="noopener">open the pairing window</a>.`;}
+    const popup=window.open('about:blank','aura-viraltrac'),business=state.business,workspace=state.data.workspace;
+    try{const result=await api('/api/viraltrac/pair',{business:state.business,expected_org:state.viraltracExpectedOrg||null});state.viraltracExpectedOrg='';if(popup){const receive=event=>{if(event.source!==popup||event.origin!==new URL(result.url).origin||event.data?.type!=='aura-viraltrac-connected')return;window.removeEventListener('message',receive);if(business===state.business&&workspace===state.data.workspace&&$('#viraltrac-status'))attempt(()=>showApiConnections(''));};window.addEventListener('message',receive);setTimeout(()=>window.removeEventListener('message',receive),600000);popup.location.href=result.url;}else $('#viraltrac-status').innerHTML=`Allow pop-ups or <a href="${esc(result.url)}" target="_blank" rel="noopener">open the pairing window</a>.`;}
     catch(error){if(popup)popup.close();throw error;}
   }
-  if(button.id==='viraltrac-check'){const result=await api('/api/viraltrac?business='+encodeURIComponent(state.business)+'&live=1');$('#viraltrac-status').textContent=result.message||(result.status==='verified'?'Connection verified. Data coverage is checked when you ask a question.':human(result.status));}
+  if(button.id==='viraltrac-report')await showViraltracReport();
+  if(button.dataset.viraltracRefresh)await showViraltracReport(button.dataset.viraltracRefresh);
+  if(button.id==='viraltrac-check'){const result=await api('/api/viraltrac?business='+encodeURIComponent(state.business)+'&live=1');await showApiConnections('');$('#viraltrac-status').textContent=result.message||(result.status==='verified'?'Connection verified. Data coverage is checked when you ask a question.':human(result.status));}
   if(button.id==='viraltrac-disconnect'||button.id==='viraltrac-unlink'){
     const unlink=button.id==='viraltrac-unlink';
     if(unlink&&!confirm('Unlink this business for everyone sharing this workspace? Saved findings remain.'))return;
@@ -3551,8 +3591,9 @@ const shellTimer=setInterval(()=>{if(!state.closed&&!document.hidden&&state.data
 async function restoreInitialRoute(){
   if(!state.data||$('#refresh').disabled||(state.business&&!state.hydrated)){setTimeout(restoreInitialRoute,100);return;}
   const params=new URLSearchParams(location.search),chat=params.get('chat'),view=params.get('view');
+  const connectViraltrac=viraltracEntry.get('connect')==='viraltrac';
   // Opening AURA lands on the home page. A link to a chat, a clear new chat, or a request still working is left alone.
-  try{if(chat&&chat!==state.chatMeta?.id)await openShellChat(chat);else if(!chat&&!params.get('new')&&state.business&&!state.busy)await goHome();if(['aura','business','files','work','tools','assistants','sharing','updates'].includes(view)){state.view=view;await render();await renderShell();}}finally{recordShellRoute(true);}
+  try{if(chat&&chat!==state.chatMeta?.id)await openShellChat(chat);else if(!chat&&!params.get('new')&&state.business&&!state.busy)await goHome();if(['aura','business','files','work','tools','assistants','sharing','updates'].includes(view)){state.view=view;await render();await renderShell();}if(connectViraltrac){state.viraltracExpectedOrg=viraltracEntry.get('viraltrac_org')||'';showViraltracDestination();}}finally{recordShellRoute(true);}
 }
 attempt(restoreInitialRoute);
 

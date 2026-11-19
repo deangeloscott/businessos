@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Use ViralTrac from AURA or your AI app.** Business-scoped pairing keeps credentials in the computer's protected store. Start from either product's existing connection settings. Read a dated marketing summary with source readiness, save useful evidence, and refresh the same reporting period in place with a before/after comparison. The same operations are available through the CLI; existing AI tools remain available.
+
 - **Keeping up with your AI apps.** AURA never updates an app itself; each updates the way it always has, and you can still hold off. AURA reads each connected app's version (no AI request) and, after an app updates, checks that it can still list its models, reach the app and read its scheduled tasks, saying in one line if not. It notes what is new from what the app reports ("New in Codex 0.164.0: 2 commands (/review, /plan)"). Where the app can say an update is available (OMP, Hermes), the bell says so once; Settings → AI app versions shows each app's version with an Update button that runs the app's own update in the built-in terminal.
 - **Models an app no longer offers.** A chat, agent or default that names a retired model is said once, with where to choose another.
 - **An app that is gone is named plainly** ("Codex isn't installed on this computer anymore. Reinstall it, or continue this chat in another app."), before you write rather than after you send.

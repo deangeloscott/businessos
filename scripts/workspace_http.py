@@ -347,7 +347,9 @@ def handler_for(app):
                     self.send(200, app.connections.rows())
                 elif route == '/api/viraltrac':
                     import workspace_viraltrac
-                    self.send(200, workspace_viraltrac.status(selected(query.get('business')), query.get('live') == '1'))
+                    from workspace_viraltrac_report import reports
+                    bid = selected(query.get('business'))
+                    self.send(200, {**workspace_viraltrac.status(bid, query.get('live') == '1'), 'reports': reports(bid)})
                 elif route == '/api/usage':
                     self.send(200,app.usage(selected(query.get('business')),query.get('period','chat'),query.get('refresh')=='1',query.get('offset','0'),query.get('since'),query.get('month_start')))
                 elif route == '/api/workspaces':
@@ -964,11 +966,14 @@ def handler_for(app):
                         self.send(200, app.connections.rows())
                     elif route == '/api/viraltrac/pair':
                         from workspace_viraltrac_pair import start
-                        info, _, _ = start(selected(data.get('business')))
+                        info, _, _ = start(selected(data.get('business')), expected_org=data.get('expected_org'), return_origin=self.headers.get('Origin'))
                         self.send(200, info)
                     elif route == '/api/viraltrac/disconnect':
                         import workspace_viraltrac
                         self.send(200, workspace_viraltrac.disconnect(selected(data.get('business')), data.get('unlink') is True))
+                    elif route == '/api/viraltrac/report':
+                        from workspace_viraltrac_report import report
+                        self.send(200, report(selected(data.get('business')), data.get('start'), data.get('end'), data.get('save') is True, data.get('source')))
                     elif route == '/api/connections/remove':
                         app.connections.remove(data.get('provider'))
                         app.option_cache.clear()

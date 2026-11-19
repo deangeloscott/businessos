@@ -1,6 +1,7 @@
 """Short-lived loopback pairing window; shared UI/CLI entry, no daemon or new account system."""
 import html
 import json
+import re
 import secrets
 import threading
 import time
@@ -11,8 +12,9 @@ from _common import workspace_root, workspace_scope
 from workspace_viraltrac import API, DASHBOARD, origin, business, connect
 
 
-def start(bid, api=API, dashboard=DASHBOARD):
+def start(bid, api=API, dashboard=DASHBOARD, expected_org=None, return_origin=None):
     api, dashboard = origin(api), origin(dashboard)
+    if return_origin: return_origin = origin(return_origin)
     root = str(workspace_root())
     name = business(bid)['name']
     nonce = secrets.token_urlsafe(32)
@@ -47,7 +49,11 @@ def start(bid, api=API, dashboard=DASHBOARD):
 <h1>Connect ViralTrac</h1><p>Link <strong>NAME</strong> to the business you authorize in ViralTrac. Your sign-in stays on this computer.</p><button id="open">Continue to ViralTrac</button><p id="status" role="status">Choose the intended business in ViralTrac before approving.</p>
 <script nonce="NONCE">let popup;const button=document.querySelector('#open'),status=document.querySelector('#status');button.onclick=()=>{popup=window.open(TARGET,'viraltrac-pair');if(!popup)status.textContent='Allow the sign-in window, then try again.';};
 window.addEventListener('message',async event=>{if(event.origin!==REMOTE||event.source!==popup||event.data?.nonce!==NONCEJSON||event.data?.type!=='aura-viraltrac-authorized')return;button.disabled=true;status.textContent='Checking the business and saving your connection…';try{const response=await fetch(location.pathname,{method:'POST',headers:{'Content-Type':'application/json','X-Aura-Pair':NONCEJSON},body:JSON.stringify({token:event.data.token,organization_id:event.data.organization_id})});const result=await response.json();if(!response.ok)throw Error(result.message);status.textContent='Connected to '+result.name+'. You can close this window and continue in AURA or your AI app.';popup.postMessage({type:'aura-viraltrac-saved',nonce:NONCEJSON},REMOTE);}catch(error){status.textContent=error.message;button.disabled=false;}});</script></html>'''
-            page = page.replace('NAME', html.escape(name)).replace('NONCEJSON', json.dumps(nonce)).replace('NONCE', nonce).replace('TARGET', json.dumps(target)).replace('REMOTE', json.dumps(dashboard))
+            if return_origin:
+                page = page.replace("popup.postMessage({type:'aura-viraltrac-saved'", "window.opener?.postMessage({type:'aura-viraltrac-connected'}," + json.dumps(return_origin) + ");popup.postMessage({type:'aura-viraltrac-saved'")
+            values = {'NAME': html.escape(name), 'NONCEJSON': json.dumps(nonce), 'NONCE': nonce,
+                      'TARGET': json.dumps(target), 'REMOTE': json.dumps(dashboard)}
+            page = re.sub(r'NAME|NONCEJSON|NONCE|TARGET|REMOTE', lambda match: values[match.group()], page)
             self.send(200, page, 'text/html')
 
         def do_POST(self):
@@ -57,6 +63,9 @@ window.addEventListener('message',async event=>{if(event.origin!==REMOTE||event.
                 length = int(self.headers.get('Content-Length', '0'))
                 if not 0 < length <= 16384: raise ValueError('Invalid pairing response.')
                 body = json.loads(self.rfile.read(length))
+                if not isinstance(body, dict): raise ValueError('Invalid pairing response. Start pairing again.')
+                if expected_org and body.get('organization_id') != expected_org:
+                    raise ValueError('Choose the ViralTrac business you started connecting, or start a new connection from AURA.')
                 with lock:
                     if done.is_set(): raise ValueError('Pairing already completed.')
                     with workspace_scope(root):

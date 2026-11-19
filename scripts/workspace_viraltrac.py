@@ -176,7 +176,7 @@ def guidance(bid):
     if not link:
         return ''
     command = [sys.executable, str(PRODUCT_ROOT / 'scripts/workspace_viraltrac.py'), '--workspace', str(workspace_root()), '--business-id', bid]
-    return '\nViralTrac business association: ' + json.dumps(link) + '. Optional authenticated CLI (argument array): ' + json.dumps(command) + '. Use discover for current capabilities, call --tool NAME --input FILE for a tool, or status --live to check access. No secrets are required in prompts. Native connected ViralTrac tools are also valid when they target this same business. Preserve source references, reporting windows, coverage and uncertainty using existing AURA records; update existing findings when appropriate.\n'
+    return '\nViralTrac business association: ' + json.dumps(link) + '. Optional authenticated CLI (argument array): ' + json.dumps(command) + '. Use report for a dated performance summary and source readiness; report --save to retain useful evidence, reports to find saved snapshots, and refresh --source ID to update that same reporting period and compare changes. Use discover for other current capabilities, call --tool NAME --input FILE for a tool, or status --live to check access. No secrets are required in prompts. Native connected ViralTrac tools are also valid when they target this same business. Preserve source references, reporting windows, coverage and uncertainty using existing AURA records; update existing findings when appropriate.\n'
 
 
 def main():
@@ -190,6 +190,9 @@ def main():
     p = sub.add_parser('disconnect'); p.add_argument('--unlink', action='store_true')
     p = sub.add_parser('discover'); p.add_argument('--group')
     p = sub.add_parser('call'); p.add_argument('--tool', required=True); p.add_argument('--input', default='-')
+    p = sub.add_parser('report'); p.add_argument('--start'); p.add_argument('--end'); p.add_argument('--save', action='store_true')
+    p = sub.add_parser('refresh'); p.add_argument('--source', required=True)
+    sub.add_parser('reports')
     sub.add_parser('mcp')
     sub.add_parser('mcp-config')
     args = parser.parse_args()
@@ -203,6 +206,11 @@ def main():
         elif args.action == 'status': result = status(args.business_id, args.live)
         elif args.action == 'disconnect': result = disconnect(args.business_id, args.unlink)
         elif args.action == 'discover': result = call(args.business_id, 'tools/list', {'tool_group': args.group} if args.group else {})
+        elif args.action in ('report', 'refresh', 'reports'):
+            from workspace_viraltrac_report import report, reports
+            if args.action == 'reports': result = reports(args.business_id)
+            elif args.action == 'refresh': result = report(args.business_id, source=args.source)
+            else: result = report(args.business_id, args.start, args.end, args.save)
         elif args.action == 'mcp-config': result = {'mcpServers': {'viraltrac': mcp_configuration(args.business_id)}, 'note': 'Add through your host\'s supported MCP settings. This contains no credential; access is scoped to this workspace and business.'}
         elif args.action == 'call':
             payload = json.loads(sys.stdin.read() if args.input == '-' else Path(args.input).read_text(encoding='utf-8'))

@@ -4,7 +4,25 @@
 
 In AURA, select the intended business and open **Settings → API connections → ViralTrac**. Continue to ViralTrac, sign in and approve the intended business in its existing **Connected AI Agents → Use with AURA** section. No new navigation page is required. The temporary pairing window closes its local listener after success or ten minutes.
 
-Starting in ViralTrac, the same **Use with AURA** section provides the AURA settings location and CLI entry below. A website cannot silently start a local AURA installation; if it is not running, open it or use the CLI. The existing sign-in return path preserves the pairing request.
+Starting in ViralTrac, **Use with AURA** accepts the address of your running AURA window and opens a business chooser followed by connection settings. No account or business is guessed from a matching name. The selected ViralTrac organization is checked again during approval. AURA uses a dynamic local port, so the website needs that address; it does not scan the computer or silently start an installation. If AURA is not running, open it or use the CLI. The existing sign-in return path preserves the pairing request.
+
+## First result and refresh
+
+After pairing, open **Marketing summary** in the same AURA connection card. It reads the existing ViralTrac performance-summary and integration-readiness tools, shows the reporting period and source qualifications, and can prepare a question in the existing chat without sending it. These two optional aggregate reads are a convenience, not a restriction on the AI's other tools.
+
+**Save latest for this period** reads the latest evidence for the displayed period and retains a bounded SourceRecord, including the source scope, reporting window, evidence handles, coverage and authorized actor returned by ViralTrac. It is visible to people who can read the AURA workspace. It does not contain a credential or grant live access. Saving the same connection and period again updates the same record. **Saved reports → Refresh** repeats only these read-only queries for the original period, compares measurements and qualifications, and updates the record in place. Request IDs and check timestamps are not presented as changed measurements. Degraded or unauthorized reads leave saved evidence intact. Current connection readiness is compared alongside historical performance; it is not represented as historical readiness.
+
+The same operations work without either product's UI:
+
+```sh
+python scripts/workspace_viraltrac.py --business-id my-business report --start 2026-10-01 --end 2026-10-31 --save
+python scripts/workspace_viraltrac.py --business-id my-business reports
+python scripts/workspace_viraltrac.py --business-id my-business refresh --source src_existing_id
+```
+
+Add `--workspace /path/to/workspace` before the subcommand when needed. A remote host can use its own scoped process credential or native ViralTrac connection; local keyring access is never implied. ACP sessions receive the existing stdio descriptor; other shell-capable hosts receive the CLI guidance, and MCP-capable hosts can use `mcp-config`. Synthetic tests cover the shared protocol and CLI, not every third-party app's account, installation or cloud deployment.
+
+Developer checks: `python tests/run_viraltrac_connection.py` covers the shared HTTP/CLI/stdio and evidence lifecycle. The optional `python tests/workspace_viraltrac_browser.py` uses a temporary workspace and synthetic approval/source server to verify the explicit business chooser, pairing completion, report/save/refresh, mobile layout and chat draft in Chromium. It requires separately installed Playwright (`AURA_PLAYWRIGHT_MODULE` can name its module directory); no browser dependency is added to the product. ViralTrac's component tests separately cover its approval and local-address handoff UI.
 
 Without AURA's interface, run from the product folder (use `--workspace` when the business lives elsewhere):
 
