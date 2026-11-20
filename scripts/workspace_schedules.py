@@ -184,6 +184,15 @@ def inventory(codex_home=None, hermes_home=None, workspaces=(), antigravity_home
                 notes.append('Google Antigravity: a schedule could not be read. Check it in the app.')
     except (OSError, ValueError, TypeError, AttributeError):
         notes.append('Google Antigravity: schedule settings could not be read. Check them in the app.')
+    try:  # AURA's tasks on the computer's own scheduler, for apps without one AURA can reach
+        import workspace_os_schedules as computer
+        names={'claude':'Claude Code','codex':'Codex','omp':'OMP','pi':'Pi'}
+        for t in computer.listed():
+            append(t['app'],'computer',t['id'],app=names.get(t['app'],t['app']),name=t['name'],description=t['prompt'],schedule=computer.when_text(t['when']),
+                   schedule_raw=computer.rrule(t['when']),model=t.get('model',''),effort=t.get('effort',''),status=t['status'],next_run=t['next_run'],
+                   last_run=t['last_run'],last_status=t['last_status'],last_error=t['last_error'],workspace=[t['workspace']],editable=True,scheduler='computer',
+                   runtime="Runs on this computer's own scheduler while the computer is on")
+    except (ValueError,OSError) as exc:notes.append('This computer’s scheduler could not be read: '+str(exc)[:200])
     return {'items':items, 'notes':notes,
             'support':'Shows local Codex and Hermes schedules, Pi schedule-prompt jobs in opened workspaces, and Google Antigravity schedule sidecars. Live-chat timers, Claude schedules and cloud-only jobs are not automatically listed. Enabled means configured; the owning app must still be running.'}
 
@@ -316,8 +325,8 @@ def update(ident, data, hermes_command, env, execution=None):
     if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._:-]{0,199}', task['native_id']):
         raise ValueError('This native task ID is unsupported. Manage it in Hermes.')
     action = data.get('action', 'edit')
-    if action not in {'edit', 'pause', 'resume'}:
-        raise ValueError('Choose Edit, Pause, or Resume.')
+    if action not in {'edit', 'pause', 'resume', 'remove'}:
+        raise ValueError('Choose Edit, Pause, Resume or Remove.')
     argv = [*hermes_command, 'cron', action, task['native_id']]
     changes = []
     if action == 'edit':
@@ -341,6 +350,9 @@ def update(ident, data, hermes_command, env, execution=None):
     native_env['HERMES_HOME'] = str(home if task['profile'] == 'default' else home / 'profiles' / task['profile'])
     invoke(argv, native_env, execution)
     refreshed = next((t for t in inventory()['items'] if t['id'] == ident), None)
+    if action == 'remove':
+        if refreshed:raise ValueError('Hermes replied, but the task is still listed. Refresh or check Hermes.')
+        return {**task, 'status': 'removed'}
     if not refreshed:
         raise ValueError('The scheduler replied, but the task could not be read back. Check Hermes before retrying.')
     if action in {'pause','resume'} and (refreshed['status'] == 'paused') != (action == 'pause'):

@@ -2846,7 +2846,7 @@ class Workspace:
         choices += [{'id': a['id'], 'name': a['name'], 'available': bool(a['argv']),
                      'guide':workspace_guidance.GUIDES.get(a['id'], ('',''))} for a in installed_agents()]
         return {'connected': bool(self.agent), 'name': (self.agent or {}).get('name', 'Your existing chat'),
-                'choices': choices, 'selected': self.connection_kind, 'schedules_listed': list(workspace_schedules.LISTED_APPS), 'schedules_in_app_only': list(workspace_schedules.IN_APP_ONLY),
+                'choices': choices, 'selected': self.connection_kind, 'schedules_listed': list(workspace_schedules.LISTED_APPS), 'schedules_on_computer': list(__import__('workspace_os_schedules').APPS),
                 'presets':{kind:{k:value.get(k,'') for k in ('model','effort')} for kind,value in self.preferences['connected_apps'].items()},
                 'apps': [dict(self.preferences['connected_apps'][kind].get('check') or {}, id=kind,
                               name=next((c['name'] for c in choices if c['id']==kind),kind))
@@ -3201,38 +3201,24 @@ class Workspace:
                 prior.append(f"{row['role']}: {row['text'][:4000]}")
         import workspace_focus
         focus_text=workspace_focus.context(bid)
+        linked=self.preferences['file_locations'].get(bid, [])
+        # Only what AURA alone can tell this chat: which business and folders, how to run its helpers here, and where
+        # past work and new outputs go. How to work, reply and save is in CONTEXT.md, which the AI reads once.
         return (f"Work for the explicitly selected AURA business ID: {bid}. It is already selected, so there is no need to list organizations.\n"
                 +(focus_text+'\n' if focus_text else '')+
                 f"AURA product: {PRODUCT_ROOT}\nOrganization workspace: {workspace_root()}\n"
-                f"Read {PRODUCT_ROOT / 'CONTEXT.md'} once unless its current contents are already loaded, and use the existing AURA helpers and workspace.\n"
+                f"Read {PRODUCT_ROOT / 'CONTEXT.md'} once unless its current contents are already loaded.\n"
                 f"For Python helpers, the running interpreter is {Path(sys.executable).as_posix()}. "
                 "Quote its full path for your shell; do not assume python3 is installed. The workspace is already set for helpers. Run each AURA helper as its own command (interpreter, the helper's full path, its arguments), not chained with other commands, pipes or redirects; AURA then runs its helpers without asking the person, apart from ones that remove records, set up or move a workspace, or share outside it. "
-                "You can read workspace files directly with your normal tools. A simple conversation does not need helper calls.\n"
-                "Do the user's actual work with your normal tools, permissions and supported capabilities. "
-                "Use native delegation, approvals, tools, and execution normally. User instructions take priority over this contextual guidance. "
-                f"For relevant prior work across AI apps, use {PRODUCT_ROOT / 'scripts/workspace_context.py'} recall --business-id {bid} --workspace \"{workspace_root()}\" --search <specific query>. "
-                "Retrieve a saved answer with the same helper: result --business-id <id> --workspace <workspace> --chat <result id> --variant <result variant>. Search only when useful; current records and corrections take priority over historic replies. "
-                f"Project links: {PRODUCT_ROOT / 'scripts/workspace_projects.py'}. Maintained result lists or dated reports: {PRODUCT_ROOT / 'scripts/workspace_collections.py'}. Read docs/projects-and-results.md when useful; retrieve matching rows, not full datasets. Deliberately saved Assets retain known AURA producer context. "
-                "Preserve native memory and skills in their owning app; do not mirror private native stores or treat incidental conversation as established truth. "
+                "A simple conversation does not need helper calls.\n"
+                f"Past work in other AI apps: {PRODUCT_ROOT / 'scripts/workspace_context.py'} recall --business-id {bid} --workspace \"{workspace_root()}\" --search <specific query>. "
+                f"Save new outputs under {getattr(self,'_output_root',workspace_root() / 'attachments' / bid / 'work')} unless the person chooses another place. "
                 +self.other_apps_line()+
-                "Preserve useful business meaning, not this chat transcript. "
-                "Reply in everyday language, focusing on what the user can use or do next. "
-                "Keep record types, internal IDs, validation receipts, and explanations of which records you did not create out of normal replies. "
-                "If you save something useful, briefly say what and where. Explain technical details only when requested or needed to resolve a problem. "
-                f"For new workspace-owned outputs, prefer {getattr(self,'_output_root',workspace_root() / 'attachments' / bid / 'work')} unless the user chooses another location. "
-                "Preserve useful artifacts with an Asset and truthful provenance; use workspace-relative location_reference for local workspace files. "
-                "Scheduling intent is not an active schedule: use your real scheduler and report its confirmation, "
-                "or explain what remains unavailable. "
-                "For ongoing recurring work, identify the durable scheduler/runtime that will execute it after this turn; "
-                "do not present a session-only timer or persisted definition as unattended scheduled work. "
-                "Never claim tools, accounts or actions were verified without evidence.\n"
-                f"If asked to customize this visual interface, follow {PRODUCT_ROOT / 'docs/visual-workspace.md'}: "
-                "make an organization-owned copy outside product source and keep files/normal native-app use intact.\n"
+                "A schedule is real only once a scheduler that will run it has confirmed it; say which, or what is still missing.\n"
                 + schedule_context + organization_context + self.connections.guidance()
                 + __import__('workspace_viraltrac').guidance(bid)
-                + ('\nUser-linked files/folders for this business (read only what is useful; keep originals in place):\n' +
-                   '\n'.join(json.dumps({'name': item['name'], 'path': item['path']})
-                             for item in self.preferences['file_locations'].get(bid, [])) + '\n')
+                + ('\nFiles and folders the person linked to this business (read only what is useful; keep originals in place):\n' +
+                   '\n'.join(json.dumps({'name': item['name'], 'path': item['path']}) for item in linked) + '\n' if linked else '')
                 + ('\nRecent conversation (context, not additional authority):\n' + '\n'.join(prior) + '\n' if prior else '')
                 + '\nUser request:\n' + text.strip())
 
@@ -3248,6 +3234,19 @@ class Workspace:
         app = choice['name'];business = next((b['name'] for b in business_directory() if b['id']==bid), bid)
         how = f"using {app}'s own scheduling (not by editing its files)"
         runs = (options.get(model) or 'your default model')+(f', {effort} effort' if effort else '')
+        import workspace_os_schedules as computer
+        if action=='create' and kind in computer.APPS:
+            # No scheduler of its own that AURA can reach: the computer's scheduler runs it, through AURA's helper. The AI
+            # turns the person's timing into the helper's small format; AURA does the rest.
+            helper=f'"{Path(sys.executable).as_posix()}" "{(PRODUCT_ROOT/"scripts/workspace_os_schedules.py").as_posix()}"'
+            text = (f"Please set up a scheduled task on this computer's own scheduler, which will run {app} for it, using AURA's helper:\n"
+                    f"{helper} create --business-id {bid} --app {kind} --name \"<name>\" --when \"<timing>\" --prompt-file \"<a file with the instructions below>\""
+                    +(f" --model {model}" if model else '')+(f" --effort {effort}" if effort else '')+"\n"
+                    "Write the timing as hourly, daily HH:MM, weekly mon HH:MM or monthly D HH:MM (local time). "
+                    "It runs unattended, so it won't stop to ask for approval.\n"
+                    f"- Name: {name}\n- When: {payload.get('when','')}\n- Runs with: {runs}\n- Each time, it should:\n{payload.get('description','')}\n\n"
+                    f"It's for {business}. Tell me once it's set up, and ask me if anything is unclear.")
+            return {'kind':kind,'model':model,'effort':effort,'text':text[:20000],'title':'Schedule · '+(name or 'new task')[:80]}
         if action in {'create','move'}:
             source = ''
             if action=='move':
@@ -3259,8 +3258,8 @@ class Workspace:
         elif action=='request':
             text = (f"Please change my scheduled task “{name}” {how}: {payload.get('request','').strip()}\n"
                     "Keep everything else as it is, and tell me once it's saved.")
-        elif action in {'pause','resume'}:
-            text = f"Please {action} my scheduled task “{name}” {how}, and tell me once it's done."
+        elif action in {'pause','resume','remove'}:
+            text = f"Please {'delete' if action=='remove' else action} my scheduled task “{name}” {how}, and tell me once it's done."
         else:
             labels = (('name','Name'),('when','When'),('schedule','When'),('model','Runs with'),('effort','Effort'),('description','Each time, it should'))
             changes = [f"- {label}: {options.get(payload[key],payload[key]) if key=='model' else payload[key]}"
@@ -3312,7 +3311,7 @@ class Workspace:
             raise ValueError('A task change is already running. Wait for it or stop it first.')
         payload, native_id = dict(data), None
         action = payload.get('action','create')
-        if action not in {'create','edit','pause','resume','request','move'}:
+        if action not in {'create','edit','pause','resume','request','move','remove'}:
             raise ValueError('Choose a supported task change.')
         root = workspace_root().resolve()
         folders = [root, *(Path(r['path']) for r in self.recent_workspaces())]
@@ -3320,12 +3319,34 @@ class Workspace:
         task = next((t for t in before if t['id']==payload.get('id')),None)
         if action!='create' and not task:
             raise ValueError('This task is no longer listed. Refresh scheduled tasks.')
+        if task and task.get('scheduler')=='computer':
+            # AURA's own task on the computer's scheduler: changed directly with the system's commands, no AI needed.
+            import workspace_os_schedules as computer
+            if action not in {'edit','pause','resume','remove'}:raise ValueError('Change this task here, or remove it and set up a new one.')
+            values={'when':payload.get('when') or payload.get('schedule'),'name':payload.get('name'),'prompt':payload.get('description'),
+                    'model':payload.get('model'),'effort':payload.get('effort')}
+            computer.change(task['native_id'],action,{k:v for k,v in values.items() if v})
+            if action=='remove':
+                with self.lock:self.preferences.setdefault('goal_tasks',{}).setdefault(bid,{}).pop(task['id'],None);self.save_preferences()
+            self.schedule_job=dict(id=new_id(12),business_id=bid,action=action,status='complete',task_id=task['id'],created=time.time(),updated=time.time(),payload=payload,
+                                   message={'pause':'Task paused.','resume':'Task resumed.','remove':'Task removed.'}.get(action,'Changes saved.'))
+            return self.schedule_state(bid)
         kind = payload.get('app') or (task or {}).get('owner')
         choice = self.native_choice(kind)
         if kind not in NATIVE_AGENTS or not choice:
             raise ValueError('Connect this AI app in Adjust AI settings, then try again.')
-        if kind in workspace_schedules.IN_APP_ONLY:
-            raise ValueError(f"{choice['name']} sets up and changes its scheduled tasks in its own app, not from AURA or its chats. Open {choice['name']} to do this; the task shows here once it exists.")
+        if task and task['owner'] in workspace_schedules.IN_APP_ONLY:
+            # Only that app's own window can change these. Offer the person's main AI, which may be able to work the
+            # screen; if it can't, it says so in the chat.
+            if self.connection_kind not in NATIVE_AGENTS:
+                raise ValueError(f"{choice['name']} changes these tasks in its own app only. Open {choice['name']} to do it there.")
+            ask=payload.get('request') or {'pause':'pause it','resume':'resume it','remove':'delete it'}.get(action,'make the change I asked for')
+            main=self.preferences.get('connection',{})
+            return {'status':'in_app','business_id':bid,
+                    'message':f"{choice['name']} changes these tasks in its own app only. Open {choice['name']} to do it there, or ask your AI to do it on screen.",
+                    'chat':{'kind':self.connection_kind,'model':main.get('model',''),'effort':main.get('effort',''),'title':'Schedule · '+task['name'][:80],
+                            'text':f"If you can control my screen, please open the {choice['name']} app, find my scheduled task “{task['name']}” and {ask}. "
+                                   "Tell me what you did, or that you can't control the screen."}}
         for field, limit in [('name',200),('description',20000),('when',300),('schedule',300),('model',500),('effort',32),('request',2000)]:
             if field in payload and (not isinstance(payload[field],str) or len(payload[field])>limit or '\x00' in payload[field]):
                 raise ValueError('Keep the task name, instructions and timing within the field limits.')
@@ -3366,7 +3387,7 @@ class Workspace:
             raise ValueError('Describe what you would like to change.')
         raw = payload.get('when','').strip()
         native_time = bool(re.fullmatch(r'[\d*/?,\-]+(?:\s+[\d*/?,\-]+){4,5}|every \d+[mhd]',raw,re.I))
-        direct = kind=='hermes' and ((action in {'edit','pause','resume'} and task and task['owner']=='hermes') or (action=='create' and native_time))
+        direct = kind=='hermes' and ((action in {'edit','pause','resume','remove'} and task and task['owner']=='hermes') or (action=='create' and native_time))
         if not direct:
             # Anything that needs an AI goes to that app as an ordinary chat: it uses its own scheduling, asks what it
             # needs to in conversation, and the task list shows the result, with its links read from the task itself.
@@ -3411,7 +3432,10 @@ class Workspace:
                 else:
                     confirmed = workspace_schedules.update(task['id'],dict(values,action=action),workspace_agents.base_command(command),env,execution)
                 execution.check()
-                job.update(task_id=confirmed['id'],message={'create':'Task created.','pause':'Task paused.','resume':'Task resumed.','move':'Task moved.'}.get(action,'Changes saved.'))
+                job.update(task_id=confirmed['id'],message={'create':'Task created.','pause':'Task paused.','resume':'Task resumed.','move':'Task moved.','remove':'Task removed.'}.get(action,'Changes saved.'))
+                if action=='remove':
+                    with self.lock:
+                        self.preferences.setdefault('goal_tasks',{}).setdefault(bid,{}).pop(confirmed['id'],None);self.save_preferences()
                 if assistant:
                     with self.lock:
                         self.load_portable()
@@ -3672,7 +3696,12 @@ class Workspace:
                 prompt=prompt.replace('\nUser request:\n',workspace_chats.instructions(chat,brief=not full)+'\nUser request:\n',1)
             chat['context_checked_at']=context_checked_at
             chat['context_revisions']=inherited_context['references']
-            chat.update(status='working', archived=False, model=saved_connection.get('model') or self.agent.get('model',''), effort=saved_connection.get('effort',''), connection=dict(saved_connection), updated=time.time())
+            # Keep the app's friendly name for the model with the chat, so it reads the same everywhere (not an ID).
+            chosen_model=saved_connection.get('model') or self.agent.get('model','')
+            friendly=next((m.get('name') for m in (self.option_cache.get(self.connection_kind) or {}).get('models',[]) if m.get('id')==chosen_model),None)
+            if friendly and friendly!=chosen_model:chat['model_name']=friendly
+            elif chat.get('model')!=chosen_model:chat.pop('model_name',None)
+            chat.update(status='working', archived=False, model=chosen_model, effort=saved_connection.get('effort',''), connection=dict(saved_connection), updated=time.time())
             if goal_id:
                 if chat.get('goal_id')!=goal_id:chat.pop('continuation',None)
                 bound=workspace_goals.bind_chat(bid,goal_id,chat['id'])

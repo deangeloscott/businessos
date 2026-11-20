@@ -1,9 +1,29 @@
 """ACP v1 native client. Agent tools, policy and authentication stay native."""
 import json
+import os
 import subprocess
 from workspace_execution import Stopped
 from workspace_interactions import question,answers_for
 from workspace_native_requests import form_request,notice,provider
+
+
+def aura_own(tool,offered,cwd):
+    """The allow-once option when an approval is only for reading AURA's own files or running one of its helpers."""
+    from pathlib import Path
+    from _common import PRODUCT_ROOT
+    from workspace_native_requests import aura_helper
+    allow=next((o.get('optionId') for o in offered if o.get('kind')=='allow_once'),None)
+    if not allow:return None
+    raw=tool.get('rawInput') if isinstance(tool.get('rawInput'),dict) else tool.get('args') if isinstance(tool.get('args'),dict) else {}
+    if tool.get('kind')=='read':
+        paths=[l.get('path') for l in tool.get('locations') or [] if isinstance(l,dict) and l.get('path')] or [raw.get('Path') or raw.get('path')]
+        try:return allow if paths and all(p and Path(p).resolve().is_relative_to(PRODUCT_ROOT.resolve()) for p in paths) else None
+        except (OSError,ValueError):return None
+    if tool.get('kind')=='execute':
+        command=next((raw[k] for k in ('command','CommandLine','commandLine','cmd') if raw.get(k)),None)
+        # On Windows these apps run commands in PowerShell, where a backslash is part of a path, not an escape.
+        return allow if command and aura_helper(command,cwd,'powershell' if os.name=='nt' else 'posix') else None
+    return None
 
 
 def usage_measure(value):
@@ -66,7 +86,10 @@ def run(command,kind,cwd,env,prompt,native_id,model,effort,update,execution):
                 item=next((r for r in config if r.get('id')==category[3:]),None) if category.startswith('id:') else next((r for r in config if r.get('category')==category),None)
                 if item:
                     if value==item.get('currentValue'):continue
-                    if value not in {r['value'] for r in options(item.get('options',[]))}:raise ValueError('This native connection does not offer the selected '+category.replace('_',' ')+'. Choose an available option in its settings.')
+                    offered_values=list(options(item.get('options',[])))
+                    if value not in {r['value'] for r in offered_values}:
+                        names=', '.join(str(r.get('name') or r['value']) for r in offered_values[:8])
+                        raise ValueError('This native connection does not offer the selected '+category.replace('_',' ')+f' ({value}). Choose an available option in its settings'+(f' ({names}).' if names else '.'))
                     pending.append(('session/set_config_option',{'configId':item['id'],'value':value}))
                 elif category=='model':
                     catalog=state.get('models') or {}
@@ -106,6 +129,10 @@ def run(command,kind,cwd,env,prompt,native_id,model,effort,update,execution):
                 elif typ=='usage_update':usage=usage_measure(value);update(usage=usage)
             elif method=='session/request_permission':
                 offered=p.get('options') or [];tool=p.get('toolCall') or {}
+                allow=aura_own(tool,offered,cwd)
+                if allow:
+                    # Reading AURA's own guidance or running one of its helpers: AURA answers, as it does for Claude Code and Codex.
+                    reply({'outcome':{'outcome':'selected','optionId':allow}});return
                 q=question('decision',tool.get('title') or 'Allow this native operation?',[o['optionId'] for o in offered])
                 for option,original in zip(q['options'],offered):option['label']=original.get('name') or original['optionId']
                 permissions[ident]=reply

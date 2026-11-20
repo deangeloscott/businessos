@@ -75,7 +75,7 @@ window.auraContinuity=(()=>{
     const job=state.liveJob,chat=state.chatMeta?.id||'';
     const key=JSON.stringify([scope(),chat,job?.id]);
     const matches=job?.chat_id===chat&&job?.workspace===state.data?.workspace;
-    const rows=matches?(job.requests||[]):[],notices=matches?(job.native_notices||[]):[],editor=matches?job.native_editor:null;
+    const rows=matches?(job.requests||[]):[],notices=matches?(job.native_notices||[]).filter(n=>job.status==='working'||!n.key):[]/* an app's status line means something only while it works */,editor=matches?job.native_editor:null;
     const signature=JSON.stringify([rows,notices,editor]);
     if(key===requestScope&&signature===requestKey)return;
     const active=document.activeElement,form=active?.closest?.('form[data-native-request]');

@@ -62,6 +62,14 @@ def main():
         answered=[];execution=type('Execution',(),{'native_cwd':str(base)})()
         requests.codex_request({'id':7,'method':'item/commandExecution/requestApproval','params':{'command':pwsh,'cwd':str(base)}},execution,answered.append)
         assert answered==[{'id':7,'result':{'decision':'accept'}}],'Codex is answered for AURA helpers too'
+        # Apps on the standard agent protocol (Antigravity): AURA answers for reading its own files and running its helpers.
+        from workspace_acp import aura_own
+        offered=[{'optionId':'once','kind':'allow_once'},{'optionId':'no','kind':'reject_once'}]
+        assert aura_own({'kind':'read','locations':[{'path':str(PRODUCT_ROOT/'CONTEXT.md')}]},offered,str(base))=='once'
+        assert aura_own({'kind':'execute','rawInput':{'CommandLine':f'"{py}" "{helpers/"remember.py"}" {bid}'}},offered,str(base))=='once'
+        for other in ({'kind':'read','locations':[{'path':str(base/'notes.txt')}]},{'kind':'execute','rawInput':{'CommandLine':f'"{py}" -c "print(1)"'}},
+                      {'kind':'edit','locations':[{'path':str(PRODUCT_ROOT/'CONTEXT.md')}]}):
+            assert aura_own(other,offered,str(base)) is None,other
         for kind in ('claude','pi','omp'):
             agents=[{'id':kind,'name':kind.title(),'argv':[sys.executable,'-u',str(fake),kind]}]
             with patch('workspace_ui.installed_agents',return_value=agents):

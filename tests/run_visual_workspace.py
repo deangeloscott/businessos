@@ -619,7 +619,10 @@ else:
             assert secret not in json.dumps(listing) and secret not in app.settings_file.read_text()
             assert app.connections.environment()['FAL_KEY'] == secret
             assert secret not in call('/api/request', {'business':bid,'text':'Use useful APIs'})['text']
-            assert 'fal.ai via FAL_KEY' in call('/api/request', {'business':bid,'text':'Use useful APIs'})['text']
+            copied=call('/api/request', {'business':bid,'text':'Use useful APIs'})['text']
+            assert 'fal.ai via FAL_KEY' in copied
+            # A pasted request carries the short summary, for an AI that cannot read this computer's files.
+            assert 'What AURA knows about this business' in copied and copied.index('What AURA knows')<copied.index('User request:')
             if os.name == 'nt':
                 call('/api/connections/save', {'provider':'fal','key':secret,'storage':'computer'})
                 assert secret.encode() not in app.connections.path.read_bytes()

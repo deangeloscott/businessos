@@ -308,7 +308,9 @@ def history(command, kind, cwd, env, native_id, source_file=''):
             state=host.call('session/load',sessionId=native_id,cwd=str(cwd),mcpServers=[])
             if state.get('sessionId',native_id)!=native_id:raise ValueError('The AI app returned a different chat. Your saved messages have been kept.')
             if not messages:raise ValueError('The AI app returned no messages for this chat. Your saved messages have been kept; check its original conversation.')
-            model=(state.get('models') or {}).get('currentModelId','')
+            # The same list the model choices come from: the app's settings first, its older model list only without them.
+            model=next((c.get('currentValue','') for c in state.get('configOptions',[]) if c.get('category')=='model'),None)
+            if model is None:model=(state.get('models') or {}).get('currentModelId','')
             effort=next((c.get('currentValue','') for c in state.get('configOptions',[]) if c.get('category')=='thought_level'),'')
         finally:host.close()
     else:

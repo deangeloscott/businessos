@@ -1285,6 +1285,13 @@ def handler_for(app):
                         bid = selected(data.get('business'))
                         context=workspace_context.resolve(app,bid,[*(data.get('references') or []),*[{'kind':'file','id':f} for f in data.get('files') or []]],data.get('goal_id'))
                         text=app.request_text(bid,str(data.get('text','')),data.get('history'),data.get('schedule_id'),data.get('organization_id'))
+                        # A pasted request may go to an AI that cannot read this computer: carry the short summary of what
+                        # is known, so it still has the essentials.
+                        import workspace_summary
+                        try:known=workspace_summary.text(workspace_summary.summary(bid))
+                        except (ValueError,OSError):known=''
+                        if known and not str(data.get('text','')).lstrip().startswith('/'):
+                            text=text.replace('\nUser request:\n','\nWhat AURA knows about this business, for an AI that cannot read these files:\n'+known+'\n\nUser request:\n',1)
                         self.send(200,{'text':text.replace('\nUser request:\n',context['text']+'\nUser request:\n',1),'references':context['references']})
                     elif route == '/api/chat/stop':
                         self.send(200, app.stop_chat(selected(data.get('business')), data.get('id')))

@@ -209,6 +209,41 @@ def main():
                     headers={'Content-Type':'application/json','X-Aura-Token':app.token})
                 with urlopen(req,timeout=5) as response:assert response.status==200
                 gate.set();assert done()['status']=='stopped' and not app.execution.stopped.is_set()
+                # Hermes tasks are deleted directly, and only reported once Hermes no longer lists them.
+                def remove_native(argv,env,execution=None,cwd=None):
+                    assert argv[1:3]==['cron','remove']
+                    jobs=json.loads(jobs_path.read_text())['jobs'];jobs_path.write_text(json.dumps({'jobs':[j for j in jobs if j['id']!=argv[3]]}),encoding='utf-8');return ''
+                with patch.object(schedules,'invoke',side_effect=remove_native):
+                    post_task({'id':task_id,'app':'hermes','action':'remove'})
+                    assert done()['status']=='complete' and app.schedule_job['message']=='Task removed.'
+                assert not any(t['id']==task_id for t in schedules.inventory()['items'])
+                # Apps whose scheduler AURA can't reach run on the computer's own one, and are changed here directly
+                # (the system scheduler is stubbed: a test never adds real tasks to the computer).
+                import workspace_os_schedules as computer
+                placed=[]
+                with patch.object(computer,'_place',side_effect=placed.append),patch.object(computer,'_win_status',return_value=None), \
+                     patch.object(computer,'_call',return_value=''),patch.object(computer,'_cron_lines',return_value=[]),patch.object(computer,'_mac_unload'):
+                    made=computer.create(bid,'claude','Weekly digest','weekly mon 9:00','Summarise the week.',model='haiku')
+                    assert made['permission']=='bypassPermissions' and placed[-1]['when']=={'every':'weekly','day':'mon','time':'09:00'},'unattended: no approval stops'
+                    try:computer.create(bid,'claude','Bad','every monday morning','x');raise AssertionError('expected the timing format')
+                    except ValueError as error:assert 'weekly mon 09:00' in str(error)
+                    row=next(t for t in schedules.inventory()['items'] if t.get('scheduler')=='computer')
+                    assert row['schedule']=='weekly mon 09:00' and row['schedule_raw']=='FREQ=WEEKLY;BYHOUR=9;BYMINUTE=0;BYDAY=MO' and row['editable']
+                    post_task({'id':row['id'],'action':'pause'});assert app.schedule_job['status']=='complete' and computer.load(made['id'])['paused']
+                    post_task({'id':row['id'],'action':'edit','schedule':'daily 07:30'});assert computer.load(made['id'])['when']=={'every':'daily','time':'07:30'}
+                    post_task({'id':row['id'],'action':'remove'});assert app.schedule_job['message']=='Task removed.'
+                    assert not computer.definitions() and not any(t.get('scheduler')=='computer' for t in schedules.inventory()['items'])
+                calls=[]  # each system's entry, built for every kind of timing (a monthly day is not a weekday)
+                with patch.object(computer,'_call',side_effect=lambda argv,data=None:calls.append((argv,data)) or ''), \
+                     patch.object(computer,'_cron_lines',return_value=['0 5 * * * backup.sh']):
+                    for when in ('hourly','daily 07:00','weekly sun 18:30','monthly 15 09:05'):
+                        sample={'id':'abcDEF123456','workspace':'/workspace','when':computer.parse_when(when),'paused':False}
+                        computer._win_create(sample);computer._cron_create(sample)
+                    assert calls[-1][1].splitlines()[0]=='0 5 * * * backup.sh' and calls[-1][1].splitlines()[-1].startswith('5 9 15 * *'),'cron keeps the person\'s own lines'
+                    assert ['/SC','MONTHLY','/D','15','/ST','09:05']==[a for a in calls[-3][0] if a in {'/SC','MONTHLY','/D','15','/ST','09:05'}]
+                    with patch.object(view,'installed_agents',return_value=[choice,{'id':'claude','name':'Claude Code','argv':['claude']}]):
+                        asked=post_task(dict(payload,app='claude',name='Morning brief',when='Every weekday at 8am'))
+                    assert asked['status']=='chat' and 'workspace_os_schedules.py' in asked['chat']['text'] and 'Every weekday at 8am' in asked['chat']['text']
             app.job = {'status':'working'}
             req = Request(f'http://127.0.0.1:{server.server_port}/api/lifecycle',
                 data=b'{"action":"quit"}',

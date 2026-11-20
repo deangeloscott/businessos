@@ -31,6 +31,7 @@ def record(bid,prepared,snapshots):
     for item in eligible:
         obj=item['object'];before=item.get('existing');path=Path(item['path'])
         label=obj.get('name') or obj.get('title') or obj.get('statement') or obj.get('decision') or obj.get('summary') or obj['object_type']
+        if obj['object_type']=='Business' and before:label='Updated business details'  # not "remembered: <the business's own name>"
         added.append({'id':new_id(12),'object_ref':obj['id'],'label':str(label)[:160],
                       'at':time.time(),'status':'pending','revision':revision(path),'operation':'updated' if before else 'created',
                       'version_id':previous.get(path.relative_to(workspace_root()).as_posix(),{}).get('id','')})

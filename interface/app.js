@@ -366,7 +366,7 @@ function limitNotice(){
 const effortLabel=e=>e?({xhigh:'Extra high',max:'Maximum'})[e]||human(e):'App default';
 const effortChoices=(efforts,fallback)=>[...(efforts.length&&!fallback?['']:[]),...efforts];
 const effortPick=(efforts,fallback,preferred)=>effortChoices(efforts,fallback).includes(preferred)?preferred:fallback||'';
-const modelDisplay=id=>id&&(catalogModels().find(m=>m.routes?.some(r=>r.model===id))?.name||state.chatModelOptions?.models?.find(m=>m.id===id)?.name||(state.data?.connection?.model===id?state.data.connection.model_name:''))||id;
+const modelDisplay=id=>id&&(catalogModels().find(m=>m.routes?.some(r=>r.model===id))?.name||state.chatModelOptions?.models?.find(m=>m.id===id)?.name||(state.chatMeta?.model===id?state.chatMeta.model_name:'')||(state.data?.connection?.model===id?state.data.connection.model_name:''))||id;
 const chosenModel=()=>catalogModels().find(m=>m.id===$('#model-choice').value);
 const selectedRoute=()=>chosenModel()?.routes.find(r=>r.agent===$('#agent-choice').value);
 const modelSource=model=>!model?'':model.access==='signin'?providerLabel(model.provider)+' sign-in':model.access==='api'?providerLabel(model.provider)+' API':model.access==='provider'?providerLabel(model.provider)+' connection':({openrouter:'OpenRouter',local:'Local model','google-app':'Google Antigravity'})[model.access]||'Configured in '+(model.routes.find(r=>r.agent===$('#agent-choice').value)?.app||'your AI app');
@@ -562,7 +562,9 @@ function usageLabel(usage) {
   $('#task-status').title=`Reported token usage. Cost and cache details are in Usage & spend.`;
   // Most of a long request is the app re-reading its own context at a fraction of the price; say how much.
   const reused=Number.isFinite(usage.cached_input_tokens)&&usage.input_tokens?Math.round(100*usage.cached_input_tokens/usage.input_tokens):0;
-  return ` · ${(usage.input_tokens+usage.output_tokens).toLocaleString()} tokens${reused>=10?` (${reused}% re-read)`:''}`;
+  // This request's own cost, when the app reports one (a running session total is not this request's cost).
+  const cost=Number.isFinite(usage.cost_usd)?' · '+(usage.cost_kind==='est'?'about ':'')+'$'+(usage.cost_usd<0.01?usage.cost_usd.toFixed(3):usage.cost_usd.toFixed(2)):'';
+  return ` · ${(usage.input_tokens+usage.output_tokens).toLocaleString()} tokens${reused>=10?` (${reused}% re-read)`:''}${cost}`;
 }
 /* Activity: work running now and notifications live together behind the bell. */
 function paintRunning(){
@@ -1392,6 +1394,7 @@ async function scheduleOperation(payload) {
     const result=await api('/api/schedules/action',{business:state.business,...payload});
     // Changes that need an AI happen in an ordinary chat with that app, which uses its own scheduling.
     if(result.status==='chat'){state.scheduleAdding=false;await startScheduleChat(result.chat);return;}
+    if(result.status==='in_app'){state.scheduleJob={id:'in-app-'+Date.now(),status:'error',message:result.message,screen:result.chat};state.dismissedScheduleJob=null;return;}
     state.scheduleJob=result;
     state.dismissedScheduleJob=null;renderScheduleOperation();if(state.scheduleJob.status!=='working')await syncSchedules(true).catch(()=>{});
   } catch(error){
@@ -1417,9 +1420,9 @@ function renderScheduleOperation() {
     const gone=job?.status==='complete'&&job.task_id&&Array.isArray(state.schedules?.items)&&!state.schedules.items.some(t=>t.id===job.task_id);
     box.hidden=!job||job.id===state.dismissedScheduleJob||gone;if(box.hidden)return;
     const signature=JSON.stringify([job.id,job.status,job.message,job.task_id,working&&job.created?Math.floor((Date.now()/1000-job.created)/60):0]);if(box.dataset.signature===signature)return;box.dataset.signature=signature;
-    box.innerHTML=`<div class="schedule-feedback"><span class="${job.status==='error'?'error':''}">${job.status==='complete'?'✓ ':''}${esc(job.message)}${working&&job.created&&Date.now()/1000-job.created>=60?` · still working, ${Math.floor((Date.now()/1000-job.created)/60)} min. Your AI app is taking its time; Stop if you'd rather not wait.`:''}</span><span class="schedule-feedback-actions">${working?'<button type="button" class="text-button" data-stop-schedule>Stop</button>':`${job.task_id?`<button type="button" class="text-button" data-open-schedule="${esc(job.task_id)}">View task</button>`:''}<button type="button" class="text-button" data-dismiss-schedule aria-label="Dismiss task status">✕</button>`}</span></div>`;
+    box.innerHTML=`<div class="schedule-feedback"><span class="${job.status==='error'?'error':''}">${job.status==='complete'?'✓ ':''}${esc(job.message)}${working&&job.created&&Date.now()/1000-job.created>=60?` · still working, ${Math.floor((Date.now()/1000-job.created)/60)} min. Your AI app is taking its time; Stop if you'd rather not wait.`:''}</span><span class="schedule-feedback-actions">${working?'<button type="button" class="text-button" data-stop-schedule>Stop</button>':`${job.screen?'<button type="button" class="text-button" data-schedule-screen>Ask my AI to do it on screen</button>':''}${job.task_id?`<button type="button" class="text-button" data-open-schedule="${esc(job.task_id)}">View task</button>`:''}<button type="button" class="text-button" data-dismiss-schedule aria-label="Dismiss task status">✕</button>`}</span></div>`;
   });
-  for(const selector of ['#create-schedule','#task-edit-form .primary','#task-request-form .primary','#task-edit-form [data-task-status]']){const button=$(selector);if(button)button.disabled=working||(selector==='#create-schedule'&&(!$('#schedule-model')?.value||$('#schedule-model')?.disabled||scheduleInAppOnly($('#schedule-app')?.value)));}
+  for(const selector of ['#create-schedule','#task-edit-form .primary','#task-request-form .primary','#task-edit-form [data-task-status]']){const button=$(selector);if(button)button.disabled=working||(selector==='#create-schedule'&&(!$('#schedule-model')?.value||$('#schedule-model')?.disabled));}
 }
 async function syncScheduleOperation() {
   if(!state.business||state.scheduleOperationLoading||state.closed)return;
@@ -1435,8 +1438,7 @@ async function syncScheduleOperation() {
   } finally {state.scheduleOperationLoading=false;}
 }
 // The server says which apps' saved schedules it can read back; others keep theirs to themselves.
-const scheduleInAppOnly=app=>(state.data.connection.schedules_in_app_only||[]).includes(app);
-const scheduleListNote=app=>scheduleInAppOnly(app)?`${state.data.connection.choices.find(c=>c.id===app)?.name||human(app)} sets up scheduled tasks in its own app, not from here. Its tasks show in this list once they exist.`:(state.data.connection.schedules_listed||[]).includes(app)?'':`${state.data.connection.choices.find(c=>c.id===app)?.name||human(app)} keeps its own schedules, so this task won't appear in this list. Open that app to see or change it.`;
+const scheduleListNote=app=>(state.data.connection.schedules_on_computer||[]).includes(app)?"This runs on this computer's own scheduler, while the computer is on. You can pause, change or delete it here.":(state.data.connection.schedules_listed||[]).includes(app)?'':`${state.data.connection.choices.find(c=>c.id===app)?.name||human(app)} keeps its own schedules, so this task won't appear in this list. Open that app to see or change it.`;
 function scheduleForm() {
   const current=state.data.connection,apps=current.choices.filter(c=>c.available&&nativeConnection(c.id));
   const draft=state.scheduleDraft??={name:'',description:'',when:'',app:apps.some(c=>c.id===current.selected)?current.selected:apps[0]?.id||'',model:current.model||'',effort:current.effort||''};
@@ -1686,7 +1688,7 @@ function updateTaskTiming() {
 async function scheduleDetails(id) {
   const task=state.schedules.items.find(t=>t.id===id);if(!task)return;
   state.editingTask=task;
-  details(task.name,`${taskSummary(task)}${scheduleOperationMarkup()}${task.runtime?`<p class="small-note">${esc(task.runtime)}</p>`:''}<details class="task-options"><summary>Task settings</summary><form id="task-edit-form" class="form-grid"><label>AI app<select name="app">${state.data.connection.choices.filter(c=>c.available||c.id===task.owner).map(c=>`<option value="${esc(c.id)}" ${c.id===task.owner?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label><label>Task name<input name="name" value="${esc(task.name)}" maxlength="200" required></label><label>Instructions<textarea name="description" rows="3" maxlength="20000" ${task.description?'':'placeholder="Describe what this task should do"'}>${esc(task.description||'')}</textarea></label>${taskTiming(task)}<label>Model<select name="model" id="task-model"><option value="">App default</option>${task.model?`<option value="${esc(task.provider?task.provider+':'+task.model:task.model)}" selected>${esc(task.model)}</option>`:''}</select><small class="muted" id="task-model-note"></small></label><div class="inline-actions"><button class="primary">${task.editable?'Save changes':'Ask AI to adjust'}</button>${task.editable?`<button type="button" class="secondary" data-task-status="${task.status==='paused'?'resume':'pause'}">${task.status==='paused'?'Resume':'Pause'}</button>`:''}</div><p class="small-note" id="task-edit-note">${task.editable?'Changes are saved in your AI app.':'Your AI confirms schedule changes in the app.'}</p></form></details>`,'context');
+  details(task.name,`${taskSummary(task)}${scheduleOperationMarkup()}${task.runtime?`<p class="small-note">${esc(task.runtime)}</p>`:''}<details class="task-options"><summary>Task settings</summary><form id="task-edit-form" class="form-grid"><label>AI app<select name="app">${state.data.connection.choices.filter(c=>c.available||c.id===task.owner).map(c=>`<option value="${esc(c.id)}" ${c.id===task.owner?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label><label>Task name<input name="name" value="${esc(task.name)}" maxlength="200" required></label><label>Instructions<textarea name="description" rows="3" maxlength="20000" ${task.description?'':'placeholder="Describe what this task should do"'}>${esc(task.description||'')}</textarea></label>${taskTiming(task)}<label>Model<select name="model" id="task-model"><option value="">App default</option>${task.model?`<option value="${esc(task.provider?task.provider+':'+task.model:task.model)}" selected>${esc(task.model)}</option>`:''}</select><small class="muted" id="task-model-note"></small></label><div class="inline-actions"><button class="primary">${task.editable?'Save changes':'Ask AI to adjust'}</button>${task.editable?`<button type="button" class="secondary" data-task-status="${task.status==='paused'?'resume':'pause'}">${task.status==='paused'?'Resume':'Pause'}</button><button type="button" class="text-button" data-task-remove>Delete task</button>`:''}</div><p class="small-note" id="task-edit-note">${task.editable?'Changes are saved in your AI app.':'Your AI confirms schedule changes in the app.'}</p></form></details>`,'context');
   $('#detail-content .task-options').insertAdjacentHTML('beforebegin',`<form id="task-request-form" class="form-grid"><label>What would you like to change?<input name="request" required maxlength="2000" placeholder="Move this to Monday mornings"></label><button class="primary">Ask AI →</button></form>`);
   renderScheduleOperation();
   window.auraWork?.history(task,$('#detail-content [data-task-history]'));
@@ -2814,6 +2816,8 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.dataset.exampleTask)showScheduleExample(button.dataset.exampleTask);
   if(button.dataset.examplefilter){state.exampleFilter=button.dataset.examplefilter;button.parentElement.querySelectorAll('button').forEach(b=>{b.classList.toggle('active',b===button);b.setAttribute('aria-pressed',String(b===button));});$('#schedule-example-list').innerHTML=scheduleMarkup(state.scheduleExamples,'',button.dataset.examplefilter,Infinity,true);}
   if(button.dataset.taskStatus)await scheduleOperation({id:state.editingTask.id,app:state.editingTask.owner,action:button.dataset.taskStatus});
+  if(button.hasAttribute('data-schedule-screen')&&state.scheduleJob?.screen){const chat=state.scheduleJob.screen;state.scheduleJob=null;$('#detail').close();await startScheduleChat(chat);}
+  if(button.hasAttribute('data-task-remove')&&confirm(`Delete “${state.editingTask.name}” from ${appName(state.editingTask.owner)}? This can't be undone.`))await scheduleOperation({id:state.editingTask.id,app:state.editingTask.owner,action:'remove'});
   if(button.hasAttribute('data-stop-schedule')){await api('/api/schedules/stop',{business:state.business,operation_id:state.scheduleJob.id});await syncScheduleOperation();}
   if(button.hasAttribute('data-dismiss-schedule')){state.dismissedScheduleJob=state.scheduleJob.id;renderScheduleOperation();}
   if(button.dataset.openSchedule){const key=chatScope();await syncSchedules(true);if(key!==chatScope())return;if(state.schedules?.items.some(t=>t.id===button.dataset.openSchedule))await scheduleDetails(button.dataset.openSchedule);else notice('This task is no longer available in its app.',true);}

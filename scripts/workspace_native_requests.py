@@ -211,12 +211,11 @@ _PYTHON=re.compile(r'(?i)^(?:python(?:3(?:\.\d+)?)?|py)(?:\.exe)?$')
 _SHELLS={'bash':'posix','sh':'posix','zsh':'posix','pwsh':'powershell','powershell':'powershell'}
 
 
-def aura_helper(command,cwd):
+def aura_helper(command,cwd,shell='posix'):
     """True when a shell command only runs AURA's own helpers from this AURA, optionally after `cd` and the workspace
     setting, joined by && or ;. Anything else (another program, pipes, redirects, substitutions) is asked about as usual.
     A command given as the app's shell call (bash -lc "...", pwsh -Command "...") is read as that shell would read it."""
     from _common import PRODUCT_ROOT,workspace_root
-    shell='posix'
     if isinstance(command,(list,tuple)):
         words=[str(w) for w in command]
         kind=_SHELLS.get(Path(words[0]).stem.lower()) if words else None
