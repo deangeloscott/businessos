@@ -143,6 +143,8 @@ def status(bid, live=False):
 
 def disconnect(bid, unlink=False):
     vault = store(bid)
+    try: had = bool(vault.stored())
+    except ValueError: had = True
     if vault.persistent: vault.write({})
     if unlink:
         from remember import remember
@@ -150,7 +152,7 @@ def disconnect(bid, unlink=False):
         extensions = dict(obj.get('extensions') or {})
         extensions.pop('viraltrac', None)
         remember(bid, {'objects': [{'object_ref': obj['id'], 'replace_extensions': True, 'content': {'extensions': extensions}}]})
-    return {'status': 'disconnected', 'note': 'Local credential removed. Any process-environment credential must be removed at its source. Revoke the connection in ViralTrac to invalidate it everywhere. Saved findings remain.'}
+    return {'status': 'disconnected', 'note': ('Local credential removed. ' if had else 'No local credential was saved. ') + 'Any process-environment credential must be removed at its source. Revoke the connection in ViralTrac to invalidate it everywhere. Saved findings remain.'}
 
 
 def call(bid, method, params=None):

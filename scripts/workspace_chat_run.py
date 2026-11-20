@@ -128,7 +128,7 @@ class ChatRun:
                     row.update(windows=windows,checked_at=time.time())
                     app.usage_accounts[kind+'-events']=[row]
             if values.get('native_commands'):
-                app.observe_app(kind,'commands',['/'+str(c.get('name','')).lstrip('/') for c in values['native_commands'] if isinstance(c,dict) and c.get('name')])
+                app.observe_app(self.kind,'commands',['/'+str(c.get('name','')).lstrip('/') for c in values['native_commands'] if isinstance(c,dict) and c.get('name')])
             if chat and values.get('native_id'):
                 chat['native_id'] = values['native_id']
                 try:
@@ -172,7 +172,7 @@ class ChatRun:
                               'options':execution.native_options,'handler':execution.native_handler,'goal':native_spec,'child_model':(assistant or {}).get('child_model'),'agent_revision':(assistant or {}).get('native_revision')}
                     result=app.native_sessions.run((str(root),bid,chat['id']),settings,prompt,resumed_id,execution,update,launch,root)
                 else:result=launch()
-                output, code = result['reply'], 0
+                output, code, stderr = result['reply'], 0, ''
                 if not welcome and keep_warm_id is None:candidate=workspace_chats.brief(output)
                 job['usage'] = result['usage']
             else:

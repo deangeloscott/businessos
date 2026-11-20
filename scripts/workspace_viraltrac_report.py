@@ -23,17 +23,17 @@ def envelope(bid, tool, arguments, link):
         raise ValueError('ViralTrac could not return ' + tool + '. Check access and try again; saved evidence was kept.')
     value = result.get('structuredContent')
     if value is None:
-        for item in result.get('content', []):
-            if item.get('type') == 'text':
+        for item in result.get('content') if isinstance(result.get('content'), list) else []:
+            if isinstance(item, dict) and item.get('type') == 'text':
                 try: value = json.loads(item['text'])
                 except (ValueError, KeyError): continue
                 break
-    actor = value.get('auth_context', {}) if isinstance(value, dict) else {}
+    actor = value.get('auth_context') if isinstance(value, dict) and isinstance(value.get('auth_context'), dict) else {}
     if isinstance(value, dict) and value.get('tool_name') == tool and value.get('ok') is True:
         value = value.get('envelope')
     if not isinstance(value, dict) or value.get('ok') is not True or value.get('tool') != tool:
         raise ValueError('ViralTrac returned an unrecognized report. Saved evidence was kept.')
-    if value.get('auth_context', {}).get('org_id') != link['organization_id']:
+    if (value.get('auth_context') if isinstance(value.get('auth_context'), dict) else {}).get('org_id') != link['organization_id']:
         raise ValueError('The report belongs to a different ViralTrac business. Saved evidence was kept.')
     return {**value, 'authorized_actor': actor}
 

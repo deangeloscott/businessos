@@ -190,7 +190,8 @@ def main():
             from correction_impacts import correction_event
             before=goals.find(bid,local['id'])
             with patch('correction_impacts.inbound_references',return_value=[{'object_type':'Asset','object_ref':asset}]):
-                assert correction_event(bid,before,{**before,'status':'paused','extensions':{'businessos':{'goal':{'scope':'chat','revision':999}}}},None,'event', 'now') is None
+                ext=dict(before.get('extensions') or {});ext['businessos']={**ext.get('businessos',{}),'goal':{'scope':'chat','revision':999}}  # keeps what the record already carries, such as where it was made
+                assert correction_event(bid,before,{**before,'status':'paused','extensions':ext},None,'event', 'now') is None
                 assert correction_event(bid,before,{**before,'target':'A materially different outcome'},None,'event','now'),'An actual outcome correction must still surface possible review impacts'
             overview=call('/api/goals?business='+bid+'&id='+goal['id'])
             assert overview['chat_goals'][0]['id']==local['id'] and overview['chat_goals'][0]['status']=='completed'

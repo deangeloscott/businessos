@@ -1815,18 +1815,21 @@ async function openPhoneMessages(){
     <div class="app-version"><div><b>Hermes messages</b><small>${status}</small></div><div class="inline-actions">${g.set_up?`<button type="button" class="secondary compact" data-terminal-run="${g.running?'hermes-gateway-stop':'hermes-gateway-start'}">${g.running?'Stop':'Start'}</button>`:''}<button type="button" class="secondary compact" data-terminal-run="hermes-gateway-setup">Set up</button></div></div>
     <label class="check-label settings-check"><input type="checkbox" id="phone-chats" ${d.chats?.business?'checked':''} ${g.set_up?'':'disabled'}><span>Show my phone chats with Hermes in</span></label>
     <select id="phone-chats-business" aria-label="Business for phone chats" ${d.chats?.business?'':'disabled'}>${businesses}</select>
-    <label class="check-label settings-check"><input type="checkbox" id="phone-notices" ${d.phone?.on?'checked':''} ${g.home?'':'disabled'}><span>Text me when work finishes, waits for me, or has a problem, while I'm away from AURA</span></label>
+    <label class="check-label settings-check"><input type="checkbox" id="phone-notices" ${d.phone?.on?'checked':''} ${g.home?'':'disabled'}><span>Text me when work finishes, waits for me, hits a plan limit or has a problem, once I've been away from AURA for</span></label>
+    <select id="phone-after" aria-label="How long away before texting" ${d.phone?.on?'':'disabled'}>${[5,10,30,60].map(m=>`<option value="${m}" ${(d.phone?.after||600)===m*60?'selected':''}>${m<60?m+' minutes':'1 hour'}</option>`).join('')}</select>
     ${d.phone?.problem?`<p class="small-note app-problem">${esc(d.phone.problem)}</p>`:''}`);
-  const chats=$('#phone-chats'),pick=$('#phone-chats-business'),phone=$('#phone-notices');
+  const chats=$('#phone-chats'),pick=$('#phone-chats-business'),phone=$('#phone-notices'),after=$('#phone-after');
   const save=(change,undo)=>attempt(async()=>{try{await api('/api/hermes-messages',change);notice('Saved.');}catch(error){undo();throw error;}});
   chats.onchange=()=>{pick.disabled=!chats.checked;save({chats:chats.checked?pick.value||state.business:''},()=>{chats.checked=!chats.checked;pick.disabled=!chats.checked;});};
   pick.onchange=()=>save({chats:pick.value},()=>{});
-  phone.onchange=()=>save({phone:phone.checked},()=>{phone.checked=!phone.checked;});
+  phone.onchange=()=>{after.disabled=!phone.checked;save({phone:phone.checked,...(phone.checked?{phone_after:Number(after.value)}:{})},()=>{phone.checked=!phone.checked;after.disabled=!phone.checked;});};
+  after.onchange=()=>save({phone_after:Number(after.value)},()=>{});
 }
 // Phone notices wait until you're away: any use of an AURA window says you're here (at most twice a minute).
 let presenceSent=0;
 const present=()=>{if(document.hidden||Date.now()-presenceSent<30000)return;presenceSent=Date.now();api('/api/presence',{}).catch(()=>{});};
-['pointerdown','keydown','focus'].forEach(type=>window.addEventListener(type,present,{passive:true}));
+// Reading counts as being here too: scrolling and moving the pointer, not only clicks and typing.
+['pointerdown','pointermove','wheel','keydown','focus','scroll'].forEach(type=>window.addEventListener(type,present,{passive:true,capture:true}));
 document.addEventListener('visibilitychange',present);
 // A chat from your phone updates within seconds while it's open (Hermes's records are checked, not re-read).
 setInterval(()=>{if(state.chatMeta?.gateway&&!document.hidden)checkNativeChanges();},5000);
@@ -1840,10 +1843,9 @@ function openSettings(query=''){
 document.addEventListener('click',event=>{
   const b=event.target.closest('#open-settings,[data-settings-open]');if(!b)return;
   if(b.id==='open-settings'){openSettings();return;}
-  if(b.dataset.settingsOpen==='app-versions'){attempt(()=>openAppVersions());return;}
-  if(b.dataset.settingsOpen==='hermes-messages'){attempt(()=>openPhoneMessages());return;}
-  const target=$('#'+b.dataset.settingsOpen);if(!target)return;
+  const own={'app-versions':openAppVersions,'hermes-messages':openPhoneMessages}[b.dataset.settingsOpen],target=own?null:$('#'+b.dataset.settingsOpen);if(!own&&!target)return;
   state.settingsQuery=$('#settings-find')?.value||'';state.settingsReturn=!!b.closest('#detail');closeAnchoredSurface(false);if($('#more-dialog').open)$('#more-dialog').close();
+  if(own){attempt(()=>own());return;}
   target.click();
 });
 $('#detail').addEventListener('close',()=>{setTimeout(()=>{if(!$('#detail').open)state.settingsReturn=false;},0);});
@@ -2679,8 +2681,11 @@ function replyExtras(r){
   const url=(local?local.at(-1).replace('0.0.0.0','localhost'):web?web.at(-1):'').replace(/[.,;:!?*]+$/,'');
   if(url){try{out+=`<a class="text-button" href="${esc(new URL(url).href)}" target="_blank" rel="noopener noreferrer">${local?'Open preview':'Open '+esc(new URL(url).host)} ↗</a>`;}catch{}}
   const here=state.chatMeta?.agent,apps=(state.data?.connection?.choices||[]).filter(c=>c.available&&c.id!==here&&!['configured','handoff'].includes(c.id));
-  const words=a=>[...new Set([a.name,a.name.replace(/^Google /,''),a.name.replace(/ Code$/,'')])].map(n=>n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'));
-  const named=state.chatMeta?.id&&apps.find(a=>words(a).some(n=>new RegExp(`\\b(?:continu\\w*|switch\\w*|mov\\w*|try|use)\\b[^.\\n]{0,40}\\b${n}\\b`,'i').test(text)));
+  const words=a=>[...new Set([a.name,a.name.replace(/^Google /,''),a.name.replace(/ Code$/,'')])];
+  // A suggestion to move, not a mention: "don't switch to OMP" is not one, and a short name like Pi must be written as a name.
+  const suggests=n=>{const m=new RegExp(`\\b(?:continu\\w*|switch\\w*|mov\\w*|try|use)\\b[^.\\n]{0,40}\\b${n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}\\b`,'i').exec(text);
+    return !!m&&(n.length>3||m[0].endsWith(n))&&!/\b(?:don['’]?t|do not|not|never|no need to|without|instead of)\s+(?:\w+\s+)?$/i.test(text.slice(Math.max(0,m.index-30),m.index));};
+  const named=state.chatMeta?.id&&apps.find(a=>words(a).some(suggests));
   if(named)out+=`<button type="button" class="text-button" data-continue-in="${esc(named.id)}">Continue in ${esc(named.name)}</button>`;
   return out?`<div class="message-actions reply-extras">${out}</div>`:'';
 }
@@ -2701,7 +2706,7 @@ function showMessages(latest=false) {
   if(state.formattedSource!==state.chat||state.formattedKey!==formatKey){
     const started=performance.now();
     const lastReply=state.chat.findLastIndex(m=>m.role==='assistant');
-    state.formattedHistory=state.chat.map((r,index)=>`<div class="message ${r.role}"><strong>${r.role==='user'?'YOU':esc(r.agent||state.data?.connection.name||'YOUR AGENT')}${r.at?` <time>${esc(clockTime(r.at))}</time>`:''}${r.role==='assistant'&&r.model?` · ${esc(r.model)}${r.effort?' · '+esc(human(r.effort)):''}`:''}</strong>${r.role==='assistant'?chatMarkdown(r.text):esc(r.text)}${nativeMedia(r.native_media)}${window.auraCompose?.actions(r,index)||''}${index===lastReply?replyExtras(r):''}</div>`).join('');
+    state.formattedHistory=state.chat.map((r,index)=>`<div class="message ${r.role}"><strong>${r.role==='user'?'YOU':esc(r.agent||state.data?.connection.name||'YOUR AGENT')}${r.at?` <time>${esc(clockTime(r.at))}</time>`:''}${r.role==='assistant'&&r.model?` · ${esc(modelDisplay(r.model))}${r.effort?' · '+esc(human(r.effort)):''}`:''}</strong>${r.role==='assistant'?(r.status==='stopped'&&!String(r.text||'').trim()?'<p class="small-note">Stopped before a reply.</p>':chatMarkdown(r.text)):esc(r.text)}${nativeMedia(r.native_media)}${window.auraCompose?.actions(r,index)||''}${index===lastReply?replyExtras(r):''}</div>`).join('');
     state.formattedSource=state.chat;state.formattedKey=formatKey;clientPerformance.message_formats++;clientPerformance.message_format_ms+=performance.now()-started;
   }
   const markup=state.formattedHistory;

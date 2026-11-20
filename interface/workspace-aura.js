@@ -52,15 +52,18 @@ window.auraView=(()=>{
   const landsFor=(f,by)=>by?links().places(f,String(by)):[];
   /* One period for every view, as the prototype's "Show" had: quick picks, or any range of dates. */
   const PERIODS=[['visit','Since your last visit'],['month','This month'],['quarter','Last 3 months'],['year','This year'],['all','All time'],['custom','Custom dates…']];
+  /* Dates the person picks are days on their own calendar, not UTC. */
+  const dayAt=(s,next=0)=>{const [y,m,d]=String(s||'').split('-').map(Number);return y&&m&&d?new Date(y,m-1,d+next).getTime():NaN;};
+  const isoDay=v=>{const d=new Date(v);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
   function period(f){
     const p=ctx?.period||{key:'quarter'},end=Date.parse(f.as_of)||Date.now(),d=new Date(end),day=864e5;
-    const from=p.key==='visit'?(Date.parse(ctx?.since||'')||end-14*day):p.key==='month'?Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),1):p.key==='quarter'?end-91*day:p.key==='year'?Date.UTC(d.getUTCFullYear(),0,1):p.key==='all'?0:(Date.parse(p.from)||end-30*day);
-    const to=p.key==='custom'&&p.to?Math.min(end,Date.parse(p.to)+day-1):end;
+    const [a,b]=p.key==='custom'&&p.from&&p.to&&p.from>p.to?[p.to,p.from]:[p.from,p.to];
+    const from=p.key==='visit'?(Date.parse(ctx?.since||'')||end-14*day):p.key==='month'?new Date(d.getFullYear(),d.getMonth(),1).getTime():p.key==='quarter'?end-91*day:p.key==='year'?new Date(d.getFullYear(),0,1).getTime():p.key==='all'?0:(dayAt(a)||end-30*day);
+    const to=p.key==='custom'&&b?Math.min(end,dayAt(b,1)-1):end;
     const date=v=>when(new Date(v).toISOString());
     const words={visit:'since your last visit',month:'this month',quarter:'in the last 3 months',year:'this year',all:'all time',custom:`from ${date(from)} to ${date(to)}`}[p.key]||'this month';
     return {key:p.key,from,to,words,days:Math.max(1,Math.round((to-from)/day))};
   }
-  const isoDay=v=>new Date(v).toISOString().slice(0,10);
   /* AI use for the period and for the equal period just before it, read once per period. */
   function loadUsage(f){
     const p=period(f),key=p.from+'|'+p.to+'|'+f.revision;if(ctx.usage?.key===key||ctx.usageLoading===key)return;
@@ -74,7 +77,7 @@ window.auraView=(()=>{
   function tools(f){
     const flt=ctx?.filter||{lands:[],needs:false,by:''};
     const p=ctx?.period||{key:'quarter'},staged=ctx&&ctx.tab!=='world';
-    const choose=staged?`<label class="world-period"><span class="sr-only">Period</span><select id="world-period">${PERIODS.map(([k,t])=>`<option value="${k}" ${k===p.key?'selected':''}>${t}</option>`).join('')}</select></label>${p.key==='custom'?`<label class="world-dates"><span class="sr-only">From</span><input type="date" id="world-from" value="${esc(p.from||'')}" max="${esc(f.as_of.slice(0,10))}"> – <span class="sr-only">To</span><input type="date" id="world-to" value="${esc(p.to||'')}" max="${esc(f.as_of.slice(0,10))}"></label>`:''}`:'';
+    const choose=staged?`<label class="world-period"><span class="sr-only">Period</span><select id="world-period">${PERIODS.map(([k,t])=>`<option value="${k}" ${k===p.key?'selected':''}>${t}</option>`).join('')}</select></label>${p.key==='custom'?`<label class="world-dates"><span class="sr-only">From</span><input type="date" id="world-from" value="${esc(p.from||'')}" max="${esc(isoDay(f.as_of))}"> – <span class="sr-only">To</span><input type="date" id="world-to" value="${esc(p.to||'')}" max="${esc(isoDay(f.as_of))}"></label>`:''}`:'';
     const top=`${choose}<label><span class="sr-only">Find in your world</span><input type="search" id="world-q" placeholder="Find anything…" autocomplete="off"></label>`;
     const lands=f.lands.filter(l=>l.kind!=='group'),size=l=>l.items.length+(l.more||0)+f.findings.filter(x=>x.land===l.id).length;
     const shown=ctx?.allChips||lands.length<=7?lands:[...lands].sort((a,b)=>flt.lands.includes(b.id)-flt.lands.includes(a.id)||size(b)-size(a)).slice(0,6);
@@ -386,7 +389,7 @@ window.auraView=(()=>{
       if(source)say(`${name(source[0])} carried the most of it.`,source[0]);
       const quiet=f.lands.filter(l=>l.kind!=='group'&&!into.has('land:'+l.id)).length;
       if(quiet&&into.size)say(`${count(quiet,'place')} had nothing flowing into ${quiet===1?'it':'them'} ${p.words}.`);
-      if(!out.length)say(flow==='saved'?`No work was recorded saving anything ${p.words}. The lines into goals show what each place holds; work saved through AURA appears here as it happens.`:`No AI use was recorded ${p.words}.`);
+      if(!out.length)say(flow==='saved'?`Nothing new was saved through AURA ${p.words}. The boxes show what each place already holds; new saved work appears here as it happens.`:`No AI use was recorded ${p.words}.`);
     }else if(tab==='timeline'){
       const changes=changesSince(comparisonFeed(f,ctx?.sel),sinceDate(f),untilDate(f)),by=new Map();for(const c of changes)if(c.land)by.set(c.land,(by.get(c.land)||0)+1);
       const busiest=[...by].sort((a,b)=>b[1]-a[1])[0],goal=changes.find(c=>c.key.startsWith('goal:'));
@@ -414,7 +417,7 @@ window.auraView=(()=>{
     if(sel){const t=L.trace(f,L.key(sel)),mine=c=>c.id&&t.all.has('chat:'+c.id);chats=chats.filter(mine);before=before.filter(mine);if(sel.kind==='method')note='Tokens and cost are reported for the whole requests this was given to.';}
     const landName=id=>f.lands.find(l=>l.id===id)?.name,projectName=id=>(state.projects||[]).find(p=>p.id===id)?.name;
     const keyOf=c=>by==='model'?c.model||'Model unreported':by==='work'?(c.group.kind==='land'?'land:'+c.group.id:c.group.kind==='project'?'project:'+c.group.id:'other'):c.agent||'Unnamed app';
-    const nameOf=k=>by==='app'&&typeof window.appName==='function'?window.appName(k):by!=='work'?k:k==='other'?'Not tied to anything':k.startsWith('land:')?landName(k.slice(5))||'A collection':projectName(k.slice(8))||'A project';
+    const nameOf=k=>by==='app'&&typeof window.appName==='function'?window.appName(k):by==='model'&&typeof modelDisplay==='function'&&k!=='Model unreported'?modelDisplay(k):by!=='work'?k:k==='other'?'Not tied to anything':k.startsWith('land:')?landName(k.slice(5))||'A collection':projectName(k.slice(8))||'A project';
     const q=String(ctx?.q||'').trim().toLowerCase(),hit=c=>(c.title+' '+(c.agent||'')+' '+(c.model||'')+' '+nameOf(keyOf(c))).toLowerCase().includes(q);
     if(q.length>=2){chats=chats.filter(hit);before=before.filter(hit);note=(note?note+' ':'')+`Showing what matches “${ctx.q}”.`;}
     // What the spending produced: the records each conversation saved or changed, as AURA noted at the time.
@@ -835,7 +838,7 @@ window.auraView=(()=>{
   document.addEventListener('change',e=>{
     if(!ctx||ctx.business!==state.business)return;
     if(e.target.id==='world-compare-date'){ctx.compare=e.target.value;paintSide();}
-    if(e.target.id==='world-period'){const key=e.target.value,end=ctx.feed.as_of.slice(0,10);ctx.period={key,from:ctx.period?.from||isoDay(Date.parse(end)-30*864e5),to:ctx.period?.to||end};ctx.week=null;paintSide();}
+    if(e.target.id==='world-period'){const key=e.target.value,end=isoDay(ctx.feed.as_of);ctx.period={key,from:ctx.period?.from||isoDay(Date.parse(ctx.feed.as_of)-30*864e5),to:ctx.period?.to||end};ctx.week=null;paintSide();}
     if(e.target.id==='world-from'||e.target.id==='world-to'){ctx.period={...ctx.period,key:'custom',[e.target.id==='world-from'?'from':'to']:e.target.value};paintSide();}
     if(e.target.id==='world-effort-metric'){ctx.metric=e.target.value;world()?.setEffortMetric?.(ctx.metric);paintSide();}
     if(e.target.id==='world-flow'){ctx.flow=e.target.value;paintSide();}

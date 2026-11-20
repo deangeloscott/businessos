@@ -133,6 +133,7 @@ print(json.dumps({'full':full,'tight':tight}))
     given=ww._used('b',Chats,{'col_1','col_2'})
     assert given['records']=={'ins_1':2} and given['collections']=={'col_1':1,'col_9':1} and given['library']==[{'id':'pb_comp','name':'Competitor Research','uses':2,'lands':['col_1']}],given
     assert ww._used('b',None,set())=={'records':{},'collections':{},'library':[],'references':[]},'with no chats to read, nothing is claimed'
+    import shutil;shutil.rmtree(views,ignore_errors=True)
     from datetime import timedelta
     assert ww._work('b',Chats,now)==ww._work('b',Chats,now+timedelta(minutes=5)),'the same records give the same weeks all day, so an unchanged world is not sent again'
     weeks=ww._work('b',Chats,now);assert len(weeks)==26 and sum(w['requests'] for w in weeks)==5 and weeks[-1]['requests']==4 and ww._work('b',None,now) is None

@@ -489,112 +489,119 @@ def _run(command, kind, cwd, env, prompt, native_id, model, effort, update, exec
             lines=agent_lines(process,kind,prompt,native_id,execution,errors)
         else:
             errors.send(process, prompt);ErrorTail.close_input(process);lines=process.stdout
-        for line in lines:
-            from workspace_native_sessions import Call
-            if isinstance(line,Call):
-                execution=line.execution;update=line.update;prompt=line.prompt;native_id=line.native_id or execution.native_session.native_id
-                ident=native_id;final='';error='';measures=[];seen_usage={};session_cost=None;context_seen=None;request_started=time.time();delegation=Tracker(update)
-                update(native_id=ident,native_controls={'steer':True,'interrupt':True})
-                continue
-            try:event=json.loads(line)
-            except ValueError:continue
-            if not isinstance(event, dict):continue
-            if getattr(execution,'trace',None):execution.trace.observe(kind,event)
-            if delegation.observe(kind, event):continue
-            event_type=event.get('type',event.get('event'))
-            if event_type=='aura_turn_end':
-                if error or not ident or not final.strip():
-                    lines.close()
-                    raise ValueError(error or errors.message('The AI app ended without a saved reply. Check its native conversation before retrying.'))
-                value={**workspace_usage.combine(measures),'last':measures[-1],**({'context':context_seen} if context_seen else {})} if measures else {}
-                if session_cost is not None:value.update(session_cost_usd=session_cost,cost_kind='est')
-                execution.native_session.turn_result={'reply':final,'native_id':ident,'usage':value}
-                continue
-            new_id=event.get('session_id') or (event.get('id') if event_type=='session' else None) or event.get('conversation_id')
-            if new_id:
-                if native_id and new_id!=native_id:
-                    error='The app returned a different chat ID. Check the native app before continuing.'
-                else:
-                    ident=new_id;update(native_id=ident)
-            if event_type=='aura_notice':
-                from workspace_native_requests import notice
-                notice(execution,update,event.get('text',''),event.get('url'),event.get('key'));continue
-            if event_type=='aura_controls':update(native_controls={'steer':True,'interrupt':True});continue
-            if event_type=='aura_editor_text':update(native_editor={'id':event.get('id') or str(time.time_ns()),'text':event.get('text','')});continue
-            if event_type=='aura_native_title':update(native_title=event.get('title',''));continue
-            if event_type=='aura_native_commands':
-                update(native_commands=[{'name':v,'description':''} if isinstance(v,str) else v for v in event.get('commands',[])])
-                continue
-            if event_type=='aura_compact_done':
-                final='Conversation compacted.';update(reply=final);continue
-            if event_type=='aura_reply_ready':update(reply_ready=True,background_work=event.get('background',False),progress='Background work is running' if event.get('background') else 'Finishing your request');continue
-            if event_type=='aura_native_goal':
-                value=event.get('goal') or {}
-                if execution.native_goal and value.get('status') in {'complete','completed','paused','blocked','cleared','needs_review'}:execution.native_goal['verdict_received']=True
-                update(native_goal=value)
-            elif event_type=='message_end':
-                message=event.get('message',{})
-                if message.get('role')=='assistant':
-                    observe(message)
-                    if message.get('stopReason') in {'error','aborted'}:error=message.get('errorMessage') or 'The AI request did not complete.'
-                    text=message_text(message.get('content',[]))
+        try:
+            for line in lines:
+                from workspace_native_sessions import Call
+                if isinstance(line,Call):
+                    execution=line.execution;update=line.update;prompt=line.prompt;native_id=line.native_id or execution.native_session.native_id
+                    ident=native_id;final='';error='';measures=[];seen_usage={};session_cost=None;context_seen=None;request_started=time.time();delegation=Tracker(update)
+                    update(native_id=ident,native_controls={'steer':True,'interrupt':True})
+                    continue
+                try:event=json.loads(line)
+                except ValueError:continue
+                if not isinstance(event, dict):continue
+                if getattr(execution,'trace',None):execution.trace.observe(kind,event)
+                if delegation.observe(kind, event):continue
+                event_type=event.get('type',event.get('event'))
+                if event_type=='aura_turn_end':
+                    if error or not ident or not final.strip():
+                        lines.close()
+                        raise ValueError(error or errors.message('The AI app ended without a saved reply. Check its native conversation before retrying.'))
+                    value={**workspace_usage.combine(measures),'last':measures[-1],**({'context':context_seen} if context_seen else {})} if measures else {}
+                    if session_cost is not None:value.update(session_cost_usd=session_cost,cost_kind='est')
+                    execution.native_session.turn_result={'reply':final,'native_id':ident,'usage':value}
+                    continue
+                new_id=event.get('session_id') or (event.get('id') if event_type=='session' else None) or event.get('conversation_id')
+                if new_id:
+                    if native_id and new_id!=native_id:
+                        error='The app returned a different chat ID. Check the native app before continuing.'
+                    else:
+                        ident=new_id;update(native_id=ident)
+                if event_type=='aura_notice':
+                    from workspace_native_requests import notice
+                    notice(execution,update,event.get('text',''),event.get('url'),event.get('key'));continue
+                if event_type=='aura_controls':update(native_controls={'steer':True,'interrupt':True});continue
+                if event_type=='aura_editor_text':update(native_editor={'id':event.get('id') or str(time.time_ns()),'text':event.get('text','')});continue
+                if event_type=='aura_native_title':update(native_title=event.get('title',''));continue
+                if event_type=='aura_native_commands':
+                    update(native_commands=[{'name':v,'description':''} if isinstance(v,str) else v for v in event.get('commands',[])])
+                    continue
+                if event_type=='aura_compact_done':
+                    final='Conversation compacted.';update(reply=final);continue
+                if event_type=='aura_reply_ready':update(reply_ready=True,background_work=event.get('background',False),progress='Background work is running' if event.get('background') else 'Finishing your request');continue
+                if event_type=='aura_native_goal':
+                    value=event.get('goal') or {}
+                    if execution.native_goal and value.get('status') in {'complete','completed','paused','blocked','cleared','needs_review'}:execution.native_goal['verdict_received']=True
+                    update(native_goal=value)
+                elif event_type=='message_end':
+                    message=event.get('message',{})
+                    if message.get('role')=='assistant':
+                        observe(message)
+                        if message.get('stopReason') in {'error','aborted'}:error=message.get('errorMessage') or 'The AI request did not complete.'
+                        text=message_text(message.get('content',[]))
+                        if text:final=text;update(reply=final,progress='Preparing a reply')
+                elif event_type=='message_start' and event.get('message',{}).get('role')=='assistant':
+                    error=''
+                    request_started=time.time()
+                    final=''
+                    update(reply='',progress='Preparing a reply')
+                elif event_type=='message_update':
+                    delta=event.get('assistantMessageEvent') or {}
+                    if delta.get('type')=='text_delta':
+                        final+=str(delta.get('delta',''))
+                        update(reply=final)
+                elif event_type=='text' and kind=='hermes':
+                    final+=str(event.get('text',''))
+                    update(reply=final,progress='Preparing a reply')
+                elif event_type in {'error','turn.failed'}:
+                    detail=event.get('error',event.get('message','The AI request failed.'))
+                    error=str(detail.get('message',detail) if isinstance(detail,dict) else detail)
+                elif event_type=='assistant':
+                    observe(event.get('message') or {})
+                    content=(event.get('message') or {}).get('content',[])
+                    text=message_text(content)
                     if text:final=text;update(reply=final,progress='Preparing a reply')
-            elif event_type=='message_start' and event.get('message',{}).get('role')=='assistant':
-                error=''
-                request_started=time.time()
-                final=''
-                update(reply='',progress='Preparing a reply')
-            elif event_type=='message_update':
-                delta=event.get('assistantMessageEvent') or {}
-                if delta.get('type')=='text_delta':
-                    final+=str(delta.get('delta',''))
-                    update(reply=final)
-            elif event_type=='text' and kind=='hermes':
-                final+=str(event.get('text',''))
-                update(reply=final,progress='Preparing a reply')
-            elif event_type in {'error','turn.failed'}:
-                detail=event.get('error',event.get('message','The AI request failed.'))
-                error=str(detail.get('message',detail) if isinstance(detail,dict) else detail)
-            elif event_type=='assistant':
-                observe(event.get('message') or {})
-                content=(event.get('message') or {}).get('content',[])
-                text=message_text(content)
-                if text:final=text;update(reply=final,progress='Preparing a reply')
-                for block in content if isinstance(content,list) else []:
-                    if block.get('type')=='tool_use':update(progress=tool_activity(block.get('name')))
-            elif event_type=='result':
-                result=event.get('result') if isinstance(event.get('result'),dict) else event
-                if isinstance(result.get('usage'),dict) and (not measures or kind=='claude'):
-                    # Claude Code's per-message usage is an early snapshot (output is a few tokens);
-                    # its result carries the turn's final totals.
-                    if kind=='claude':measures.clear();seen_usage.clear()
-                    observe({'usage':result['usage'],'timestamp':time.time()})
-                    if kind=='claude':
-                        # The last model call's input is what the conversation now occupies.
-                        calls=result['usage'].get('iterations') or [result['usage']]
-                        last_call=calls[-1] if isinstance(calls[-1],dict) else {}
-                        windows=[m.get('contextWindow') for m in (result.get('modelUsage') or {}).values() if isinstance(m,dict)]
-                        used=sum(workspace_usage.number(last_call.get(k)) or 0 for k in ('input_tokens','cache_read_input_tokens','cache_creation_input_tokens','output_tokens'))
-                        if used and windows and workspace_usage.number(max(windows)):context_seen={'tokens':used,'window':max(windows)}
-                session_cost=workspace_usage.number(result.get('total_cost_usd'))
-                if session_cost is not None:
-                    update(usage={**workspace_usage.combine(measures),'last':measures[-1] if measures else {},**({'context':context_seen} if context_seen else {}),
-                                  'session_cost_usd':session_cost,'cost_kind':'est'})
-                result_id=result.get('conversation_id') or result.get('session_id') or ident
-                if native_id and result_id!=native_id:
-                    error='The app returned a different chat ID. Check the native app before continuing.'
-                elif result_id:
-                    ident=result_id;update(native_id=ident)
-                final=result.get('response') or result.get('text') or (event.get('result') if isinstance(event.get('result'),str) else '') or final
-                if result.get('is_error') or result.get('exit_code') or (result.get('status') and result['status']!='SUCCESS'):
-                    error=str(result.get('error') or final or 'The host did not complete this request. Check its native chat.')
-            elif event_type in {'tool_execution_start','tool_use','step_update','tool_start'}:
-                update(progress=tool_activity(event.get('toolName') or event.get('name') or event.get('tool')))
-            elif event_type in {'tool_execution_end','tool_end','tool_result'}:
-                update(progress='Tool finished. Continuing the request')
-            elif event_type=='rate_limit_event' and kind=='claude':
-                update(quota_windows=workspace_usage.claude_limits(event.get('rate_limit_info')))
-        code=process.wait()
+                    for block in content if isinstance(content,list) else []:
+                        if block.get('type')=='tool_use':update(progress=tool_activity(block.get('name')))
+                elif event_type=='result':
+                    result=event.get('result') if isinstance(event.get('result'),dict) else event
+                    if isinstance(result.get('usage'),dict) and (not measures or kind=='claude'):
+                        # Claude Code's per-message usage is an early snapshot (output is a few tokens);
+                        # its result carries the turn's final totals.
+                        if kind=='claude':measures.clear();seen_usage.clear()
+                        observe({'usage':result['usage'],'timestamp':time.time()})
+                        if kind=='claude':
+                            # The last model call's input is what the conversation now occupies.
+                            calls=result['usage'].get('iterations') or [result['usage']]
+                            last_call=calls[-1] if isinstance(calls[-1],dict) else {}
+                            windows=[m.get('contextWindow') for m in (result.get('modelUsage') or {}).values() if isinstance(m,dict)]
+                            used=sum(workspace_usage.number(last_call.get(k)) or 0 for k in ('input_tokens','cache_read_input_tokens','cache_creation_input_tokens','output_tokens'))
+                            if used and windows and workspace_usage.number(max(windows)):context_seen={'tokens':used,'window':max(windows)}
+                    session_cost=workspace_usage.number(result.get('total_cost_usd'))
+                    if session_cost is not None:
+                        update(usage={**workspace_usage.combine(measures),'last':measures[-1] if measures else {},**({'context':context_seen} if context_seen else {}),
+                                      'session_cost_usd':session_cost,'cost_kind':'est'})
+                    result_id=result.get('conversation_id') or result.get('session_id') or ident
+                    if native_id and result_id!=native_id:
+                        error='The app returned a different chat ID. Check the native app before continuing.'
+                    elif result_id:
+                        ident=result_id;update(native_id=ident)
+                    final=result.get('response') or result.get('text') or (event.get('result') if isinstance(event.get('result'),str) else '') or final
+                    if result.get('is_error') or result.get('exit_code') or (result.get('status') and result['status']!='SUCCESS'):
+                        error=str(result.get('error') or final or 'The host did not complete this request. Check its native chat.')
+                elif event_type in {'tool_execution_start','tool_use','step_update','tool_start'}:
+                    update(progress=tool_activity(event.get('toolName') or event.get('name') or event.get('tool')))
+                elif event_type in {'tool_execution_end','tool_end','tool_result'}:
+                    update(progress='Tool finished. Continuing the request')
+                elif event_type=='rate_limit_event' and kind=='claude':
+                    update(quota_windows=workspace_usage.claude_limits(event.get('rate_limit_info')))
+            code=process.wait()
+        except BaseException:
+            # End the app before the with-block closes its output: on Windows that close waits on the reader
+            # thread, so an unexpected error here would otherwise leave the request hanging instead of reporting.
+            if process.poll() is None:process.kill()
+            if lines is not process.stdout:lines.close()
+            raise
     if execution:execution.check()
     if code or error or not ident or not final.strip():
         raise ValueError(error or errors.message('The AI app did not complete a saved reply. Open its native chat to check authentication or approvals; no automatic retry was made.'))

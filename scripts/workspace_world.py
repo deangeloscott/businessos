@@ -372,7 +372,8 @@ def _effort(bid, app, bound, known, at, previous=False, span=None):
             'tokens': 0, 'cost_usd': 0.0, 'missing_costs': 0, 'missing_tokens': 0, 'app_estimates': 0, 'api_usd': 0.0, 'api_count': 0})
         guess = None
         if prices is not None and not isinstance(receipt.get('cost_usd'), (int, float)):
-            guess = workspace_prices.estimate(model, receipt.get('input_tokens'), receipt.get('output_tokens'), receipt['at'], prices)
+            guess = workspace_prices.estimate(model, receipt.get('input_tokens'), receipt.get('output_tokens'), receipt['at'], prices,
+                                              receipt.get('cached_input_tokens'), receipt.get('cache_write_tokens'))
         for totals in (group, chat):
             totals['requests'] += 1
             totals['tokens'] += int(receipt.get('input_tokens') or 0) + int(receipt.get('output_tokens') or 0)

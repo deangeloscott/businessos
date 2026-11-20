@@ -126,6 +126,9 @@ def handler_for(app):
 
         def do_GET(self):
             self.request_started=time.monotonic()
+            if self.headers.get('Host')==f'localhost:{self.server.server_port}' and not self.path.startswith('/api/'):
+                # Same computer, other name for it: open AURA at its own address rather than refusing.
+                self.send_response(302);self.send_header('Location',f'http://127.0.0.1:{self.server.server_port}{self.path}');self.send_header('Content-Length','0');self.end_headers();return
             if urlsplit(self.path).path in {'/api/context','/api/goals','/api/activity','/api/activity/result','/api/history','/api/history/version','/api/archive','/api/permissions','/api/state','/api/file','/api/sharing','/api/chat','/api/chats','/api/notifications'}:
                 with app.lock:self.read_GET()
             else:self.read_GET()
@@ -238,7 +241,9 @@ def handler_for(app):
                         def moment(value):
                             if not value:return None
                             try:return float(value)
-                            except ValueError:return _dt.fromisoformat(str(value).replace('Z','+00:00')).timestamp()
+                            except ValueError:pass
+                            try:return _dt.fromisoformat(str(value).replace('Z','+00:00')).timestamp()
+                            except ValueError:raise ValueError('Choose a valid date range.') from None
                         self.send(200,workspace_world.effort_between(selected(query.get('business')),owner,moment(query.get('from')),moment(query.get('to'))))
                 elif route in {'/api/collection-view','/api/running','/api/goal-progress','/api/world'}:
                     with app.lock:root=app.workspace_path;owner=copy.copy(app)

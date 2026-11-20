@@ -68,6 +68,7 @@ TESTS=[
     'tests/run_workspace_costs.py',
     'tests/run_workspace_app_updates.py',
     'tests/run_hermes_messages.py',
+    'tests/run_native_chat_events.py',
     'tests/run_workspace_focus.py',
     'tests/run_workspace_summary.py',
     'tests/run_workspace_world.py',

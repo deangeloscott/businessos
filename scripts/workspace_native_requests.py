@@ -5,6 +5,10 @@ import threading
 import time
 import base64
 import mimetypes
+import os
+import re
+import shlex
+import sys
 from pathlib import Path
 from urllib.parse import urlsplit
 from workspace_interactions import answers_for,question
@@ -144,6 +148,9 @@ def codex_request(event,execution,send,update=lambda **v:None):
         legacy=method in {'execCommandApproval','applyPatchApproval'}
         available=params.get('availableDecisions')
         decisions=available if available is not None else (['approved','approved_for_session','denied','abort'] if legacy else ['accept','acceptForSession','decline','cancel'])
+        once=next((d for d in ('accept','approved') if d in decisions),None)
+        if once and method in {'item/commandExecution/requestApproval','execCommandApproval'} and aura_helper(params.get('command'),params.get('cwd') or getattr(execution,'native_cwd',None)):
+            reply({'decision':once});return
         labels={'accept':'Approve once','acceptForSession':'Approve for this session','decline':'Decline','cancel':'Cancel request',
                 'approved':'Approve once','approved_for_session':'Approve for this session','denied':'Decline','abort':'Cancel request'}
         offered=[]
@@ -193,6 +200,64 @@ def codex_request(event,execution,send,update=lambda **v:None):
         send({'id':ident,'error':{'code':-32601,'message':title}})
 
 
+# AURA's own helpers run without an approval box (a person's choice for ease of use), except the ones that remove
+# records, set up or move a workspace, share outside it, or build AURA itself: those ask as usual. AURA's internal
+# workspace_* modules are not helpers, apart from the two the AI is told to use.
+ASK_FIRST={'forget','archive_history','setup','init_business','configure_workspace','migrate_workspace','open_aura',
+           'configure_innovation_sharing','prepare_innovation_package','export_innovation_package','import_innovation_package',
+           'build_innovation_exchange_index','generate_playbooks','generate_registry','package_edition','package_release',
+           'package_runtime','validate_runtime_bundle'}
+_PYTHON=re.compile(r'(?i)^(?:python(?:3(?:\.\d+)?)?|py)(?:\.exe)?$')
+_SHELLS={'bash':'posix','sh':'posix','zsh':'posix','pwsh':'powershell','powershell':'powershell'}
+
+
+def aura_helper(command,cwd):
+    """True when a shell command only runs AURA's own helpers from this AURA, optionally after `cd` and the workspace
+    setting, joined by && or ;. Anything else (another program, pipes, redirects, substitutions) is asked about as usual.
+    A command given as the app's shell call (bash -lc "...", pwsh -Command "...") is read as that shell would read it."""
+    from _common import PRODUCT_ROOT,workspace_root
+    shell='posix'
+    if isinstance(command,(list,tuple)):
+        words=[str(w) for w in command]
+        kind=_SHELLS.get(Path(words[0]).stem.lower()) if words else None
+        if not kind or len(words)<3 or words[-2].lower() not in {'-c','-lc','-command'}:return False
+        text,shell=words[-1],kind
+    else:text=str(command or '')
+    if not text.strip() or re.search(r'[`\n\r]|\$[({]',text):return False
+    try:
+        lexer=shlex.shlex(text,posix=True,punctuation_chars=True);lexer.whitespace_split=True
+        if shell=='powershell':lexer.escape=''  # a backslash is part of a Windows path there, not an escape
+        tokens=list(lexer)
+    except ValueError:return False
+    segments=[[]]
+    for token in tokens:
+        if token in {'&&',';'}:segments.append([])
+        elif token=='&' and shell=='powershell' and not segments[-1]:continue  # PowerShell's call operator
+        elif set(token)<=set('();<>|&'):return False
+        else:segments[-1].append(token)
+    here=Path(cwd or os.getcwd());scripts=(PRODUCT_ROOT/'scripts').resolve();ran=False
+    def place(value):return (here/value).resolve() if not Path(value).is_absolute() else Path(value).resolve()
+    for words in segments:
+        if not words:return False
+        if words[0]=='cd':
+            if len(words)!=2 or place(words[1]) not in {PRODUCT_ROOT.resolve(),workspace_root().resolve()}:return False
+            here=place(words[1]);continue
+        while words and re.match(r'^(BUSINESSOS_WORKSPACE|PYTHONUTF8|PYTHONIOENCODING)=',words[0]):
+            name,value=words[0].split('=',1)
+            if name=='BUSINESSOS_WORKSPACE' and place(value)!=workspace_root().resolve():return False  # only this workspace
+            words=words[1:]
+        if not words or not (_PYTHON.match(Path(words[0]).name) and (os.sep not in words[0] and '/' not in words[0] or Path(words[0]).is_file())
+                             or Path(words[0]).resolve()==Path(sys.executable).resolve()):return False
+        rest=words[1:]
+        while rest and rest[0] in {'-X','-u','-I','-B'}:rest=rest[2:] if rest[0]=='-X' else rest[1:]
+        if not rest:return False
+        script=place(rest[0]);name=script.stem
+        if script.parent!=scripts or script.suffix!='.py' or not script.is_file() or name in ASK_FIRST:return False
+        if name.startswith('_') or name.startswith('workspace_') and name not in {'workspace_context','workspace_summary'}:return False
+        ran=True
+    return ran
+
+
 def claude_request(event,execution,send):
     ident=event.get('request_id');request=event.get('request') or {}
     def reply(payload,ident=ident):send({'type':'control_response','response':{'subtype':'success','request_id':ident,'response':payload}})
@@ -203,6 +268,8 @@ def claude_request(event,execution,send):
         if provider(execution,{'id':ident,'method':request.get('subtype'),'params':request},bridge):return
         send({'type':'control_response','response':{'subtype':'error','request_id':ident,'error':'Use the native app for this interaction.'}});return
     original=request.get('input') or {}
+    if request.get('tool_name')=='Bash' and aura_helper(original.get('command'),getattr(execution,'native_cwd',None)):
+        reply({'behavior':'allow','updatedInput':original});return
     if request.get('tool_name')=='AskUserQuestion':
         qs=[question(str(i),q.get('question',''),[o['label'] for o in q.get('options',[])],q.get('multiSelect'),True) for i,q in enumerate(original.get('questions',[]))]
         def convert(a,original=original,qs=qs):return {'behavior':'allow','updatedInput':{**original,'answers':{q.get('question',''):', '.join(a[str(i)]) for i,q in enumerate(original.get('questions',[]))}}}

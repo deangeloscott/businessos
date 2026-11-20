@@ -100,6 +100,21 @@ def run(base,root,home,fake,sent,db,now,hm):
         app.ui_active_at=0;app.send_phone_notices();app.send_phone_notices()
         lines=[json.loads(x) for x in sent.read_text(encoding='utf-8').splitlines()]
         assert lines==[['send','-t','telegram','-q','AURA · Phone studio: Finished · Weekly numbers']],lines
+        # Many at once: a few, then the rest as one line; none silently dropped. Work from before you left stays here.
+        app.ui_active_at=time.time()-900;app.preferences['phone_notices']['since']=0
+        app.preferences['notification_items']+=[{'id':f'm{i}','business_id':bid,'chat_id':phone[0]['id'],'agent':'Hermes','status':'complete','at':time.time()-(1000 if i==5 else 300),'read':False,'delivered':False} for i in range(6)]
+        sent.unlink();app.send_phone_notices()
+        lines=[json.loads(x)[-1] for x in sent.read_text(encoding='utf-8').splitlines()]
+        assert len(lines)==3 and lines[-1]=='AURA: 3 more updates. Open AURA to see them.',lines
+        assert [n['id'] for n in app.preferences['notification_items'] if n['id'].startswith('m') and not n.get('phone')]==['m5']
+        # How long away is your choice (10 minutes unless you change it), and a plan limit reaches you too.
+        try:app.hermes_messages_settings({'phone_after':7});raise AssertionError('expected a choice')
+        except ValueError:pass
+        app.preferences['notification_items'].append({'id':'l1','business_id':bid,'chat_id':phone[0]['id'],'kind':'limit','title':'Codex plan limit reached. Open the chat to choose how to continue.','status':'complete','at':time.time()-200,'read':False,'delivered':False})
+        sent.unlink();app.ui_active_at=time.time()-400;app.send_phone_notices()
+        assert not sent.exists(),'not yet: 10 minutes is the default'
+        app.hermes_messages_settings({'phone_after':5});app.send_phone_notices()
+        assert json.loads(sent.read_text(encoding='utf-8'))[-1]=='AURA · Phone studio: Plan limit · Codex plan limit reached. Open the chat to choose how to continue.'
 
         assert app.other_apps_line()=='Other AI apps on this computer: Hermes, Codex. The user can continue this chat in one of them. '
         assert {'app':'Hermes','folder':str(home)} in app.app_histories()

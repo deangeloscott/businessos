@@ -561,6 +561,8 @@ class Workspace:
         self.library_refresh_lock = threading.Lock()
         self.app_check_lock = threading.Lock()
         self.hermes_check_lock = threading.Lock()
+        self.phone_lock = threading.Lock()
+        self.ui_active_at = time.time()  # a fresh start counts as here, not away
         self.library_checked = 0
         self.verified_business = None
         self.read_cache = {}
@@ -2400,7 +2402,8 @@ class Workspace:
         return {'apps':apps,'retired':self.retired_choices()}
 
     # ---- Hermes messages: phone chats in AURA, and notices back to the phone -------------------------------------
-    PHONE_AWAY=180  # no AURA window in use for this long counts as away from the computer
+    PHONE_AWAY=600  # no AURA window in use for this long counts as away from the computer, unless you chose otherwise
+    PHONE_AFTER=(5,10,30,60)  # the minutes you can choose
 
     def hermes_messages_status(self):
         """Hermes's gateway as Hermes reports it, and the two opt-in settings."""
@@ -2423,12 +2426,15 @@ class Workspace:
                     old=self.preferences.get('hermes_messages') or {}
                     self.preferences['hermes_messages']={'business':bid,'workspace':self.workspace_path,'since':old.get('since') if old.get('business') else time.time()-7*86400}
                 else:self.preferences.pop('hermes_messages',None)
+            after=data.get('phone_after')
+            if after is not None and (isinstance(after,bool) or after not in self.PHONE_AFTER):raise ValueError('Choose 5, 10, 30 or 60 minutes.')
             if 'phone' in data:
                 if data['phone'] is True:
                     home=hm.gateway(self.agent_environment(choice))['home']
                     if not home:raise ValueError("Set up Hermes messages first, so Hermes knows your chat.")
                     self.preferences['phone_notices']={'on':True,'platform':home,'since':time.time()}
                 else:self.preferences.pop('phone_notices',None)
+            if after is not None and self.preferences.get('phone_notices'):self.preferences['phone_notices']['after']=after*60
             self.save_preferences()
         if data.get('chats'):threading.Thread(target=self.check_hermes_messages,daemon=True,name='aura-hermes-messages').start()
         return self.hermes_messages_status()
@@ -2473,31 +2479,39 @@ class Workspace:
         elif not kind and item.get('status')=='error':label='Stopped with a problem'
         elif kind=='input':label='Waiting for you'
         elif kind in {'app_problem','service'}:label='Problem';title=item.get('title') or title
+        elif kind in {'limit','task_limit'}:label='Plan limit';title=item.get('title') or title  # says what happened and what's next
         else:return ''
         try:name=json.loads((workspace_root()/'instances'/item['business_id']/'context/business.json').read_text(encoding='utf-8')).get('name')
         except (OSError,ValueError,KeyError,TypeError):name=''
         return f"AURA{' · '+name if name else ''}: {label}{' · '+title if title else ''}"
 
     def send_phone_notices(self):
-        """While you're away from AURA, send finished work, waits for you and problems to your own chat, once each."""
+        """While you're away from AURA, send what finished, is waiting for you or hit a problem after you left, to your
+        own chat, once each. A few at a time, the rest as one line. A send that fails is tried again on the next check."""
         import workspace_hermes_messages as hm
-        with self.lock:setting=dict(self.preferences.get('phone_notices') or {})
-        if not setting.get('on') or time.time()-getattr(self,'ui_active_at',0)<self.PHONE_AWAY:return
-        choice=self.native_choice('hermes')
-        if not choice:return
-        now=time.time()
-        with self.lock:
-            due=[(n,line) for n in self.preferences['notification_items'] if not n.get('phone') and not n.get('read') and setting.get('since',now)<=n.get('at',0)<=now-30
-                 and now-n.get('at',0)<6*3600 for line in [self.phone_line(n)] if line]
-            for n,_ in due:n['phone']=True
-            if due:self.save_preferences()
-        argv=self.interactive_command('hermes',choice);env=self.agent_environment(choice)
-        for _,line in due[:5]:
-            problem=hm.send(argv,env,setting.get('platform','telegram'),line)
+        if not self.phone_lock.acquire(blocking=False):return  # a slow send is still going
+        try:
+            with self.lock:setting=dict(self.preferences.get('phone_notices') or {})
+            left=getattr(self,'ui_active_at',0)
+            if not setting.get('on') or time.time()-left<setting.get('after',self.PHONE_AWAY):return
+            choice=self.native_choice('hermes')
+            if not choice:return
+            now=time.time()
             with self.lock:
-                saved=self.preferences.get('phone_notices')
-                if saved:saved['problem']=problem;self.save_preferences()
-            if problem:break
+                due=[([n],line) for n in self.preferences['notification_items'] if not n.get('phone') and not n.get('read') and max(setting.get('since',now),left)<n.get('at',0)<=now-30
+                     and now-n.get('at',0)<6*3600 for line in [self.phone_line(n)] if line]
+            if len(due)>3:due=[*due[:2],([n for items,_ in due[2:] for n in items],f'AURA: {len(due)-2} more updates. Open AURA to see them.')]
+            argv=self.interactive_command('hermes',choice);env=self.agent_environment(choice)
+            for items,line in due:
+                problem=hm.send(argv,env,setting.get('platform','telegram'),line)
+                with self.lock:
+                    if not problem:
+                        for n in items:n['phone']=True
+                    saved=self.preferences.get('phone_notices')
+                    if saved:saved['problem']=problem
+                    self.save_preferences()
+                if problem:break
+        finally:self.phone_lock.release()
 
     def hermes_answering(self,chat):
         """A phone conversation Hermes is answering right now takes one message at a time."""
@@ -3187,7 +3201,7 @@ class Workspace:
                 f"AURA product: {PRODUCT_ROOT}\nOrganization workspace: {workspace_root()}\n"
                 f"Read {PRODUCT_ROOT / 'CONTEXT.md'} once unless its current contents are already loaded, and use the existing AURA helpers and workspace.\n"
                 f"For Python helpers, the running interpreter is {Path(sys.executable).as_posix()}. "
-                "Quote its full path for your shell; do not assume python3 is installed. "
+                "Quote its full path for your shell; do not assume python3 is installed. The workspace is already set for helpers. Run each AURA helper as its own command (interpreter, the helper's full path, its arguments), not chained with other commands, pipes or redirects; AURA then runs its helpers without asking the person, apart from ones that remove records, set up or move a workspace, or share outside it. "
                 "You can read workspace files directly with your normal tools. A simple conversation does not need helper calls.\n"
                 "Do the user's actual work with your normal tools, permissions and supported capabilities. "
                 "Use native delegation, approvals, tools, and execution normally. User instructions take priority over this contextual guidance. "
@@ -3701,7 +3715,7 @@ class Workspace:
                 if execution.continuation.get('goal_basis')!=job['goal_basis']:
                     execution.continuation={'mode':'manual'};chat.pop('continuation',None);self.save_preferences()
                 execution.continuation_guard=lambda:workspace_goals.guard(bid,goal_id,job['goal_basis'],execution.continuation)
-                execution.continuation_changed=lambda values:update(**values)
+                execution.continuation_changed=lambda values:run.update(**values)
                 def preflight_continuation():
                     reason=workspace_goals.guard(bid,goal_id,job['goal_basis'],execution.continuation)
                     if reason:return reason

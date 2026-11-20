@@ -31,6 +31,8 @@ def main():
         assert abs(prices.estimate('GPT-X',1000,100,first+.001)-(1000*1e-6+100*4e-6))<1e-12,'a request is estimated at the price of its day'
         assert abs(prices.estimate('gpt-x',1000,100,time.time())-(1000*2e-6+100*8e-6))<1e-12
         assert prices.estimate('another-model',1000,100,time.time()) is None
+        prices.refresh(force=True,fetch=lambda:{'data':[{'id':'anthropic/model-y','pricing':{'prompt':'1e-6','completion':'5e-6','input_cache_read':'1e-7'}}]})
+        assert abs(prices.estimate('model-y-20251001',1000,0,time.time(),cached_tokens=900)-(100*1e-6+900*1e-7))<1e-12,'cached input at its own price; a dated release is the same model'
 
         # Each conversation's share of its app's current plan: measured where seen, otherwise split by tokens and marked.
         now=time.time()
