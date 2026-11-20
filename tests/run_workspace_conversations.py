@@ -287,8 +287,13 @@ print('## Reply '+name+'\\n\\nWorkspace: '+str(root))
                 assert context_chat!=custom and set(app.jobs)==jobs_before
                 assert app.preferences['active_chats']==active_before
                 context_row=next(c for c in app.preferences['chats'] if c['id']==context_chat['id'])
-                assert context_row['purpose']=='context' and context_row['title']=='Business context'
+                assert context_row['purpose']=='context' and context_row['title'].startswith('Business context · ')
                 assert call('/api/chats/open',{'business':bid,'id':context_chat['id']})['messages']==[]
+                # Once used, it is not reopened forever: the next is a new dated chat, and saved memory carries over.
+                context_row['native_id']='used-context';app.save_preferences()
+                later_context=call('/api/chats/context',{'business':bid,'connection':connection})
+                assert later_context!=context_chat and call('/api/chats/context',{'business':bid,'connection':connection})==later_context
+                context_row=next(c for c in app.preferences['chats'] if c['id']==later_context['id']);context_chat=later_context
                 context_row['archived']=True;app.save_preferences()
                 fresh_context=call('/api/chats/context',{'business':bid,'connection':connection})
                 assert fresh_context!=context_chat,'Archived context chats must not be silently reopened'

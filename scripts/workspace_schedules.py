@@ -54,6 +54,9 @@ def codex_latest_runs(home):
 
 # The apps whose saved schedules inventory() reads back; others keep theirs to themselves.
 LISTED_APPS = ('codex', 'hermes', 'pi', 'antigravity')
+# Apps that set up and change scheduled tasks only in their own desktop app: no command or protocol method, and their
+# chats run from AURA cannot reach it. AURA lists their tasks; changes happen in the app.
+IN_APP_ONLY = ('codex',)
 
 
 def inventory(codex_home=None, hermes_home=None, workspaces=(), antigravity_home=None):

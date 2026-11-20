@@ -1402,6 +1402,7 @@ async function startScheduleChat(chat){
   const model=chat.model||state.data.connection.presets?.[chat.kind]?.model||'';
   await newShellChat();state.newChatConnection={kind:chat.kind,model,effort:chat.model?chat.effort:state.data.connection.presets?.[chat.kind]?.effort||''};
   chatControls();renderComposerConnection();await submitRequest(chat.text);
+  if(state.chatMeta?.id&&chat.title)await api('/api/chats/rename',{business:state.business,id:state.chatMeta.id,title:chat.title}).then(()=>refresh(true)).catch(()=>{});
 }
 async function createSchedule(chosen) {
   const draft=state.scheduleDraft;
@@ -1418,7 +1419,7 @@ function renderScheduleOperation() {
     const signature=JSON.stringify([job.id,job.status,job.message,job.task_id,working&&job.created?Math.floor((Date.now()/1000-job.created)/60):0]);if(box.dataset.signature===signature)return;box.dataset.signature=signature;
     box.innerHTML=`<div class="schedule-feedback"><span class="${job.status==='error'?'error':''}">${job.status==='complete'?'✓ ':''}${esc(job.message)}${working&&job.created&&Date.now()/1000-job.created>=60?` · still working, ${Math.floor((Date.now()/1000-job.created)/60)} min. Your AI app is taking its time; Stop if you'd rather not wait.`:''}</span><span class="schedule-feedback-actions">${working?'<button type="button" class="text-button" data-stop-schedule>Stop</button>':`${job.task_id?`<button type="button" class="text-button" data-open-schedule="${esc(job.task_id)}">View task</button>`:''}<button type="button" class="text-button" data-dismiss-schedule aria-label="Dismiss task status">✕</button>`}</span></div>`;
   });
-  for(const selector of ['#create-schedule','#task-edit-form .primary','#task-request-form .primary','#task-edit-form [data-task-status]']){const button=$(selector);if(button)button.disabled=working||(selector==='#create-schedule'&&(!$('#schedule-model')?.value||$('#schedule-model')?.disabled));}
+  for(const selector of ['#create-schedule','#task-edit-form .primary','#task-request-form .primary','#task-edit-form [data-task-status]']){const button=$(selector);if(button)button.disabled=working||(selector==='#create-schedule'&&(!$('#schedule-model')?.value||$('#schedule-model')?.disabled||scheduleInAppOnly($('#schedule-app')?.value)));}
 }
 async function syncScheduleOperation() {
   if(!state.business||state.scheduleOperationLoading||state.closed)return;
@@ -1434,7 +1435,8 @@ async function syncScheduleOperation() {
   } finally {state.scheduleOperationLoading=false;}
 }
 // The server says which apps' saved schedules it can read back; others keep theirs to themselves.
-const scheduleListNote=app=>(state.data.connection.schedules_listed||[]).includes(app)?'':`${state.data.connection.choices.find(c=>c.id===app)?.name||human(app)} keeps its own schedules, so this task won't appear in this list. Open that app to see or change it.`;
+const scheduleInAppOnly=app=>(state.data.connection.schedules_in_app_only||[]).includes(app);
+const scheduleListNote=app=>scheduleInAppOnly(app)?`${state.data.connection.choices.find(c=>c.id===app)?.name||human(app)} sets up scheduled tasks in its own app, not from here. Its tasks show in this list once they exist.`:(state.data.connection.schedules_listed||[]).includes(app)?'':`${state.data.connection.choices.find(c=>c.id===app)?.name||human(app)} keeps its own schedules, so this task won't appear in this list. Open that app to see or change it.`;
 function scheduleForm() {
   const current=state.data.connection,apps=current.choices.filter(c=>c.available&&nativeConnection(c.id));
   const draft=state.scheduleDraft??={name:'',description:'',when:'',app:apps.some(c=>c.id===current.selected)?current.selected:apps[0]?.id||'',model:current.model||'',effort:current.effort||''};

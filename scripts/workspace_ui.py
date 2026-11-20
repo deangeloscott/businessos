@@ -1510,11 +1510,14 @@ class Workspace:
         return self.workspace_chat(bid,'personalization',connection)
 
     def workspace_chat(self,bid,purpose,connection=None):
-        """One local conversation reference per business; opening never submits work."""
-        title={'personalization':'Personalize AURA','context':'Business context'}[purpose]
+        """A chat for this purpose; opening never submits work. An unused one is reused, so opening twice adds nothing;
+        once it has a conversation, the next opens a new chat, titled with its date. Saved memory carries what matters
+        between them, so no single thread grows without end."""
+        title={'personalization':'Personalize AURA','context':'Business context'}[purpose]+' · '+time.strftime('%b %d').replace(' 0',' ')
         root=str(workspace_root().resolve())
         with self.lock:
-            existing=next((c for c in self.preferences['chats'] if c.get('purpose')==purpose and c['business_id']==bid and c.get('workspace')==root and not c.get('archived')),None)
+            existing=next((c for c in reversed(self.preferences['chats']) if c.get('purpose')==purpose and c['business_id']==bid and c.get('workspace')==root and not c.get('archived')
+                           and not c.get('native_id') and not self.chat_display_path(c['id']).is_file()),None)
             if existing:return {'id':existing['id']}
             desired=self.preferences.get('connection',{}) if connection is None else connection
             if not isinstance(desired,dict):raise ValueError('Choose an AI connection.')
@@ -2843,7 +2846,7 @@ class Workspace:
         choices += [{'id': a['id'], 'name': a['name'], 'available': bool(a['argv']),
                      'guide':workspace_guidance.GUIDES.get(a['id'], ('',''))} for a in installed_agents()]
         return {'connected': bool(self.agent), 'name': (self.agent or {}).get('name', 'Your existing chat'),
-                'choices': choices, 'selected': self.connection_kind, 'schedules_listed': list(workspace_schedules.LISTED_APPS),
+                'choices': choices, 'selected': self.connection_kind, 'schedules_listed': list(workspace_schedules.LISTED_APPS), 'schedules_in_app_only': list(workspace_schedules.IN_APP_ONLY),
                 'presets':{kind:{k:value.get(k,'') for k in ('model','effort')} for kind,value in self.preferences['connected_apps'].items()},
                 'apps': [dict(self.preferences['connected_apps'][kind].get('check') or {}, id=kind,
                               name=next((c['name'] for c in choices if c['id']==kind),kind))
@@ -3264,7 +3267,7 @@ class Workspace:
                        for key,label in labels if key in payload and str(payload[key])!=str(own.get(key,''))]
             text = (f"Please update my scheduled task “{name}” {how}:\n"+'\n'.join(changes or ['- Check its settings with me'])+
                     "\nKeep everything else as it is, and tell me once it's saved.")
-        return {'kind':kind,'model':model,'effort':effort,'text':text[:20000]}
+        return {'kind':kind,'model':model,'effort':effort,'text':text[:20000],'title':'Schedule · '+(name or 'new task')[:80]}
 
     def sync_task_links(self, bid, items):
         """AURA's links to a scheduled task (the goal it serves, where its results go, the agent that runs it) come from
@@ -3321,6 +3324,8 @@ class Workspace:
         choice = self.native_choice(kind)
         if kind not in NATIVE_AGENTS or not choice:
             raise ValueError('Connect this AI app in Adjust AI settings, then try again.')
+        if kind in workspace_schedules.IN_APP_ONLY:
+            raise ValueError(f"{choice['name']} sets up and changes its scheduled tasks in its own app, not from AURA or its chats. Open {choice['name']} to do this; the task shows here once it exists.")
         for field, limit in [('name',200),('description',20000),('when',300),('schedule',300),('model',500),('effort',32),('request',2000)]:
             if field in payload and (not isinstance(payload[field],str) or len(payload[field])>limit or '\x00' in payload[field]):
                 raise ValueError('Keep the task name, instructions and timing within the field limits.')
