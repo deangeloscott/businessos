@@ -455,7 +455,13 @@ def _run(command, kind, cwd, env, prompt, native_id, model, effort, update, exec
     elif kind=='hermes':
         argv += ['chat','--query-file','-','--format','stream-json','--no-restore-cwd','--in',str(cwd)]
         if native_id:argv += ['--resume',native_id]
-        argv += ['--model',model]
+        if model.startswith('custom:'):
+            # Hermes names its current endpoint "custom:<model>". Name the real provider, as chats do, so that
+            # provider's own key and address go with the request.
+            from workspace_hermes import metadata,model_route
+            route=model_route(metadata(command,None,str(cwd),env,'model.options',profile='default',explicit_only=True),model)
+            argv += ['--provider',route['provider'],'--model',route['model']]
+        else:argv += ['--model',model]
         if effort:argv += ['--reasoning',effort]
     else:
         argv += ['--input-format','stream-json','--output-format','stream-json','--model',model]

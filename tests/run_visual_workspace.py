@@ -555,6 +555,8 @@ else:
                 previous_kind = app.connection_kind
                 call('/api/connect', {'kind':'codex','model':'unknown','effort':'low'}, expect=400)
                 assert app.connection_kind == previous_kind and 'AURA workspace attachment' not in instructions.read_text()
+                # Continue without choosing a model: the app's own recommended model and level.
+                assert call('/api/connect', {'kind':'codex','model':'','effort':''}) and app.preferences['connection']['model']=='fixture-model' and app.preferences['connection']['effort']=='low'
                 call('/api/connect', {'kind':'codex','model':'fixture-model','effort':'low'})
                 assert instructions.read_text().startswith('Keep this user-authored instruction.')
                 assert call('/api/state?business='+bid)['connection']['attachment']['discovered']

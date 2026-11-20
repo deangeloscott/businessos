@@ -46,6 +46,11 @@ If no, do not persist it merely because a schema/helper exists.
 {"provenance":{"method":"ad_hoc"},"objects":[{"object_ref":"biz_<business-id>","content":{"description":"What the organization does, in the user's words."}}]}
 ```
 
+Where common things go (add more fields only when they help; `core/schemas/` has the rest):
+- What the person tells you about the business (hours, policies, what it offers, who it serves): `scripts/bootstrap_explicit_context.py <business-id> --approved-claim "<their wording>" --source-text "<their message>"`, plus `--service`, `--market` or `--objective` where they fit. Their wording must appear in the source text, so keep it.
+- A product or service: `ProductService` with `name` and `description`. A decision they made: `DecisionRecord` with `decision`, `made_by`, `made_at` and `status: current`.
+- Research findings: an `Insight` whose `evidence_links` point to the `SourceRecord`s it rests on.
+
 When the text has non-English characters, write the JSON to a file with your file tool and pass the file: Windows PowerShell 5.1 replaces them with `?` when piping text to a program.
 
 Preferences, attention items and platform changes have their own helpers that keep their meaning governed: `scripts/upsert_preference_profile.py`, `scripts/upsert_attention.py` and `scripts/record_platform_change.py`.

@@ -87,7 +87,7 @@ def _provenance_errors(objects,sources):
             if not statement:
                 errors.append(f'{path} explicit-user BusinessClaim source {srcid} lacks captured/verbatim text for literal support')
                 continue
-            normalized_quote=re.sub(r'\s+',' ',quote).strip().lower();normalized_source=re.sub(r'\s+',' ',statement).strip().lower()
+            normalized_quote=re.sub(r'\s+',' ',quote).strip().rstrip('.!').lower();normalized_source=re.sub(r'\s+',' ',statement).strip().lower()
             if normalized_quote not in normalized_source:
                 errors.append(f'{path} explicit-user BusinessClaim support_quote is not a literal excerpt of source {srcid}')
     return errors

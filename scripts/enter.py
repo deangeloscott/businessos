@@ -24,7 +24,7 @@ from workspace_goals import discoverable
 from resolve_preferences import resolve_effective_preferences,_load_task_preferences
 
 METHOD_TYPES=['aura_playbook','aura_workflow','external_skill','model_created','ad_hoc']
-BASELINE_TYPES=['Business','Brand','ProductService','Offer','AudienceSegment','Market','Objective','DecisionRecord','Learning']
+BASELINE_TYPES=['Business','BusinessClaim','Brand','ProductService','Offer','AudienceSegment','Market','Objective','DecisionRecord','Learning']
 
 
 def _recipe_menu():

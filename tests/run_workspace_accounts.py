@@ -107,9 +107,9 @@ def recovery_checks(root):
     a=root/'workspace-a';b=root/'workspace-b'
     with patch.dict(os.environ,{'BUSINESSOS_WORKSPACE_CONFIG':str(root/'pointer.json')}),patch.object(Workspace,'glance',return_value={'limits':None}):
         bid_a=setup(workspace=a,organization='Workspace A',run_doctor=False,write_link=False,allow_state_switch=True)['business_id']
-        app_a=Workspace(agent={'name':'Fixture','argv':[sys.executable,'-c',"print('Done')"]})
+        app_a=Workspace(agent={'name':'Fixture','argv':[sys.executable,'-c',"print('Done')"]});app_a.remember_workspace()  # opened in the interface
         bid_b=setup(workspace=b,organization='Workspace B',run_doctor=False,write_link=False,allow_state_switch=True)['business_id']
-        app_b=Workspace(agent={'name':'Fixture','argv':[sys.executable,'-c',"print('Done')"]})
+        app_b=Workspace(agent={'name':'Fixture','argv':[sys.executable,'-c',"print('Done')"]});app_b.remember_workspace()  # opened in the interface
         app_b.workspace_views[str(a.resolve())]=app_a.__dict__
         app_a.jobs=app_b.jobs;app_a.executions=app_b.executions
         app_a.preferences['connected_apps']['configured']={'kind':'configured','model':'','effort':''}

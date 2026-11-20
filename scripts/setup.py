@@ -5,7 +5,7 @@ This is a thin composition layer over existing AURA primitives. It does not inst
 third-party software, configure credentials, or guess a host's Skill mechanism.
 """
 from pathlib import Path
-import argparse,json,os,re,subprocess,sys
+import argparse,hashlib,json,os,subprocess,sys,unicodedata
 
 from _common import PRODUCT_ROOT,business_directory,business_ids,resolve_business,slug,workspace_profile,workspace_root
 from configure_workspace import configure
@@ -41,10 +41,10 @@ def _profile_for(root,requested):
 
 
 def _stable_business_id(name):
-    value=slug(name)[:64].strip('-')
-    if not value or not re.fullmatch(r'[a-z0-9][a-z0-9_-]{0,63}',value):
-        raise ValueError('Could not derive a stable organization ID; supply --business-id explicitly.')
-    return value
+    """A readable ID from the name: accented letters become plain ones (Café -> cafe); a name with no Latin letters
+    (東京カフェ) gets a short ID that is always the same for that name."""
+    value=slug(unicodedata.normalize('NFKD',str(name)).encode('ascii','ignore').decode())[:64].strip('-')
+    return value or 'business-'+hashlib.sha256(str(name).strip().casefold().encode('utf-8')).hexdigest()[:8]
 
 
 def _resolve_or_initialize(organization=None,business_id=None):
@@ -62,10 +62,8 @@ def _resolve_or_initialize(organization=None,business_id=None):
             init_business(business_id,name);return business_id,True
         if len(matches)==1:return matches[0]['id'],False
         if len(matches)>1:raise ValueError('More than one initialized organization has that name; supply --business-id.')
-        derived=_stable_business_id(name)
-        if derived in ids:
-            current=next((row for row in directory if row['id']==derived),None)
-            raise ValueError(f'Derived organization ID {derived!r} already exists as {current.get("name") if current else derived!r}; supply --business-id.')
+        derived=base=_stable_business_id(name);n=1
+        while derived in ids:n+=1;derived=f'{base[:60]}-{n}'  # a different business with a similar name keeps its own
         init_business(derived,name);return derived,True
     resolved=resolve_business(business_id)
     if resolved.get('status')=='resolved':return resolved['business_id'],False

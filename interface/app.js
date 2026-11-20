@@ -77,6 +77,9 @@ function notice(text, error=false) {
     let message=dialog.querySelector('.dialog-error');
     if(!message) { message=document.createElement('p'); message.className='dialog-error'; message.setAttribute('role','alert'); dialog.append(message); }
     message.textContent=text;
+    // A long dialog would keep it out of sight at the bottom: scroll the dialog itself (never the page) to it.
+    for(let box=message.parentElement;box&&box!==dialog.parentElement;box=box.parentElement)
+      if(box.scrollHeight>box.clientHeight&&/auto|scroll/.test(getComputedStyle(box).overflowY)){box.scrollTop=box.scrollHeight;break;}
   }
 }
 // A brief confirmation with an optional Undo; it floats above pages, panels and dialogs.
@@ -95,7 +98,7 @@ function empty(title, text, prompt, label='Ask your AI to help') { return `<div 
 function goalInfo(goal){return goal?.extensions?.businessos?.goal||{};}
 function workspaceGoalRecords(includeInactive=false){return rows('Objective').filter(r=>goalInfo(r.data).scope!=='chat'&&!goalInfo(r.data).deleted_at&&(includeInactive||(r.data.status||'active')==='active'));}
 function recordTitle(r){if(r.type!=='MetricObservation')return r.title;const m=(state.data?.records||[]).find(x=>x.ref===r.data.metric_ref);return (m?.title||'Measurement')+(r.data.value!=null?': '+Number(r.data.value).toLocaleString()+(m?.data?.unit&&!['count','rank'].includes(m.data.unit)?' '+m.data.unit:''):'');}
-function recordRow(r,note='') { return `<button class="row" data-record="${esc(r.ref)}"><span class="row-icon">${r.type==='Asset'?'▧':r.type==='Objective'?'↗':'◈'}</span><span class="row-text"><span class="row-title">${esc(recordTitle(r))}</span><span class="row-meta">${note?esc(note):esc(({MetricDefinition:'Measure',Business:'Business details',Asset:'Saved file',Objective:goalInfo(r.data).scope==='chat'?'Chat goal':'Business goal',SourceRecord:'Saved source',PreferenceProfile:'Preferences',Observation:'Finding',ProofRecord:'Evidence',MetricObservation:'Measurement'})[r.type]||human(r.type))+(r.data.status&&r.data.status!=='active'?' · '+esc(human(r.data.status)):'')+(r.data.updated_at?' · '+stamp(r.data.updated_at):'')}</span></span><span class="arrow">↗</span></button>`; }
+function recordRow(r,note='') { return `<button class="row" data-record="${esc(r.ref)}"><span class="row-icon">${r.type==='Asset'?'▧':r.type==='Objective'?'↗':'◈'}</span><span class="row-text"><span class="row-title">${esc(recordTitle(r))}</span><span class="row-meta">${note?esc(note):esc(({MetricDefinition:'Measure',Business:'Business details',BusinessClaim:'Fact',ProductService:'Product or service',DecisionRecord:'Decision',Learning:'Lesson',Asset:'Saved file',Objective:goalInfo(r.data).scope==='chat'?'Chat goal':'Business goal',SourceRecord:'Saved source',PreferenceProfile:'Preferences',Observation:'Finding',ProofRecord:'Evidence',MetricObservation:'Measurement'})[r.type]||human(r.type))+(r.data.status&&r.data.status!=='active'?' · '+esc(human(r.data.status)):'')+(r.data.updated_at?' · '+stamp(r.data.updated_at):'')}</span></span><span class="arrow">↗</span></button>`; }
 function heading(title, subtitle='') { return `<div class="section-head"><div><h2>${title}</h2>${subtitle?`<p>${subtitle}</p>`:''}</div></div>`; }
 
 async function refresh(light=false,preserveDetails=light) {
@@ -1420,6 +1423,9 @@ async function syncScheduleOperation() {
     if(previous==='working'&&state.scheduleJob?.status!=='working')await syncSchedules(true);
   } finally {state.scheduleOperationLoading=false;}
 }
+// Apps whose saved schedules AURA can read back and list (workspace_schedules.inventory); others keep theirs to themselves.
+const LISTED_SCHEDULE_APPS=new Set(['codex','hermes','pi','antigravity']);
+const scheduleListNote=app=>LISTED_SCHEDULE_APPS.has(app)?'':`${state.data.connection.choices.find(c=>c.id===app)?.name||human(app)} keeps its own schedules, so this task won't appear in this list. Open that app to see or change it.`;
 function scheduleForm() {
   const current=state.data.connection,apps=current.choices.filter(c=>c.available&&nativeConnection(c.id));
   const draft=state.scheduleDraft??={name:'',description:'',when:'',app:apps.some(c=>c.id===current.selected)?current.selected:apps[0]?.id||'',model:current.model||'',effort:current.effort||''};
@@ -1435,8 +1441,9 @@ async function loadScheduleModels(refresh=false) {
     state.scheduleModels=options.models;$('#schedule-add').dataset.loaded=app;
     if(!options.models.length)throw Error('No models found. Check this app’s connection or choose another app.');
     select.innerHTML=options.models.map(m=>`<option value="${esc(m.id)}">${esc(m.name)}</option>`).join('');
-    const preferred=draft.model||(app===state.data.connection.selected?state.data.connection.model:'');
-    select.value=options.models.some(m=>m.id===preferred)?preferred:options.models[0].id;draft.model=select.value;select.disabled=false;
+    // Otherwise the model you already use with this app, not simply the first (often the costliest) in its list.
+    const preset=state.data.connection.presets?.[app]||{},preferred=draft.model||(app===state.data.connection.selected?state.data.connection.model:preset.model||options.model||'');
+    select.value=options.models.some(m=>m.id===preferred)?preferred:options.models.some(m=>m.id==='default')?'default':options.models[0].id;draft.model=select.value;select.disabled=false;
     await loadScheduleEfforts();
   } catch(error) {
     if(request!==state.scheduleModelRequest||!select.isConnected)return;
@@ -1452,10 +1459,11 @@ async function loadScheduleEfforts() {
     if(!select.isConnected||app!==$('#schedule-app').value||model!==$('#schedule-model').value)return;
     const efforts=chosen.efforts||[];
     select.innerHTML=effortChoices(efforts,chosen.default_effort).map(e=>`<option value="${esc(e)}">${esc(effortLabel(e))}</option>`).join('')||'<option value="">App default</option>';
-    const preferred=draft.effort||(app===state.data.connection.selected&&model===state.data.connection.model?state.data.connection.effort:'');
+    const preset=state.data.connection.presets?.[app]||{};
+    const preferred=draft.effort||(app===state.data.connection.selected&&model===state.data.connection.model?state.data.connection.effort:model===preset.model?preset.effort||'':'');
     select.value=effortPick(efforts,chosen.default_effort,preferred);draft.effort=select.value;
     $('#schedule-effort-label').hidden=!efforts.length;select.disabled=false;
-    $('#schedule-create-status').textContent='';$('#create-schedule').textContent='Create with '+(state.data.connection.choices.find(c=>c.id===app)?.name||human(app))+' →';renderScheduleOperation();
+    $('#schedule-create-status').textContent=scheduleListNote(app);$('#create-schedule').textContent='Create with '+(state.data.connection.choices.find(c=>c.id===app)?.name||human(app))+' →';renderScheduleOperation();
   } catch(error) {if(select.isConnected&&app===$('#schedule-app').value&&model===$('#schedule-model').value){$('#schedule-create-status').textContent=simpleSetupError(humanError(error));$('#schedule-retry-models').hidden=false;}}
 }
 function scheduleFilters(scope) {return `<div class="schedule-controls"><div class="filters compact-filters" aria-label="Scheduled task frequency">${scheduleKinds.map(([kind,name])=>`<button type="button" data-schedulefilter="${kind}" aria-pressed="${(state.scheduleFilter||'all')===kind}" class="${(state.scheduleFilter||'all')===kind?'active':''}">${name}</button>`).join('')}</div><label class="show-paused"><input type="checkbox" data-show-paused ${state.showPaused?'checked':''}>Show paused</label></div>`;}
@@ -2629,7 +2637,7 @@ function paintContinuation(){const host=$('#chat-continuation');if(!host)return;
 async function openContinue(id,preferred=''){
   const business=state.business,d=await api('/api/chats/continue?business='+encodeURIComponent(business)+'&id='+encodeURIComponent(id));if(business!==state.business)return;
   const apps=[...(d.linked||[]),...(d.apps||[])],pick=Math.max(0,apps.findIndex(a=>a.id===preferred&&a.method!=='catch_up'));
-  details('Continue in another app',`<p>Pick up “${esc(d.chat.title)}” in another AI app.${d.continued_to?` It already continued in ${esc(appLabel(d.continued_to.agent))}; continuing again makes another copy.`:''}</p>${d.busy?'<p class="continue-busy" role="status">This chat is still working. Stop it or let it finish first.</p>':''}${apps.length?`<form id="continue-form" class="continue-options">${apps.map((a,i)=>`<label class="continue-option"><input type="radio" name="app" value="${esc(a.id)}" data-method="${esc(a.method)}" data-chat="${esc(a.chat_id||'')}" ${i===pick?'checked':''}><span class="continue-option-text"><strong>${esc(a.method==='catch_up'?a.name+' · the linked chat':a.name)}</strong><span class="source-chip ${a.method==='handoff'?'unverified':''}">${a.method==='import'?'Full conversation':a.method==='catch_up'?'Catch up':'Handoff'}</span><small>${esc(a.carries)}</small><small>${esc(a.cost)} ${esc(a.permission)}</small></span></label>`).join('')}<p class="small-note">${esc(d.privacy)} Only want a different model? Switch it in this chat instead; that keeps everything.</p><div id="continue-status" class="continue-status" role="status" hidden></div><div class="inline-actions"><button class="primary" ${d.busy?'disabled':''}>Continue</button><button type="button" class="text-button" data-edit-chat="${esc(id)}">Cancel</button></div></form>`:empty('No other AI app connected','Connect another app in Settings → AI connections, then continue this chat there.')}`);
+  details('Continue in another app',`<p>Pick up “${esc(d.chat.title)}” in another AI app.${d.continued_to?` It already continued in ${esc(appLabel(d.continued_to.agent))}; continuing again makes another copy.`:''}</p>${d.busy?'<p class="continue-busy" role="status">This chat is still working. Stop it or let it finish first.</p>':''}${apps.length?`<form id="continue-form" class="continue-options">${apps.map((a,i)=>`<label class="continue-option"><input type="radio" name="app" value="${esc(a.id)}" data-method="${esc(a.method)}" data-chat="${esc(a.chat_id||'')}" ${i===pick?'checked':''}><span class="continue-option-text"><strong>${esc(a.method==='catch_up'?a.name+' · the linked chat':a.name)}</strong><span class="source-chip ${a.method==='handoff'?'unverified':''}">${a.method==='import'?'Full conversation':a.method==='catch_up'?'Catch up':'Handoff'}</span><small>${esc(a.carries)}</small><small>${esc(a.cost)} ${esc(a.permission)}</small></span></label>`).join('')}<p class="small-note">${esc(d.privacy)} Only want a different model? Switch it in this chat instead; that keeps everything.</p>${moreAppsNote()}<div id="continue-status" class="continue-status" role="status" hidden></div><div class="inline-actions"><button class="primary" ${d.busy?'disabled':''}>Continue</button><button type="button" class="text-button" data-edit-chat="${esc(id)}">Cancel</button></div></form>`:empty('No other AI app connected','Connect another app in Settings → AI connections, then continue this chat there.')}`);
   const form=$('#continue-form');if(!form)return;
   form.addEventListener('submit',event=>{event.preventDefault();if(form.dataset.busy)return;form.dataset.busy='1';form.querySelector('button.primary').disabled=true;
     const choice=form.querySelector('input[name=app]:checked'),app=choice.value,method=choice.dataset.method,status=$('#continue-status');
@@ -3713,6 +3721,11 @@ async function saveProfilePicture(file){
   if($('.profile-picture'))$('.profile-picture').innerHTML=avatarMarkup(profile);if($('#remove-profile-picture'))$('#remove-profile-picture').hidden=false;
 }
 let chatModelTicket=0;
+// AI apps on this computer that AURA can use but that aren't connected yet, so pickers can say how to add them.
+function moreAppsNote(){
+  const c=state.data?.connection||{},on=new Set((c.apps||[]).map(a=>a.id)),names=(c.choices||[]).filter(a=>a.available&&!on.has(a.id)).map(a=>a.name);
+  return names.length?`<p class="small-note">Also on this computer: ${esc(names.join(', '))}. <button type="button" class="text-button" data-settings-open="connection">Connect one</button></p>`:'';
+}
 async function openChatModels(target=null){
   if(!state.data)return;
   const scope=chatScope(),ticket=++chatModelTicket,c=target?.connection||composerConnection();
@@ -3721,7 +3734,7 @@ async function openChatModels(target=null){
   if(!target&&state.busy){$('#chat-model-content').innerHTML='<p>Wait for this reply or stop the request before changing its model.</p>';return;}
   state.chatModelDraft={...c,scope,ticket,target};state.chatModelLimit=60;
   const choices=state.data.connection.choices.filter(a=>a.available&&(state.data.connection.apps?.some(x=>x.id===a.id)||a.id===c.kind));
-  $('#chat-model-content').innerHTML=`${state.chatMeta||target?`<p class="chat-model-owner">${esc(appName(c.kind))}${target?'':'<small>This conversation stays in its original AI app.</small>'}</p>`:`<label class="model-app-field">AI app<select id="chat-model-app">${choices.map(a=>`<option value="${esc(a.id)}" ${a.id===c.kind?'selected':''}>${esc(a.name)}</option>`).join('')}</select></label>`}<div id="chat-model-options"><p role="status">Loading this app’s models…</p></div>`;
+  $('#chat-model-content').innerHTML=`${state.chatMeta||target?`<p class="chat-model-owner">${esc(appName(c.kind))}${target?'':'<small>This conversation stays in its original AI app.</small>'}</p>`:`<label class="model-app-field">AI app<select id="chat-model-app">${choices.map(a=>`<option value="${esc(a.id)}" ${a.id===c.kind?'selected':''}>${esc(a.name)}</option>`).join('')}</select></label>${moreAppsNote()}`}<div id="chat-model-options"><p role="status">Loading this app’s models…</p></div>`;
   if(!state.chatMeta&&!target&&choices.length&&!choices.some(a=>a.id===c.kind))state.chatModelDraft.kind=choices[0].id;
   await loadChatModelOptions();
   if(document.activeElement===$('#chat-model-dialog .close-button'))$('#chat-model-search')?.focus({preventScroll:true});

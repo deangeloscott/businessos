@@ -640,7 +640,6 @@ class Workspace:
                 workspace_guidance.refresh(PRODUCT_ROOT,workspace_root())
             except (OSError,ValueError):
                 self.workspace_note = 'Your saved work is available. Ask your AI to check its existing AURA guidance.'
-            self.remember_workspace()
             if not (workspace_root() / workspace_storage.VIEW_FILE).exists() and self.portable_view_ok:
                 workspace_storage.save_view(workspace_root(),self.preferences)
 
@@ -772,6 +771,7 @@ class Workspace:
         fresh.organization_job = self.organization_job
         self.__dict__.update(fresh.__dict__)
         self.save_preferences(portable=True)
+        if business_directory():self.remember_workspace()  # open here next time, also when coming back to a workspace
         startup = workspace_startup.status()
         if startup.get('enabled'):
             try:
@@ -3077,6 +3077,8 @@ class Workspace:
     def state(self, bid=None, revision=None):
         self.load_portable()
         directory = business_directory()
+        if bid and not any(b['id'] == bid for b in directory):
+            bid = None  # a page left on another workspace's business: open this workspace as usual instead of failing
         if not bid and len(directory) == 1:
             bid = directory[0]['id']
         current_revision,(rows,diagnostics)=self.record_snapshot(selected(bid)) if bid else ('',([],[]))
@@ -3322,11 +3324,18 @@ class Workspace:
                     levels = self.agent_efforts(kind,values['model'])['efforts']
                     if payload.get('effort') and payload['effort'] not in levels:
                         raise ValueError('Choose a supported effort level in this task’s settings.')
-                    if kind=='hermes':
-                        parts=values['model'].split(':',2 if values['model'].startswith('custom:') else 1)
-                        if len(parts)!=2 and not (len(parts)==3 and parts[0]=='custom'):
+                    if kind=='hermes' and values['model'].startswith('custom:'):
+                        # Hermes lists its current endpoint as "custom:<model>"; its own catalog names the real provider
+                        # (and so that provider's key), as chats already do. Sending "custom" would reach it without the key.
+                        from workspace_hermes import metadata,model_route
+                        catalog=metadata(command,None,str(root),env,'model.options',profile='default',explicit_only=True)
+                        route=model_route(catalog,values['model'])
+                        values['provider'],values['model']=route['provider'],route['model']
+                    elif kind=='hermes':
+                        parts=values['model'].split(':',1)
+                        if len(parts)!=2:
                             raise ValueError('Refresh Hermes models and choose a model with its provider.')
-                        values['provider'],values['model']=':'.join(parts[:-1]),parts[-1]
+                        values['provider'],values['model']=parts
                 direct = kind=='hermes' and not continuation and (action in {'edit','pause','resume'} and task['owner']=='hermes')
                 raw = payload.get('when','').strip()
                 native_time = bool(re.fullmatch(r'[\d*/?,\-]+(?:\s+[\d*/?,\-]+){4,5}|every \d+[mhd]',raw,re.I))
@@ -3335,8 +3344,11 @@ class Workspace:
                 elif kind=='hermes' and action=='create' and native_time and not continuation:
                     confirmed = workspace_schedules.create(dict(values,schedule=raw),workspace_agents.base_command(command),env,root,execution)
                 else:
-                    model = payload.get('model') or connection.get('model')
-                    effort = payload.get('effort',connection.get('effort',''))
+                    # A change to an existing task can use the task's own model when its app isn't connected here.
+                    own = dict(task or {});own_model = own.get('model') or ''
+                    if kind=='hermes' and own_model and own.get('provider'):own_model = f"{own['provider']}:{own_model}"
+                    model = payload.get('model') or connection.get('model') or own_model
+                    effort = payload.get('effort',connection.get('effort',own.get('effort') or ''))
                     if not model:
                         raise ValueError('Choose an AI app and model in the task settings first.')
                     options = self.agent_options(kind)
@@ -3349,9 +3361,9 @@ class Workspace:
                         'Use the requested app and run model/effort; do not silently substitute another. '
                         'Read back the saved task. Reply only with JSON: {"state":"saved","native_id":"the actual scheduler task ID"}, '
                         'or {"state":"needs_input","message":"one short plain-language question"}, '
-                        'or {"state":"unavailable","message":"a short plain-language reason and next step"}. '
+                        'or {"state":"unavailable","message":"a short plain-language reason and next step, naming the app or setting the person should open"}. '
                         'Do not include commands, paths, logs, hashes, or internal terminology in message. '
-                        f'Workspace: {root}. Business: {bid}. Requested change: {json.dumps(payload,ensure_ascii=False)}. '
+                        f'Workspace: {root}. Business: {bid}. Requested change: {json.dumps(dict(payload,**{k:values[k] for k in ("model","provider") if values.get(k)}),ensure_ascii=False)}. '
                         f'Original task: {json.dumps(task,ensure_ascii=False)}. '
                         'A saved definition does not prove the scheduler is running.')
                     def update(**changes):
@@ -3810,6 +3822,9 @@ def main():
     update_stop = threading.Event()
     try:
         app = Workspace(agent, args.interface_dir)
+        # Only the interface itself decides which workspace opens next time; helpers an AI runs in another
+        # workspace must not change it.
+        if business_directory():app.remember_workspace()
         # Only locally opted-in retirement entries can expire. This runs on
         # launch, so no extra service or scheduler is needed while AURA is shut.
         if any(e.get('status')=='available' and e.get('expires') and e['expires']<=time.time() for e in workspace_organization.recovery(app.settings_file.parent)):

@@ -94,6 +94,17 @@ def main():
         errors,warnings,counts=validate_business(BID,True)
         req(not errors,f'active business must validate after multi-source onboarding: {errors}')
         req(counts.get('Brand')==1 and counts.get('PreferenceProfile')==1,'expected Brand + PreferenceProfile canonical state')
+
+        # A fact said in chat: kept with its full stop, harmless to say twice, back for a differently worded
+        # question, and listed after the chat by what it says.
+        os.environ['AURA_STATE_DIR']=str(TMP/'state')
+        for _ in range(2):run(S/'bootstrap_explicit_context.py',BID,'--approved-claim','We close at 3pm on Sundays.','--source-text','Two quick things: we close at 3pm on Sundays')
+        errors,_,_=validate_business(BID,True);req(not errors,f'a stated fact with its full stop must validate: {errors}')
+        found=json.loads(run(S/'enter.py','sunday closing time','--business-id',BID).stdout)['retrieval']
+        req(any(r['title']=='We close at 3pm on Sundays.' for r in found['baseline_context']),'saved facts come with every request')
+        req(any(r['title']=='We close at 3pm on Sundays.' for r in found.get('saved_work_candidates') or []),'"closing" and "Sunday" meet "close" and "Sundays"')
+        import workspace_memory_feedback
+        req('We close at 3pm on Sundays.' in [r['label'] for r in workspace_memory_feedback.rows(BID)],'the save is listed by what it says')
         print('onboarding context hardening regressions passed')
     finally:
         for p in [BASE,RUNS,TMP]:

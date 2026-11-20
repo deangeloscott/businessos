@@ -1348,7 +1348,7 @@ body.panel-resizing :is(.shell-main,#sidebar,#detail){transition:none;animation:
 /* When something is opened beside the aura, the world keeps the room and its own list steps aside. */
 body:has(#detail[open][data-mode=context]) .aura-view.world-view{grid-template-columns:minmax(0,1fr)}body:has(#detail[open][data-mode=context]) .world-side{display:none}
 /* In the aura, the world owns everything to the right of the sidebar: no page margins, no heading, controls on the picture. */
-body.in-aura #header-handoff{display:none}body.in-aura #section-dialog{padding:0;overflow:hidden}body.in-aura #section-dialog>.dialog-top{display:none}body.in-aura #section-content{height:100%;max-width:none;margin:0;padding:0;overflow:hidden}
+body.in-aura #header-handoff,body:has(#section-dialog[open]) #header-handoff{display:none}body.in-aura #section-dialog{padding:0;overflow:hidden}body.in-aura #section-dialog>.dialog-top{display:none}body.in-aura #section-content{height:100%;max-width:none;margin:0;padding:0;overflow:hidden}
 body.in-aura .aura-view.world-view{height:100%;min-height:0;grid-template-columns:minmax(0,1fr) var(--world-side-w,380px);position:relative}
 body.in-aura .world-main{display:block;position:relative;height:100%}body.in-aura .world-stage{position:absolute;inset:0;border-radius:0;min-height:0}
 .world-top{position:absolute;left:14px;right:14px;top:12px;z-index:4;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;pointer-events:none}.world-top>*{pointer-events:auto}

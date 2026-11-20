@@ -62,6 +62,11 @@ def main():
             req((observation.get('extensions') or {}).get('businessos',{}).get('extraction_confidence_label')=='high','qualitative confidence label was not preserved')
 
             errors,_,_=validate_business(bid,True);req(not errors,f'setup/persistence state must remain valid: {errors}')
+            # Any name works: accents become plain letters, other alphabets get a stable short ID, and a similar
+            # name gets its own.
+            from setup import _resolve_or_initialize
+            req(_resolve_or_initialize('Café Olé')[0]=='cafe-ole' and _resolve_or_initialize('Cafe Ole!')[0]=='cafe-ole-2','similar names keep their own businesses')
+            tokyo=_resolve_or_initialize('東京カフェ')[0];req(tokyo.startswith('business-') and _resolve_or_initialize('東京カフェ')==(tokyo,False),'a name in another alphabet can be set up, once')
             # Exercise CLI behavior in a source copy, without touching live state/indexes.
             product=root/'product'
             shutil.copytree(ROOT,product,ignore=lambda directory,names: [name for name in names if name=='__pycache__' or (Path(directory)==ROOT and name in {'.git','.businessos','generated','instances','runtime','knowledge','attachments','qualification','.venv'})])

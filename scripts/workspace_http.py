@@ -497,7 +497,14 @@ def handler_for(app):
                     raise ValueError('Send JSON from the local view.')
                 length = int(self.headers.get('Content-Length', '0'))
                 if length <= 0 or length > (6*1024*1024 if urlsplit(self.path).path in {'/api/support/test','/api/support/prepare'} else 45*1024*1024 if urlsplit(self.path).path=='/api/documents/save' else MAX_BODY):
-                    raise ValueError('Request is empty or too large.')
+                    # Take the upload first so the page gets this answer, not a dropped connection that reads as
+                    # "AURA is not responding".
+                    remaining = length if 0 < length <= 256*1024*1024 else 0
+                    while remaining > 0:
+                        chunk = self.rfile.read(min(remaining, 1 << 20))
+                        if not chunk:break
+                        remaining -= len(chunk)
+                    raise ValueError('This is too large to send at once. Attach it as a file, or send a shorter part.' if length > 0 else 'Request is empty.')
                 data = json.loads(self.rfile.read(length))
                 if not isinstance(data, dict):
                     raise ValueError('Expected an object.')
@@ -936,14 +943,20 @@ def handler_for(app):
                         model, effort, attachment, chosen = '', '', None, None
                         if app.native_kind(data.get('kind')) in NATIVE_AGENTS:
                             options = app.agent_options(data['kind'])
-                            model = data.get('model')
-                            chosen = next((m for m in options['models'] if m['id'] == model), None)
+                            model = data.get('model') or ''
                             effort = data.get('effort') or ''
+                            if not model:
+                                # Continue without choosing: the app's own recommended model. Use the one it reports when
+                                # it is in its list; otherwise leave it unset so the app uses its own setting.
+                                ids = {m['id'] for m in options['models']}
+                                model = options.get('model') if options.get('model') in ids else 'default' if 'default' in ids else ''
+                                if not effort and app.native_kind(data['kind']) == 'codex':effort = options.get('effort') or ''
+                            chosen = next((m for m in options['models'] if m['id'] == model), None) if model else None
                             if chosen:
                                 app.agent_efforts(data['kind'], model)
                             # An empty effort keeps the app's own default; Codex needs an explicit level.
                             app_default = effort == '' and app.native_kind(data['kind']) != 'codex'
-                            if not chosen or (chosen['efforts'] and effort not in chosen['efforts'] and not app_default) or (not chosen['efforts'] and effort):
+                            if model and (not chosen or (chosen['efforts'] and effort not in chosen['efforts'] and not app_default) or (not chosen['efforts'] and effort)):
                                 raise ValueError('Choose an available model and its supported effort level.')
                         if data.get('kind') == 'configured' and app.configured_agent:
                             app.agent = app.configured_agent

@@ -204,7 +204,7 @@ def _load_facts(facts_json=None,facts_file=None,facts_stdin=False):
 
 
 def _literal_claim_quote(statement,source_text,label):
-    normalized_statement=re.sub(r'\s+',' ',statement).strip().lower();normalized_source=re.sub(r'\s+',' ',source_text).strip().lower()
+    normalized_statement=re.sub(r'\s+',' ',statement).strip().rstrip('.!').lower();normalized_source=re.sub(r'\s+',' ',source_text).strip().lower()
     if normalized_statement not in normalized_source:
         raise ValueError(f'Explicit {label} must be a literal source-supported statement because it can authorize outward business claims. Preserve the exact supported wording or store a non-claim interpretation through the appropriate context/evidence type: {statement!r}')
     return statement
@@ -300,15 +300,33 @@ def _merge_existing_business(existing,incoming):
 
 @organization_transaction
 def persist_explicit_context(business_id,**kwargs):
-    objs=build_objects(business_id,**kwargs);base=ROOT/'instances'/business_id;paths=[_path(base,obj) for obj in objs];blocked=[]
+    objs=build_objects(business_id,**kwargs);base=ROOT/'instances'/business_id;paths=[_path(base,obj) for obj in objs];blocked=[];same=set()
     for i,(obj,path) in enumerate(zip(objs,paths)):
         if not path.exists():continue
+        existing=json.loads(path.read_text(encoding='utf-8'))
         if obj.get('object_type')=='Business':
-            objs[i]=_merge_existing_business(json.loads(path.read_text(encoding='utf-8')),obj);continue
+            objs[i]=_merge_existing_business(existing,obj);continue
+        if _meaning(existing)==_meaning(obj):same.add(i);objs[i]=existing;continue  # said again: already saved
         blocked.append(path.relative_to(ROOT).as_posix())
     if blocked:raise FileExistsError('Refusing to overwrite existing canonical context object(s): '+', '.join(blocked)+'. Update current context through its supported update path instead of silently replacing it.')
-    for obj,path in zip(objs,paths):write_json_atomic(path,obj)
+    prepared=[];snapshots={}
+    for i,(obj,path) in enumerate(zip(objs,paths)):
+        if i in same:continue
+        if path.exists():snapshots[path]=path.read_bytes()
+        prepared.append({'object':obj,'existing':json.loads(snapshots[path]) if path in snapshots else None,'path':str(path)})
+        write_json_atomic(path,obj)
+    try:  # what was saved shows after the chat with Keep and Undo, as remember.py's saves do
+        from workspace_memory_feedback import record
+        shown=[p for p in prepared if p['object'].get('object_type')!='SourceRecord' and not (p['object'].get('object_type')=='Business' and p['existing']
+               and all(p['existing'].get(k)==p['object'].get(k) for k in ('name','description','industries','business_models')))]
+        record(business_id,shown,snapshots)
+    except (OSError,ValueError,TypeError,KeyError):pass
     return objs,paths
+
+
+def _meaning(obj):
+    """What a context object says, apart from when and from which message it was saved."""
+    return {k:v for k,v in obj.items() if k not in {'created_at','updated_at','lineage','source_ref','support_quote','extensions'}}
 
 
 def _merge_lists(*groups):

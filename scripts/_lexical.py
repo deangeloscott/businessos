@@ -71,6 +71,19 @@ def document_frequency(rows, fields):
     return result
 
 
+def word_form(token):
+    """The shared form of a word's simple variants, so "closing", "closes" and "close" or "Sunday" and "Sundays"
+    meet. Only common English endings; matching stays literal otherwise."""
+    if len(token) > 3 and not token.isdigit():
+        for ending in ('ing', 'ed', 's'):
+            if token.endswith(ending) and len(token) - len(ending) >= 3 and not token.endswith('ss'):
+                token = token[:-len(ending)]
+                break
+        if token.endswith('e') and len(token) > 3:
+            token = token[:-1]
+    return token
+
+
 def weighted_overlap(query_terms, document_terms, frequencies, document_count):
     """Return a deterministic inverse-document-frequency weighted overlap."""
     query_set = set(query_terms if not isinstance(query_terms, str) else tokens(query_terms))
@@ -84,7 +97,8 @@ def weighted_overlap(query_terms, document_terms, frequencies, document_count):
             document_set = set(tokens(' '.join(document_set)))
     else:
         document_set = set(tokens(document_terms))
-    matched = sorted(query_set & document_set)
+    forms = {word_form(term) for term in document_set}
+    matched = sorted(term for term in query_set if term in document_set or word_form(term) in forms)
     if not matched:
         return 0.0, []
     total = max(1, int(document_count))

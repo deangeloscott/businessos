@@ -64,6 +64,7 @@ def main():
         assert all(p.read_bytes()==value for p,value in before.items()), 'Discovery wrote to existing work'
         assert catalog.candidates(source.parent)['items'][0]['kind']=='workspace'
         app = Workspace()
+        app.remember_workspace()  # as the interface does when it starts; AURA's helpers leave the choice alone
         app.preferences['appearance']='dark'
         app.preferences['file_locations']={bid:[{'id':'brand-files','name':'Brand assets','kind':'folder','path':str(ads)}]}
         app.save_preferences(portable=True)

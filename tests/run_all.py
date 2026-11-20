@@ -14,6 +14,9 @@ for name in ('CLAUDE_CODE_SESSION_ID','PI_SESSION_ID','PI_SESSION_FILE','HERMES_
 # Legacy fixtures use repository-relative paths. Never follow a user's selected
 # workspace; individual external-workspace suites set their own isolated roots.
 env['BUSINESSOS_WORKSPACE']=str(ROOT)
+# Tests keep their settings, history and recent-workspace list away from the person's own AURA.
+import shutil,tempfile
+state=tempfile.mkdtemp(prefix='aura-tests-state-');env.setdefault('AURA_STATE_DIR',state)
 TESTS=[
     'tests/run_viraltrac_connection.py',
     'tests/run_distribution.py',
@@ -92,10 +95,12 @@ TESTS=[
     'tests/run_claim_manifest_operational_promises.py'
 ]
 failures=[]
-for rel in TESTS:
-    print(f'== {rel} ==',flush=True)
-    completed=subprocess.run([sys.executable,str(ROOT/rel)],cwd=ROOT,env=env)
-    if completed.returncode!=0:failures.append((rel,completed.returncode))
+try:
+    for rel in TESTS:
+        print(f'== {rel} ==',flush=True)
+        completed=subprocess.run([sys.executable,str(ROOT/rel)],cwd=ROOT,env=env)
+        if completed.returncode!=0:failures.append((rel,completed.returncode))
+finally:shutil.rmtree(state,ignore_errors=True)
 if failures:
     print(f'\nAURA product-integrity gate failed: {len(failures)}/{len(TESTS)} suites failed')
     for rel,code in failures:print(f'- {rel} (exit {code})')

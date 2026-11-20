@@ -184,6 +184,25 @@ def _challenged(objects, at, days):
     return rows
 
 
+def _basics(objects, limit):
+    """What is established about the business itself, newest first: facts and rules it stated, what it offers and
+    decisions still current. These answer most everyday questions, so they come before findings."""
+    rows = []
+    for o in objects:
+        typ, status = o.get('object_type'), o.get('status')
+        if typ == 'BusinessClaim' and status in {'approved', 'prohibited'}:
+            rule = o.get('claim_kind') in {'constraint', 'prohibition'} or status == 'prohibited'
+            rows.append((o, 'rule' if rule else 'fact', str(o.get('statement') or '')))
+        elif typ == 'ProductService' and status not in {'retired', 'archived', 'inactive', 'discontinued'}:
+            name, about = str(o.get('name') or ''), str(o.get('description') or '')
+            rows.append((o, 'offering', name + (': ' + about if about and about != name else '')))
+        elif typ == 'DecisionRecord' and status == 'current':
+            rows.append((o, 'decision', str(o.get('decision') or '')))
+    rows = [r for r in rows if r[2].strip()]
+    rows.sort(key=lambda r: str(r[0].get('updated_at') or r[0].get('created_at') or ''), reverse=True)
+    return [{'id': o['id'], 'kind': kind, 'text': words[:240]} for o, kind, words in rows[:limit]], len(rows)
+
+
 def _results(objects, limit):
     rows = [o for o in objects if o.get('object_type') == 'Asset' and not (((o.get('extensions') or {}).get('businessos')) or {}).get('collection')]
     rows.sort(key=lambda o: str(o.get('updated_at') or o.get('created_at') or ''), reverse=True)
@@ -234,6 +253,7 @@ def summary(bid, at=None, days=7, *, index=None, watches_snapshot=None, document
     changes_total += len(challenged)
     changes = sorted(challenged + changes, key=lambda c: c['at'], reverse=True)[:8]
     results, results_total = _results(objects, 6)
+    basics, basics_total = _basics(objects, 12)
     opportunities, opportunities_total = _opportunities(objects, 3)
     suggestions = _suggestions(objects, watches, at)
     watches = [{k: v for k, v in w.items() if not k.startswith('_')} for w in watches]
@@ -244,10 +264,10 @@ def summary(bid, at=None, days=7, *, index=None, watches_snapshot=None, document
     return {'business': {'id': bid, 'name': business.get('name', ''), 'description': str(business.get('description') or '')[:600],
                          # AURA's made-up example business says so wherever it is shown.
                          **({'example': True, 'example_built': example.get('built_at')} if isinstance(example, dict) else {})},
-            'focus': focus, 'as_of': at.isoformat(timespec='seconds').replace('+00:00', 'Z'), 'changes_days': days,
+            'focus': focus, 'as_of': at.isoformat(timespec='seconds').replace('+00:00', 'Z'), 'changes_days': days, 'basics': basics,
             'knowledge': knowledge, 'changes': changes, 'attention': attention, 'deadlines': due, 'goals': goals,
             'watches': watches, 'results': results, 'agents': agents[:12], 'opportunities': opportunities, 'suggestions': suggestions,
-            'totals': {'findings': knowledge['findings'], 'changes': changes_total, 'attention': attention_total, 'goals': goals_total,
+            'totals': {'basics': basics_total, 'findings': knowledge['findings'], 'changes': changes_total, 'attention': attention_total, 'goals': goals_total,
                        'watches': watches_total, 'results': results_total, 'agents': len(agents), 'opportunities': opportunities_total},
             # Nothing saved beyond the organization itself: the home page shows first steps instead of empty tiles.
             'empty': not agents and all(o.get('object_type')=='Business' or (o.get('object_type')=='SourceRecord' and o.get('origin')=='initialization input') for o in objects)}
@@ -261,6 +281,12 @@ def text(s):
     if s['empty']:
         lines.append('Nothing has been saved yet beyond the organization itself.')
         return '\n'.join(lines)
+    if s.get('basics'):
+        lines.append('About the business:')
+        label = {'fact': '', 'rule': 'Rule: ', 'offering': 'Offers ', 'decision': 'Decided: '}
+        lines += [f"- {label[r['kind']]}{r['text']}" for r in s['basics']]
+        more = s['totals']['basics'] - len(s['basics'])
+        if more > 0:lines.append(f"- and {more} more (scripts/enter.py finds them by topic)")
     by = k['by_status']
     if k['findings']:
         parts = [f"{by[key]} {label}" for key, label in (('supported', 'supported'), ('unverified', 'unverified'), ('challenged', 'challenged'), ('needs_review', 'due for review'), ('out_of_date', 'out of date')) if by[key]]
@@ -270,7 +296,7 @@ def text(s):
     if s['changes']:
         lines.append(f"Changed in the last {s['changes_days']} days:")
         lines += [f"- {c['title']} ({c['kind']}{', ' + c['collection'] if c.get('collection') else ''}): {c['reason']}" for c in s['changes']]
-    else:lines.append(f"No recorded changes in the last {s['changes_days']} days.")
+    else:lines.append(f"No changes found by checks or new evidence in the last {s['changes_days']} days.")
     if s['attention']:
         lines.append('Needs someone:')
         lines += [f"- {a['title']}: {a['reason']}" for a in s['attention']]

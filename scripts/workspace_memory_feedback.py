@@ -30,7 +30,7 @@ def record(bid,prepared,snapshots):
     previous={r['path']:r for r in workspace_history.capture_many(bid,{Path(r['path']):snapshots[Path(r['path'])] for r in eligible if Path(r['path']) in snapshots},'Before saved memory')}
     for item in eligible:
         obj=item['object'];before=item.get('existing');path=Path(item['path'])
-        label=obj.get('name') or obj.get('title') or obj.get('summary') or obj['object_type']
+        label=obj.get('name') or obj.get('title') or obj.get('statement') or obj.get('decision') or obj.get('summary') or obj['object_type']
         added.append({'id':new_id(12),'object_ref':obj['id'],'label':str(label)[:160],
                       'at':time.time(),'status':'pending','revision':revision(path),'operation':'updated' if before else 'created',
                       'version_id':previous.get(path.relative_to(workspace_root()).as_posix(),{}).get('id','')})
