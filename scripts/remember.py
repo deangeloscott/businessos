@@ -8,7 +8,7 @@ fields; AURA does not infer what should change. A Run or playbook contract is op
 context, not a prerequisite for organizational memory.
 """
 from pathlib import Path
-import argparse,json,re,secrets,collections
+import argparse,hashlib,json,re,secrets,collections
 
 from _common import *
 from canonical_store import canonical_path,schema_entry,validate_canonical,write_canonical
@@ -27,7 +27,7 @@ SPECIALIZED_TYPES={
 def _item_type(item,index,number):
     existing_ref=item.get('object_ref');typ=item.get('object_type')
     if existing_ref:
-        if existing_ref not in index:raise ValueError(f'Unknown canonical object_ref for update: {existing_ref}')
+        if existing_ref not in index:raise ValueError(f'Unknown canonical object_ref for update: {existing_ref}. scripts/enter.py lists current records; to add a new one, give object_type instead of object_ref.')
         existing_type=index[existing_ref][0].get('object_type')
         if typ is None:typ=existing_type
         elif typ!=existing_type:raise ValueError(f'object_ref {existing_ref} is {existing_type}, not {typ}.')
@@ -75,10 +75,37 @@ def _receipt(rows):
     return {'status':'saved','objects':len(rows),'created':created,'updated':updated,'object_types':dict(sorted(types.items())),'validation':'passed'}
 
 
+def _stated(payload):
+    """With the person's own message as "said", AURA keeps it as the source of the facts they stated in this save and
+    fills in what such a fact needs (its source, authority, kind, status and quote). The caller writes only each
+    fact's statement, in the person's words; the usual check that those words are theirs still applies."""
+    said=payload.get('said') if isinstance(payload,dict) else None
+    if said is None:return payload,False
+    if not isinstance(said,str) or not said.strip():raise ValueError('"said" must be the person’s message, as text.')
+    items=[];used=False
+    for item in payload.get('objects') or []:
+        if isinstance(item,dict) and item.get('object_type')=='BusinessClaim' and not item.get('object_ref') and isinstance(item.get('content'),dict):
+            content=dict(item['content'])
+            for key,value in (('claim_kind','approved_business_claim'),('status','approved'),('authority','explicit_user')):content.setdefault(key,value)
+            if content['authority']=='explicit_user':
+                content.setdefault('support_quote',str(content.get('statement') or '').strip().rstrip('.!'))
+                content.setdefault('source_ref','@said');used=True
+            item={**item,'content':content}
+        items.append(item)
+    if used:
+        items.insert(0,{'key':'said','object_type':'SourceRecord','content':{
+            'source_type':'user_statement','source_reference':'Told in chat','origin':'active user conversation','retrieved_at':now(),
+            'access_scope':'business-private','access_class':'private','content_hash':hashlib.sha256(said.encode('utf-8')).hexdigest(),
+            'content_hash_target':'captured_text','extensions':{'authority':'explicit_user','verbatim_user_statement':said,
+            'businessos_evidence':{'capture_status':'captured','capture_method':'text_excerpt','acquisition_method':'user_provided','captured_text':said}}}})
+    return {**payload,'objects':items},used
+
+
 @organization_transaction
 def remember(business_id,payload):
     resolved=resolve_business(business_id)
     if resolved.get('status')!='resolved':raise ValueError(resolved.get('reason') or 'Organization could not be resolved.')
+    payload,stated=_stated(payload)
     bid=resolved['business_id'];items=payload.get('objects') if isinstance(payload,dict) else None
     if not isinstance(items,list) or not items:raise ValueError('Input requires a non-empty objects list.')
     provenance=payload.get('provenance') if isinstance(payload.get('provenance'),dict) else None
@@ -193,7 +220,7 @@ def remember(business_id,payload):
     # Optional feedback observes a confirmed save; it never changes persistence semantics.
     try:
         from workspace_memory_feedback import record
-        feedback=record(bid,prepared,snapshots)
+        feedback=record(bid,[row for row in prepared if not (stated and row['key']=='said')],snapshots)
     except (OSError,ValueError,TypeError,KeyError):feedback=[]
 
     rows=[{

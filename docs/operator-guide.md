@@ -117,6 +117,12 @@ Before saving, ask:
 
 Do not persist something merely because a schema exists.
 
+Something the person said about the business (hours, policies, what it offers) needs only their words and their message. AURA keeps the message as the source, fills in the rest of the fact, and checks that the wording is theirs; wording that is yours belongs in ordinary context instead:
+
+```json
+{"said":"Oh, and we open at 7am on weekdays.","objects":[{"object_type":"BusinessClaim","content":{"statement":"We open at 7am on weekdays."}}]}
+```
+
 When a real deliverable matters later, keep the actual artifact where it naturally belongs and remember the useful `Asset` identity/reference/provenance/status rather than automatically copying every binary or scratch file into AURA.
 
 For example, after creating `deliverables/onboarding-guide.md`, save this payload as a JSON file and pass it to `remember.py`. Replace the example's meaning and path with the actual result:

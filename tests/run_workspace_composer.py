@@ -249,32 +249,24 @@ def main():
             assert goals.guard(bid,goal['id'],goals.fingerprint(goal),{'mode':'native','until':time.time()+3600})
             with urlopen(f'http://127.0.0.1:{server.server_port}/workspace-compose.js') as response:assert response.status==200
         finally:server.shutdown();server.server_close()
-        # Goal/task links require confirmed native instructions, and can be removed.
+        # A goal link lives in the task's own instructions: added when AURA creates the task directly, and read back
+        # from the task whenever schedules are listed, so changes made in a chat or in the app itself count too.
         native=[]
         def create_task(data,*args):
             task=dict(data,id='hermes:goal-task',native_id='goal-task',owner='hermes',status='active')
             native.append(task);return task
-        def change_task(*args):
-            payload=app.schedule_job['payload'];old=native[0]
-            native[0]={**old,'description':'Native task without a goal' if payload.get('remove_goal') else old['description']+'\nUpdated unrelated setting'}
-            return {'reply':json.dumps({'state':'saved','native_id':'goal-task'}),'native_id':'manage-session'}
         app.preferences.setdefault('connected_apps',{})['hermes']={'model':'test:model'}
-        with patch('workspace_ui.installed_agents',return_value=[{'id':'hermes','name':'Fixture','argv':['fixture','chat']}]), \
-             patch.object(app,'agent_options',return_value={'models':[{'id':'test:model'}]}), \
-             patch.object(app,'agent_efforts',return_value={'efforts':[]}), \
-             patch.object(schedules,'inventory',side_effect=lambda **kwargs:{'items':list(native)}), \
-             patch.object(schedules,'create',side_effect=create_task),patch.object(agents,'run',side_effect=change_task):
+        with patch('workspace_ui.installed_agents',return_value=[{'id':'hermes','name':'Fixture','argv':['fixture','chat']}]),              patch.object(app,'agent_options',return_value={'models':[{'id':'test:model'}]}),              patch.object(app,'agent_efforts',return_value={'efforts':[]}),              patch.object(schedules,'inventory',side_effect=lambda **kwargs:{'items':list(native)}),              patch.object(schedules,'create',side_effect=create_task),patch.object(agents,'run') as ai:
             app.schedule_action(bid,{'action':'create','app':'hermes','name':'Goal review','description':'Review saved research.','when':'every 1h','model':'test:model','goal_id':goal['id']})
             wait(lambda:app.schedule_job['status']!='working');assert app.schedule_job['status']=='complete',app.schedule_job
             assert app.preferences['goal_tasks'][bid]['hermes:goal-task']==goal['id']
             assert '[Aura goal]' in native[0]['description'] and '--basis' in native[0]['description']
-            app.schedule_action(bid,{'action':'request','id':'hermes:goal-task','goal_id':'','remove_goal':True,'request':'Unlink goal'})
-            wait(lambda:app.schedule_job['status']!='working');assert app.schedule_job['status']=='complete',app.schedule_job
-            assert not app.preferences['goal_tasks'][bid]
-            # A native reply that changes something unrelated must not create a goal link.
-            app.schedule_action(bid,{'action':'request','id':'hermes:goal-task','goal_id':goal['id'],'request':'Link goal'})
-            wait(lambda:app.schedule_job['status']!='working');assert app.schedule_job['status']=='error'
-            assert not app.preferences['goal_tasks'][bid]
+            asked=app.schedule_action(bid,{'action':'request','id':'hermes:goal-task','goal_id':'','remove_goal':True,'request':'Unlink goal'})
+            assert asked['status']=='chat' and 'Remove only the [Aura goal]' in asked['chat']['text'] and not ai.called
+            native[0]={**native[0],'description':'Native task without a goal'};app.sync_task_links(bid,native)
+            assert not app.preferences['goal_tasks'][bid],'the link follows the task once its app removed the block'
+            native[0]={**native[0],'description':native[0]['description']+' Updated unrelated setting'};app.sync_task_links(bid,native)
+            assert not app.preferences['goal_tasks'][bid],'an unrelated change does not create a goal link'
         # Exercise real RPC streams. Aura never toggles native shared retry settings
         # and never sends a second prompt to continue the assignment.
         goals.save(bid,{'id':goal['id'],'status':'active'});goal=goals.find(bid,goal['id']);script=base/'retry.py';script.write_text(RETRY,encoding='utf-8')

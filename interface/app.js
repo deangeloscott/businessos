@@ -149,7 +149,7 @@ async function refresh(light=false,preserveDetails=light) {
       if(state.view==='business')renderMemory();
     }else await render();
     if(ticket!==state.refreshTicket)return;
-    if(state.business&&!state.hydrated) {state.hydrated=true;await hydrateConversation();}
+    if(state.business&&!state.hydrated) {state.hydrated=true;const link=new URLSearchParams(location.search);if(link.get('new')&&!link.get('chat'))await newShellChat();else await hydrateConversation();}
     if(ticket!==state.refreshTicket)return;
     await window.auraCompose?.sync();chatControls();
     if(state.data.organization?.status==='working'&&!state.organizationPolling){state.organizationWorking=true;notice(state.data.organization.progress);attempt(pollOrganization);}
@@ -488,7 +488,7 @@ function renderConnection() {
   const step=state.setupStep, ready=step==='ready', failed=step==='failed', checking=step==='checking';
   const stages={welcome:[1,'Welcome to AURA'],connect:[2,'Connect your AI'],models:[3,'Models & favorites'],tour:[4,'A quick look around'],checking:[5,'Checking connections'],ready:[5,'You’re ready'],failed:[5,'Connection needs attention']};
   const [,title]=stages[step]||stages.welcome;
-  $('#setup-step').textContent='QUICK SETUP';
+  $('#setup-step').textContent=state.data?.onboarding?.seen&&!state.tour?'AI CONNECTIONS':'QUICK SETUP';  // first run vs. from Settings
   $('#connect-title').textContent=title;
   for(const section of ['welcome','connect','models','tour'])$('#setup-'+section).hidden=step!==section;
   $('#setup-result').hidden=!['checking','ready','failed'].includes(step);
@@ -560,7 +560,9 @@ function taskStatus(text,elapsed='') {$('#chat-status').hidden=!text;if($('#task
 function usageLabel(usage) {
   if(!usage||!Number.isFinite(usage.input_tokens)||!Number.isFinite(usage.output_tokens))return '';
   $('#task-status').title=`Reported token usage. Cost and cache details are in Usage & spend.`;
-  return ` · ${(usage.input_tokens+usage.output_tokens).toLocaleString()} tokens`;
+  // Most of a long request is the app re-reading its own context at a fraction of the price; say how much.
+  const reused=Number.isFinite(usage.cached_input_tokens)&&usage.input_tokens?Math.round(100*usage.cached_input_tokens/usage.input_tokens):0;
+  return ` · ${(usage.input_tokens+usage.output_tokens).toLocaleString()} tokens${reused>=10?` (${reused}% re-read)`:''}`;
 }
 /* Activity: work running now and notifications live together behind the bell. */
 function paintRunning(){
@@ -904,9 +906,9 @@ async function pollJob(job) {
   } catch(error) {
     if(!current())return;
     state.busy=false;state.connectionInterrupted=true;state.activeJob=null;state.polling=false;state.stopping=false;
-    taskStatus('Connection interrupted. Reconnect to check this chat; your request has not been resent.');
+    // The recovery card below the chat says this once, with Reconnect; no separate status line or banner.
+    taskStatus('');
     if(job.welcome){state.setupStep='failed';state.welcome={reply:humanError(error)};}
-    else notice('The connection was interrupted. Your draft and saved work are still here.',true);
     showMessages();chatControls();
   }
 }
@@ -1387,11 +1389,19 @@ function scheduleInfo(task) {
 async function scheduleOperation(payload) {
   if(state.scheduleStarting)return;state.scheduleStarting=true;renderScheduleOperation();
   try {
-    state.scheduleJob=await api('/api/schedules/action',{business:state.business,...payload});
+    const result=await api('/api/schedules/action',{business:state.business,...payload});
+    // Changes that need an AI happen in an ordinary chat with that app, which uses its own scheduling.
+    if(result.status==='chat'){state.scheduleAdding=false;await startScheduleChat(result.chat);return;}
+    state.scheduleJob=result;
     state.dismissedScheduleJob=null;renderScheduleOperation();if(state.scheduleJob.status!=='working')await syncSchedules(true).catch(()=>{});
   } catch(error){
     state.scheduleJob={id:'local-'+Date.now(),status:'error',message:error.status===400?humanError(error):'Task setup couldn’t connect to AURA. Try again when the connection is back.'};state.dismissedScheduleJob=null;
   } finally {state.scheduleStarting=false;renderScheduleOperation();}
+}
+async function startScheduleChat(chat){
+  const model=chat.model||state.data.connection.presets?.[chat.kind]?.model||'';
+  await newShellChat();state.newChatConnection={kind:chat.kind,model,effort:chat.model?chat.effort:state.data.connection.presets?.[chat.kind]?.effort||''};
+  chatControls();renderComposerConnection();await submitRequest(chat.text);
 }
 async function createSchedule(chosen) {
   const draft=state.scheduleDraft;
@@ -1405,8 +1415,8 @@ function renderScheduleOperation() {
     // A finished message about a task that no longer exists has nothing left to say.
     const gone=job?.status==='complete'&&job.task_id&&Array.isArray(state.schedules?.items)&&!state.schedules.items.some(t=>t.id===job.task_id);
     box.hidden=!job||job.id===state.dismissedScheduleJob||gone;if(box.hidden)return;
-    const signature=JSON.stringify([job.id,job.status,job.message,job.task_id]);if(box.dataset.signature===signature)return;box.dataset.signature=signature;
-    box.innerHTML=`<div class="schedule-feedback"><span class="${job.status==='error'?'error':''}">${job.status==='complete'?'✓ ':''}${esc(job.message)}</span><span class="schedule-feedback-actions">${working?'<button type="button" class="text-button" data-stop-schedule>Stop</button>':`${job.task_id?`<button type="button" class="text-button" data-open-schedule="${esc(job.task_id)}">View task</button>`:''}<button type="button" class="text-button" data-dismiss-schedule aria-label="Dismiss task status">✕</button>`}</span></div>${job.status==='needs_input'?'<form class="schedule-answer"><input name="request" required maxlength="2000" aria-label="Answer the task setup question" placeholder="Your answer…"><button class="secondary">Continue →</button></form>':''}`;
+    const signature=JSON.stringify([job.id,job.status,job.message,job.task_id,working&&job.created?Math.floor((Date.now()/1000-job.created)/60):0]);if(box.dataset.signature===signature)return;box.dataset.signature=signature;
+    box.innerHTML=`<div class="schedule-feedback"><span class="${job.status==='error'?'error':''}">${job.status==='complete'?'✓ ':''}${esc(job.message)}${working&&job.created&&Date.now()/1000-job.created>=60?` · still working, ${Math.floor((Date.now()/1000-job.created)/60)} min. Your AI app is taking its time; Stop if you'd rather not wait.`:''}</span><span class="schedule-feedback-actions">${working?'<button type="button" class="text-button" data-stop-schedule>Stop</button>':`${job.task_id?`<button type="button" class="text-button" data-open-schedule="${esc(job.task_id)}">View task</button>`:''}<button type="button" class="text-button" data-dismiss-schedule aria-label="Dismiss task status">✕</button>`}</span></div>`;
   });
   for(const selector of ['#create-schedule','#task-edit-form .primary','#task-request-form .primary','#task-edit-form [data-task-status]']){const button=$(selector);if(button)button.disabled=working||(selector==='#create-schedule'&&(!$('#schedule-model')?.value||$('#schedule-model')?.disabled));}
 }
@@ -1423,9 +1433,8 @@ async function syncScheduleOperation() {
     if(previous==='working'&&state.scheduleJob?.status!=='working')await syncSchedules(true);
   } finally {state.scheduleOperationLoading=false;}
 }
-// Apps whose saved schedules AURA can read back and list (workspace_schedules.inventory); others keep theirs to themselves.
-const LISTED_SCHEDULE_APPS=new Set(['codex','hermes','pi','antigravity']);
-const scheduleListNote=app=>LISTED_SCHEDULE_APPS.has(app)?'':`${state.data.connection.choices.find(c=>c.id===app)?.name||human(app)} keeps its own schedules, so this task won't appear in this list. Open that app to see or change it.`;
+// The server says which apps' saved schedules it can read back; others keep theirs to themselves.
+const scheduleListNote=app=>(state.data.connection.schedules_listed||[]).includes(app)?'':`${state.data.connection.choices.find(c=>c.id===app)?.name||human(app)} keeps its own schedules, so this task won't appear in this list. Open that app to see or change it.`;
 function scheduleForm() {
   const current=state.data.connection,apps=current.choices.filter(c=>c.available&&nativeConnection(c.id));
   const draft=state.scheduleDraft??={name:'',description:'',when:'',app:apps.some(c=>c.id===current.selected)?current.selected:apps[0]?.id||'',model:current.model||'',effort:current.effort||''};
@@ -3078,7 +3087,6 @@ document.addEventListener('submit',event=>{
         const task=state.editingTask;
         await scheduleOperation({id:task.id,app:task.owner,action:'request',request:data.get('request')});
       }
-      if(form.classList.contains('schedule-answer'))await scheduleOperation({operation_id:state.scheduleJob.id,request:data.get('request')});
       if(form.getAttribute('id')==='schedule-form')await createSchedule(Object.fromEntries(data));
     } finally { if(submit)submit.disabled=false;renderScheduleOperation(); }
   });
@@ -3103,6 +3111,10 @@ document.addEventListener('change',event=>{
     if(field.id==='schedule-model')await loadScheduleEfforts();
   });
 });
+// The message box holds about a million characters; say so rather than silently cutting a longer paste.
+document.addEventListener('paste',event=>{const box=event.target;if(box?.id!=='request'||!box.maxLength||box.maxLength<0)return;
+  const incoming=(event.clipboardData?.getData('text')||'').length,kept=box.value.length-(box.selectionEnd-box.selectionStart);
+  if(kept+incoming>box.maxLength)notice('That is longer than one message can hold, so the end was left out. Attach it as a file instead, or send it in parts.',true);});
 document.addEventListener('input',event=>{if(event.target.closest('#schedule-form'))state.scheduleDraft[event.target.name]=event.target.value;});
 document.addEventListener('change',event=>{if(['task-cadence','task-day','task-time','task-every','task-unit','task-custom'].includes(event.target.id))updateTaskTiming();if(event.target.id==='api-provider')apiProviderHelp();if(event.target.name==='app'&&event.target.closest('#task-edit-form')){taskModels(event.target.value).catch(()=>{});const moved=event.target.value!==state.editingTask.owner;$('#task-edit-form button[type=submit],#task-edit-form .primary').textContent=moved?'Ask AI to move':state.editingTask.editable?'Save changes':'Ask AI to adjust';$('#task-edit-note').textContent=moved?'Your AI must confirm the new schedule before pausing the old one.':state.editingTask.editable?'Changes are saved in your AI app.':'Your AI confirms schedule changes in the app.';}});
 $('#detail').addEventListener('close',()=>{if(!$('#detail').open){state.detailBack=null;if(state.searchReturn)shellReturnFocus=$('#search-open');state.searchReturn=null;}state.libraryDetailTicket=(state.libraryDetailTicket||0)+1;const field=$('#api-secret');if(field)field.value='';const changed=state.apiChanged,reload=state.apiReturn==='models'&&changed;state.apiReturn='';state.apiChanged=false;if(reload)loadAgentOptions(true).catch(modelFailure);if(changed)attempt(async()=>{state.library=await cachedApi('/api/library');quickMethods();if(state.view==='work')renderWork();});});

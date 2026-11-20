@@ -20,7 +20,7 @@ window.auraContinuity=(()=>{
     const show=!state.busy&&(state.needsCheck||state.connectionInterrupted||pending);
     host.hidden=!show;if(!show){host.innerHTML='';recoveryMarkup='';return;}
     const owner=appName(state.chatMeta?.agent);
-    const message=(pending?'Checking the latest work in '+owner+'…':recoveryError||r?.message||'The connection ended. Check the latest work before continuing.').replace(/your AI app/g,owner);
+    const message=(pending?'Checking the latest work in '+owner+'…':recoveryError||r?.message||(state.connectionInterrupted?'The connection to AURA was interrupted during this request. Your draft and saved work are here, and nothing was resent. Reconnect once AURA is open to see where the work stands.':'The connection ended. Check the latest work before continuing.')).replace(/your AI app/g,owner);
     const history=state.recoveryHistoryNote;
     const action=!pending&&r?.can_continue?`<button type="button" class="secondary" id="recovery-continue">${r.state==='uncertain'?'I’ve reviewed · Continue':'Continue chat'}</button>`:'';
     const html=`<p>${esc(message)}</p>${history?`<p class="small-note">${esc(history)}</p>`:''}<div class="inline-actions">${action}<button type="button" class="text-button" id="recovery-check" ${pending?'disabled':''}>${pending?'Checking…':state.connectionInterrupted?'Reconnect':'Check again'}</button></div>`;

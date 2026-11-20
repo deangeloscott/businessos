@@ -143,3 +143,5 @@ Check a new component in Modern and at least one retro style, in both modes.
 - `node tools/ui-snapshots.mjs --business <id> --out <folder>` captures the main screens in every style, light and dark, at phone, tablet and desktop widths, with a gallery (`index.html`). Look through it before calling interface work done.
 - Walk through the six jobs in the running interface and fix whatever makes one slower or less clear.
 - `python tests/run_all.py` still passes.
+- Before a release, `python tests/real_apps_check.py --model claude=haiku --model codex=gpt-5.6-luna --effort high` runs the journeys only real apps break (connect, save in one app and find in another, stop, continue) at AURA's model floor: the Haiku / GPT-5.6-Luna class at High effort.
+- Before a release, reread `CONTEXT.md` and drop what models at that floor do well unprompted. Keep what only AURA can tell them.

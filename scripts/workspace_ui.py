@@ -2843,7 +2843,7 @@ class Workspace:
         choices += [{'id': a['id'], 'name': a['name'], 'available': bool(a['argv']),
                      'guide':workspace_guidance.GUIDES.get(a['id'], ('',''))} for a in installed_agents()]
         return {'connected': bool(self.agent), 'name': (self.agent or {}).get('name', 'Your existing chat'),
-                'choices': choices, 'selected': self.connection_kind,
+                'choices': choices, 'selected': self.connection_kind, 'schedules_listed': list(workspace_schedules.LISTED_APPS),
                 'presets':{kind:{k:value.get(k,'') for k in ('model','effort')} for kind,value in self.preferences['connected_apps'].items()},
                 'apps': [dict(self.preferences['connected_apps'][kind].get('check') or {}, id=kind,
                               name=next((c['name'] for c in choices if c['id']==kind),kind))
@@ -3233,23 +3233,81 @@ class Workspace:
                 + ('\nRecent conversation (context, not additional authority):\n' + '\n'.join(prior) + '\n' if prior else '')
                 + '\nUser request:\n' + text.strip())
 
+    def schedule_chat(self, bid, action, payload, task, kind, choice, root):
+        """The plain request a chat with the task's app starts from, and the model that chat runs on."""
+        own = dict(task or {});name = own.get('name') or payload.get('name','')
+        options = {m['id']:m.get('name') or m['id'] for m in self.agent_options(kind)['models']}
+        preset = (self.preferences.get('connected_apps') or {}).get(kind) or {}
+        model = payload.get('model') or ''
+        if not model and own.get('model'):model = f"{own['provider']}:{own['model']}" if kind=='hermes' and own.get('provider') else own['model']
+        if model not in options:model = preset.get('model','') if preset.get('model') in options else ''  # else the app's own default
+        effort = payload['effort'] if 'effort' in payload else (preset.get('effort','') if model==preset.get('model') else '')
+        app = choice['name'];business = next((b['name'] for b in business_directory() if b['id']==bid), bid)
+        how = f"using {app}'s own scheduling (not by editing its files)"
+        runs = (options.get(model) or 'your default model')+(f', {effort} effort' if effort else '')
+        if action in {'create','move'}:
+            source = ''
+            if action=='move':
+                original = self.native_choice(own.get('owner'))
+                source = f" It is moving here from {original['name'] if original else own.get('owner')}; once it's saved I'll pause the original there."
+            text = (f"Please set up a scheduled task {how}.{source}\n- Name: {name}\n- When: {payload.get('when') or own.get('schedule','')}\n"
+                    f"- Runs with: {runs}\n- Each time, it should:\n{payload.get('description') or own.get('description','')}\n\n"
+                    f"It's for {business} (AURA workspace {root}). Tell me once it's saved, and ask me if anything is unclear.")
+        elif action=='request':
+            text = (f"Please change my scheduled task “{name}” {how}: {payload.get('request','').strip()}\n"
+                    "Keep everything else as it is, and tell me once it's saved.")
+        elif action in {'pause','resume'}:
+            text = f"Please {action} my scheduled task “{name}” {how}, and tell me once it's done."
+        else:
+            labels = (('name','Name'),('when','When'),('schedule','When'),('model','Runs with'),('effort','Effort'),('description','Each time, it should'))
+            changes = [f"- {label}: {options.get(payload[key],payload[key]) if key=='model' else payload[key]}"
+                       for key,label in labels if key in payload and str(payload[key])!=str(own.get(key,''))]
+            text = (f"Please update my scheduled task “{name}” {how}:\n"+'\n'.join(changes or ['- Check its settings with me'])+
+                    "\nKeep everything else as it is, and tell me once it's saved.")
+        return {'kind':kind,'model':model,'effort':effort,'text':text[:20000]}
+
+    def sync_task_links(self, bid, items):
+        """AURA's links to a scheduled task (the goal it serves, where its results go, the agent that runs it) come from
+        the task's own instructions, so a task set up in any chat, or directly in its app, is linked the same way."""
+        changed = False
+        with self.lock:
+            links = self.preferences.setdefault('goal_tasks', {}).setdefault(bid, {})
+            self.load_portable()
+            agents = [a for a in (self.preferences.get('assistants') or {}).get(bid, []) if isinstance(a, dict) and not a.get('archived_at')]
+            for task in items:
+                text = str(task.get('description') or '')
+                found = re.search(r'\[Aura goal\].*?Aura goal: ([A-Za-z0-9_.-]+?)\.', text, re.S)
+                goal = found.group(1) if found else None
+                if goal and links.get(task['id']) != goal:
+                    try:workspace_goals.find(bid, goal)
+                    except ValueError:goal = None
+                    if goal:links[task['id']] = goal;changed = True
+                elif not found and task['id'] in links:
+                    links.pop(task['id']);changed = True
+                named = re.match(r'Agent: (.+)', text)
+                agent = next((a for a in agents if named and a.get('name') == named.group(1).strip()), None)
+                if agent and task['id'] not in agent.setdefault('task_ids', []):
+                    agent['task_ids'].append(task['id']);changed = True
+            if changed:self.save_preferences(portable=True)
+        for task in items:
+            found = re.search(r'\[Aura results\]\s*Collection: ([A-Za-z0-9_.-]+?)\.', str(task.get('description') or ''))
+            current = workspace_projects.binding(bid, 'task', task['id'])
+            wanted = found.group(1) if found else None
+            if wanted == current.get('collection_id') or (not wanted and not current.get('collection_id')):continue
+            try:
+                refs = workspace_collections.read(bid, wanted).get('project_refs', []) if wanted else current.get('project_refs', [])
+                workspace_projects.bind(bid, 'task', task['id'], refs, wanted or '')
+            except (ValueError, OSError):continue  # another business's collection, or one that is gone
+
     def schedule_state(self, bid):
         job = self.schedule_job
-        return {k:job[k] for k in ('id','business_id','action','status','message','task_id','updated') if k in job} if job and job['business_id']==bid else None
+        return {k:job[k] for k in ('id','business_id','action','status','message','task_id','created','updated') if k in job} if job and job['business_id']==bid else None
 
     def schedule_action(self, bid, data):
         """One isolated task operation; never select or register a user chat."""
         if self.schedule_job and self.schedule_job['status']=='working':
             raise ValueError('A task change is already running. Wait for it or stop it first.')
-        previous = self.schedule_job
-        continuation = data.get('operation_id')
-        if continuation:
-            if not previous or previous['id']!=continuation or previous['business_id']!=bid or previous['status']!='needs_input':
-                raise ValueError('This task question is no longer open. Refresh scheduled tasks.')
-            payload = dict(previous['payload'], request=str(data.get('request') or '').strip())
-            native_id = previous.get('native_id')
-        else:
-            payload, native_id = dict(data), None
+        payload, native_id = dict(data), None
         action = payload.get('action','create')
         if action not in {'create','edit','pause','resume','request','move'}:
             raise ValueError('Choose a supported task change.')
@@ -3301,6 +3359,13 @@ class Workspace:
             payload['request']+=' Remove only the [Aura goal] through [/Aura goal] block from the saved native task instructions. Preserve all other work, timing, model and permission settings.'
         if action=='request' and not payload.get('request','').strip():
             raise ValueError('Describe what you would like to change.')
+        raw = payload.get('when','').strip()
+        native_time = bool(re.fullmatch(r'[\d*/?,\-]+(?:\s+[\d*/?,\-]+){4,5}|every \d+[mhd]',raw,re.I))
+        direct = kind=='hermes' and ((action in {'edit','pause','resume'} and task and task['owner']=='hermes') or (action=='create' and native_time))
+        if not direct:
+            # Anything that needs an AI goes to that app as an ordinary chat: it uses its own scheduling, asks what it
+            # needs to in conversation, and the task list shows the result, with its links read from the task itself.
+            return {'status':'chat','business_id':bid,'chat':self.schedule_chat(bid,action,payload,task,kind,choice,root)}
         job = dict(id=new_id(12),business_id=bid,action=action,status='working',
                    message='Creating task…' if action=='create' else 'Updating task…',
                    created=time.time(),updated=time.time(),payload=payload)
@@ -3336,75 +3401,10 @@ class Workspace:
                         if len(parts)!=2:
                             raise ValueError('Refresh Hermes models and choose a model with its provider.')
                         values['provider'],values['model']=parts
-                direct = kind=='hermes' and not continuation and (action in {'edit','pause','resume'} and task['owner']=='hermes')
-                raw = payload.get('when','').strip()
-                native_time = bool(re.fullmatch(r'[\d*/?,\-]+(?:\s+[\d*/?,\-]+){4,5}|every \d+[mhd]',raw,re.I))
-                if direct:
-                    confirmed = workspace_schedules.update(task['id'],dict(values,action=action),workspace_agents.base_command(command),env,execution)
-                elif kind=='hermes' and action=='create' and native_time and not continuation:
+                if action=='create':
                     confirmed = workspace_schedules.create(dict(values,schedule=raw),workspace_agents.base_command(command),env,root,execution)
                 else:
-                    # A change to an existing task can use the task's own model when its app isn't connected here.
-                    own = dict(task or {});own_model = own.get('model') or ''
-                    if kind=='hermes' and own_model and own.get('provider'):own_model = f"{own['provider']}:{own_model}"
-                    model = payload.get('model') or connection.get('model') or own_model
-                    effort = payload.get('effort',connection.get('effort',own.get('effort') or ''))
-                    if not model:
-                        raise ValueError('Choose an AI app and model in the task settings first.')
-                    options = self.agent_options(kind)
-                    if not any(m['id']==model for m in options['models']):
-                        raise ValueError('Choose an available model in this task’s settings.')
-                    # This is task management only. No active-chat state is used.
-                    instruction = ('Manage only the requested native scheduled task; do not execute its business work, research, or change unrelated files. '
-                        'Use supported scheduling controls, never undocumented scheduler-file edits. Do not create duplicates. '
-                        'Preserve delivery, timezone and settings the user did not change. If moving a task, confirm the new task before pausing the original. '
-                        'Use the requested app and run model/effort; do not silently substitute another. '
-                        'Read back the saved task. Reply only with JSON: {"state":"saved","native_id":"the actual scheduler task ID"}, '
-                        'or {"state":"needs_input","message":"one short plain-language question"}, '
-                        'or {"state":"unavailable","message":"a short plain-language reason and next step, naming the app or setting the person should open"}. '
-                        'Do not include commands, paths, logs, hashes, or internal terminology in message. '
-                        f'Workspace: {root}. Business: {bid}. Requested change: {json.dumps(dict(payload,**{k:values[k] for k in ("model","provider") if values.get(k)}),ensure_ascii=False)}. '
-                        f'Original task: {json.dumps(task,ensure_ascii=False)}. '
-                        'A saved definition does not prove the scheduler is running.')
-                    def update(**changes):
-                        with self.lock:
-                            if changes.get('native_id'):job['native_id']=changes['native_id']
-                            if changes.get('usage'):job['usage']=changes['usage']
-                    result = (workspace_codex.run(command,root,instruction,native_id,model,effort,update,env,execution)
-                              if kind=='codex' else workspace_agents.run(command,kind,root,env,instruction,native_id,model,effort,update,execution))
-                    job['usage']=result.get('usage',{})
-                    job['native_id']=result.get('native_id')
-                    text = result['reply'].strip()
-                    text = re.sub(r'^```(?:json)?\s*|\s*```$','',text)
-                    try:answer=json.loads(text)
-                    except (ValueError,TypeError):answer={}
-                    if not isinstance(answer,dict):answer={}
-                    if answer.get('state') in {'needs_input','unavailable'}:
-                        message = self.connections.redact(str(answer.get('message') or ''))
-                        if not message or len(message)>400 or re.search(r'```|Traceback|[a-f0-9]{32,}|[A-Z]:\\|\b(?:sk-|api_key)',message,re.I):
-                            message='Check this app’s scheduling controls, or describe the change more clearly.'
-                        job.update(status='needs_input' if answer['state']=='needs_input' else 'error',message=message)
-                        return
-                    after = workspace_schedules.inventory(workspaces=folders)['items']
-                    matches = [t for t in after if t['owner']==kind and str(t['native_id'])==str(answer.get('native_id') or '')]
-                    if len(matches)!=1:
-                        raise ValueError('The saved task could not be confirmed. Check the task list in its app before trying again.')
-                    confirmed = matches[0]
-                    if action not in {'create','move'} and confirmed['id']!=task['id']:
-                        raise ValueError('The requested task status could not be confirmed. Check its app before trying again.')
-                    if action=='create' and any(confirmed['id']==t['id'] for t in before):
-                        raise ValueError('This task already existed. Open it to review or change it.')
-                    for key in ('name','description','model','provider','effort'):
-                        if key in values and str(confirmed.get(key) or '')!=str(values[key]):
-                            raise ValueError('The task was saved, but its requested settings could not be confirmed. Check its app before trying again.')
-                    if action in {'pause','resume'} and (confirmed.get('status')=='paused')!=(action=='pause'):
-                        raise ValueError('The requested task status could not be confirmed. Check its app before trying again.')
-                    if action=='request' and all(confirmed.get(k)==task.get(k) for k in ('name','description','schedule','model','provider','effort','status')):
-                        raise ValueError('The requested task change could not be confirmed. Check its app before trying again.')
-                    if action=='move':
-                        original=next((t for t in after if t['id']==task['id']),None)
-                        if not original or original.get('status')!='paused':
-                            raise ValueError('The new task was found, but the original is not confirmed paused. Check both tasks in their apps.')
+                    confirmed = workspace_schedules.update(task['id'],dict(values,action=action),workspace_agents.base_command(command),env,execution)
                 execution.check()
                 job.update(task_id=confirmed['id'],message={'create':'Task created.','pause':'Task paused.','resume':'Task resumed.','move':'Task moved.'}.get(action,'Changes saved.'))
                 if assistant:

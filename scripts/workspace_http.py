@@ -432,8 +432,10 @@ def handler_for(app):
                     location=str((PRODUCT_ROOT/item['path']).resolve()) if item.get('path') else str(PRODUCT_ROOT/'scripts/operating_knowledge.py') if item.get('subtype')=='Playbook' else ''
                     self.send(200, {'item':item,'option':option,'text':text,'location':location})
                 elif route == '/api/schedules':
-                    self.send(200, workspace_schedules.inventory(workspaces=[workspace_root(),
-                        *(row['path'] for row in app.recent_workspaces() if query.get('scope')!='workspace')]))
+                    listed = workspace_schedules.inventory(workspaces=[workspace_root(),
+                        *(row['path'] for row in app.recent_workspaces() if query.get('scope')!='workspace')])
+                    for business in business_directory():app.sync_task_links(business['id'], listed['items'])
+                    self.send(200, listed)
                 elif route == '/api/schedules/operation':
                     self.send(200, {'job':app.schedule_state(selected(query.get('business')))})
                 elif route == '/api/schedules/result':

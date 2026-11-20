@@ -106,7 +106,7 @@ def _prepare_work(task,business_id=None,workspace=None,focus=None,operator_ref=N
     read_diagnostics=[];index=object_index(bid,read_diagnostics);focused,unresolved_focus=resolve_focus(index,focus,read_diagnostics)
     focus_context=[describe_object(obj,path) for obj,path in focused.values()]
     playbook=get_playbook(selected_playbook_id,registry) if selected_playbook_id else None
-    if selected_playbook_id and not playbook:raise ValueError(f'Unknown or unavailable Playbook: {selected_playbook_id}')
+    if selected_playbook_id and not playbook:raise ValueError(f'Unknown or unavailable Playbook: {selected_playbook_id}. scripts/find_playbooks.py lists the available ones.')
     owner=playbook.get('owner_system') if playbook else None
     selected_workflow=_selected_workflow(task,bid,selected_workflow_id,team_ref,role_ref,operator_ref) if selected_workflow_id else None
     if selected_workflow and owner and selected_workflow.get('owner_system')!=owner:selected_workflow={**selected_workflow,'cross_area':True}

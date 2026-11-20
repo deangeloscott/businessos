@@ -185,52 +185,30 @@ def main():
                     assert not projects.binding(bid,'task',task_id).get('collection_id')
                 assert app.preferences['connection']==original_connection
                 assert app.preferences['chats']==original_chats and app.preferences['active_chats']==original_active
-                def isolated_agent(command,kind,root,env,prompt,native_id,model,effort,update,execution):
-                    assert native_id is None and model=='openai:fixture' and effort=='high'
-                    ident=save_fake_task('AI-assisted task')
-                    return {'reply':json.dumps({'state':'saved','native_id':ident}),
-                            'native_id':'setup-session','usage':{'input_tokens':11,'output_tokens':2}}
-                ai.side_effect=isolated_agent
-                post_task(dict(payload,name='AI-assisted task',when='Every Monday at 9am'))
-                assert done()['status']=='complete'
-                assert len(app.preferences['usage_receipts'])==1
-                assert not any(k.startswith('schedule:') for k in app.preferences.get('usage_chats',{}))
-                ai.return_value={'reply':'{"state":"saved","native_id":"does-not-exist"}',
-                                 'native_id':'setup-session','usage':{}}
-                ai.side_effect=None
-                post_task(dict(payload,name='Unconfirmed task',when='Every Monday at 9am'))
-                assert done()['status']=='error' and 'could not be confirmed' in app.schedule_job['message']
-                ai.side_effect=ValueError('Traceback: invalid API_KEY credential 401')
-                post_task(dict(payload,name='Failed task',when='Every Monday at 9am'))
-                failure=done()
-                assert failure['status']=='error' and 'Traceback' not in failure['message'] and 'API_KEY' not in failure['message']
+                # Anything that needs an AI becomes an ordinary chat with that app: no hidden job, no usage,
+                # and the person's chats and connection are untouched until they send it.
+                answer=post_task(dict(payload,name='AI-assisted task',when='Every Monday at 9am'))
+                assert answer['status']=='chat' and answer['chat']['kind']=='hermes' and answer['chat']['model']=='openai:fixture'
+                assert all(part in answer['chat']['text'] for part in ('AI-assisted task','Every Monday at 9am',"Hermes's own scheduling"))
+                change=post_task({'id':task_id,'app':'hermes','action':'request','request':'Run it at 10am instead'})
+                assert change['status']=='chat' and '10am' in change['chat']['text']
+                ai.assert_not_called();assert not app.preferences.get('usage_receipts')
                 assert app.preferences['chats']==original_chats and app.preferences['active_chats']==original_active
-                assert app.preferences['connection']==original_connection and app.job is main_job
-                def question_agent(command,kind,root,env,prompt,native_id,model,effort,update,execution):
-                    if native_id is None:
-                        return {'reply':'{"state":"needs_input","message":"What time on Monday?"}',
-                                'native_id':'task-question','usage':{}}
-                    assert native_id=='task-question' and '9am' in prompt
-                    ident=save_fake_task('Follow-up task')
-                    return {'reply':json.dumps({'state':'saved','native_id':ident}),'native_id':native_id,'usage':{}}
-                ai.side_effect=question_agent
-                post_task(dict(payload,name='Follow-up task',when='Monday'))
-                question=done();assert question['status']=='needs_input'
-                post_task({'operation_id':question['id'],'request':'9am'})
-                assert done()['status']=='complete'
-                started.clear()
-                def cancellable_agent(*args):
-                    execution=args[-1];started.set()
-                    assert execution.stopped.wait(5), 'Task setup stop did not reach its own execution'
-                    execution.check()
-                ai.side_effect=cancellable_agent
-                stopping=post_task(dict(payload,name='Cancelled task',when='Monday'))
+                # A task set up in a chat, or directly in its app, is linked by what its own instructions say.
+                jobs=json.loads(jobs_path.read_text())['jobs'];native=next(t for t in schedules.inventory()['items'] if t['id']==task_id)['native_id']
+                next(j for j in jobs if j['id']==native)['prompt']+=collections.instructions(bid,destination['id'])
+                jobs_path.write_text(json.dumps({'jobs':jobs}),encoding='utf-8')
+                app.sync_task_links(bid,schedules.inventory()['items'])
+                assert projects.binding(bid,'task',task_id)['collection_id']==destination['id']
+                # Stop reaches a direct scheduler change of its own.
+                started.clear();gate.clear()
+                stopping=post_task(dict(payload,name='Cancelled task'))
                 assert started.wait(2)
                 req=Request(f'http://127.0.0.1:{server.server_port}/api/schedules/stop',
                     data=json.dumps({'business':bid,'operation_id':stopping['id']}).encode(),
                     headers={'Content-Type':'application/json','X-Aura-Token':app.token})
                 with urlopen(req,timeout=5) as response:assert response.status==200
-                assert done()['status']=='stopped' and not app.execution.stopped.is_set()
+                gate.set();assert done()['status']=='stopped' and not app.execution.stopped.is_set()
             app.job = {'status':'working'}
             req = Request(f'http://127.0.0.1:{server.server_port}/api/lifecycle',
                 data=b'{"action":"quit"}',

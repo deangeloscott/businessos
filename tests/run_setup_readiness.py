@@ -61,6 +61,11 @@ def main():
             req(observation.get('extraction_confidence') is None,'qualitative confidence should not invent numeric precision')
             req((observation.get('extensions') or {}).get('businessos',{}).get('extraction_confidence_label')=='high','qualitative confidence label was not preserved')
 
+            # A fact the person stated needs only its words and their message; AURA keeps the source and checks the wording.
+            stated=remember(bid,{'said':'Oh, and we open at 7am on weekdays.','objects':[{'object_type':'BusinessClaim','content':{'statement':'We open at 7am on weekdays.'}}]})
+            req(stated['receipt']['object_types']=={'BusinessClaim':1,'SourceRecord':1},'a stated fact needs only its words and the message')
+            try:remember(bid,{'said':'we open at 7am','objects':[{'object_type':'BusinessClaim','content':{'statement':'Opening is at seven.'}}]});req(False,'a paraphrase was saved as their words')
+            except ValueError as error:req('"said"' in str(error),'the failure says how to fix it')
             errors,_,_=validate_business(bid,True);req(not errors,f'setup/persistence state must remain valid: {errors}')
             # Any name works: accents become plain letters, other alphabets get a stable short ID, and a similar
             # name gets its own.

@@ -35,6 +35,11 @@ def _businessos_ext(obj):
     return ext.get('businessos') if isinstance(ext.get('businessos'),dict) else {}
 
 
+# Said where it is needed, so a model that hits one of these checks can fix it in one step.
+STATED_FIX=(' To save what the person said, give remember.py their message as "said" and write each fact in their own words; '
+            'AURA records the source. Wording that is yours rather than theirs belongs in ordinary context instead.')
+
+
 def _source_authority(src):
     ext=src.get('extensions') if isinstance(src.get('extensions'),dict) else {}
     bos=ext.get('businessos') if isinstance(ext.get('businessos'),dict) else {}
@@ -70,11 +75,11 @@ def _provenance_errors(objects,sources):
             continue
         srcid=(obj.get('source_ref') if typ=='BusinessClaim' else None) or bos.get('source_ref')
         if not srcid or srcid not in sources:
-            errors.append(f'{path} explicit_user authority requires an existing SourceRecord source_ref; got {srcid!r}')
+            errors.append(f'{path} explicit_user authority requires an existing SourceRecord source_ref; got {srcid!r}.'+STATED_FIX)
             continue
         src=sources[srcid]
         if _source_authority(src)!='explicit_user':
-            errors.append(f'{path} explicit_user source {srcid} is not marked explicit_user authority')
+            errors.append(f'{path} explicit_user source {srcid} is not marked explicit_user authority.'+STATED_FIX)
             continue
         if typ=='BusinessClaim':
             if obj.get('authority')!='explicit_user':
@@ -82,14 +87,14 @@ def _provenance_errors(objects,sources):
                 continue
             quote=obj.get('support_quote');statement=_source_text(src)
             if not isinstance(quote,str) or not quote.strip():
-                errors.append(f'{path} explicit-user BusinessClaim requires a non-empty support_quote')
+                errors.append(f'{path} explicit-user BusinessClaim requires a non-empty support_quote.'+STATED_FIX)
                 continue
             if not statement:
-                errors.append(f'{path} explicit-user BusinessClaim source {srcid} lacks captured/verbatim text for literal support')
+                errors.append(f'{path} explicit-user BusinessClaim source {srcid} lacks captured/verbatim text for literal support.'+STATED_FIX)
                 continue
             normalized_quote=re.sub(r'\s+',' ',quote).strip().rstrip('.!').lower();normalized_source=re.sub(r'\s+',' ',statement).strip().lower()
             if normalized_quote not in normalized_source:
-                errors.append(f'{path} explicit-user BusinessClaim support_quote is not a literal excerpt of source {srcid}')
+                errors.append(f'{path} explicit-user BusinessClaim support_quote is not a literal excerpt of source {srcid}.'+STATED_FIX)
     return errors
 
 

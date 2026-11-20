@@ -52,6 +52,10 @@ def codex_latest_runs(home):
         return {}
 
 
+# The apps whose saved schedules inventory() reads back; others keep theirs to themselves.
+LISTED_APPS = ('codex', 'hermes', 'pi', 'antigravity')
+
+
 def inventory(codex_home=None, hermes_home=None, workspaces=(), antigravity_home=None):
     defaults = roots()
     codex_home, hermes_home = Path(codex_home or defaults[0]), Path(hermes_home or defaults[1])
