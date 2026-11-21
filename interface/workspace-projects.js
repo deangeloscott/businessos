@@ -7,7 +7,7 @@ window.auraProjects=(()=>{
     return ()=>id===ticket&&panel===state.fileDetailTicket&&(!wasOpen||$('#detail').open);
   }
   const url=(route,values={})=>route+'?'+new URLSearchParams({business:state.business,...values});
-  const label=kind=>({asset:'File',record:'Memory',goal:'Goal',file:'File',task:'Scheduled task',collection:'Saved results',result:'Chat result',library:'Library'})[kind]||human(kind);
+  const label=kind=>({asset:'File',record:'Knowledge',goal:'Goal',file:'File',task:'Scheduled task',collection:'Saved results',result:'Chat result',library:'Library'})[kind]||human(kind);
   async function refreshSavedWork(key){
     invalidateReads();await refresh(true,true);if(key!==scope())return;
     if(state.view==='files'){const data=await cachedApi(url('/api/files'));if(key!==scope())return;state.files=data.items;state.fileProjects=data.projects||[];renderFiles();}

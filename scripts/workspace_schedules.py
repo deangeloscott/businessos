@@ -5,6 +5,7 @@ import os
 import re
 from pathlib import Path
 import subprocess
+import sys
 import sqlite3
 from contextlib import closing
 
@@ -186,12 +187,11 @@ def inventory(codex_home=None, hermes_home=None, workspaces=(), antigravity_home
         notes.append('Google Antigravity: schedule settings could not be read. Check them in the app.')
     try:  # AURA's tasks on the computer's own scheduler, for apps without one AURA can reach
         import workspace_os_schedules as computer
-        names={'claude':'Claude Code','codex':'Codex','omp':'OMP','pi':'Pi'}
         for t in computer.listed():
-            append(t['app'],'computer',t['id'],app=names.get(t['app'],t['app']),name=t['name'],description=t['prompt'],schedule=computer.when_text(t['when']),
+            append(t['app'],'computer',t['id'],app=computer.NAMES.get(t['app'],t['app']),name=t['name'],description=t['prompt'],schedule=computer.when_text(t['when']),
                    schedule_raw=computer.rrule(t['when']),model=t.get('model',''),effort=t.get('effort',''),status=t['status'],next_run=t['next_run'],
                    last_run=t['last_run'],last_status=t['last_status'],last_error=t['last_error'],workspace=[t['workspace']],editable=True,scheduler='computer',
-                   runtime="Runs on this computer's own scheduler while the computer is on")
+                   runtime="Runs on this computer's own scheduler while "+('the computer is on' if sys.platform.startswith('linux') else "you're signed in"))
     except (ValueError,OSError) as exc:notes.append('This computer’s scheduler could not be read: '+str(exc)[:200])
     return {'items':items, 'notes':notes,
             'support':'Shows local Codex and Hermes schedules, Pi schedule-prompt jobs in opened workspaces, and Google Antigravity schedule sidecars. Live-chat timers, Claude schedules and cloud-only jobs are not automatically listed. Enabled means configured; the owning app must still be running.'}
@@ -222,7 +222,14 @@ def history(ident, workspaces=()):
         raise ValueError('This task is no longer available. Refresh recurring tasks.')
     runs=[]
     note='Results are kept by '+task['app']+'. This app has not exposed a result here.'
-    if task['owner']=='hermes':
+    if task.get('scheduler')=='computer':
+        import workspace_os_schedules as computer
+        labels={'complete':'Finished','error':'Failed','skipped':'Skipped'}
+        for row in reversed(computer.runs(task['native_id'])):
+            runs.append({'id':row.get('at',''),'name':row.get('at','').replace('T',' ')[:16],
+                         'status':labels.get(row.get('status'),row.get('status','')),'summary':(row.get('reply') or row.get('error') or '')[:300]})
+        note='No run yet. AURA keeps the last 20 runs of this task here.'
+    elif task['owner']=='hermes':
         home=roots()[1]
         if task['profile']!='default':home=home/'profiles'/task['profile']
         latest=result_path(home,task['native_id'],strict=True)
@@ -248,6 +255,11 @@ def result(ident, workspaces=(), run_id=None):
     task=found['task']
     run=next((r for r in found['items'] if r['id']==run_id),None) if run_id else next(iter(found['items']),None)
     if not run:raise ValueError('This saved result is no longer available. Refresh the task.')
+    if task.get('scheduler')=='computer':
+        import workspace_os_schedules as computer
+        row=next((r for r in computer.runs(task['native_id']) if r.get('at')==run['id']),{})
+        return {'text':(row.get('reply') or row.get('error') or '')[:100000],'name':task['name'],'file':run['name'],'native_id':'','owner':task['owner'],
+                'note':'' if row.get('reply') else 'This run did not finish with a reply.'}
     if task['owner']=='codex':
         row=next((r for r in codex_rows(roots()[0],'automation_runs',task['native_id']) if r['thread_id']==run['id']),None)
         if not row:raise ValueError('This result is no longer available in Codex.')

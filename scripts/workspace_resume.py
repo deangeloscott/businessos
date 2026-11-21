@@ -126,13 +126,16 @@ def schedule_wake(product):
         moment = datetime.fromtimestamp(at)
         target = Path.home() / 'Library/LaunchAgents/com.viraltrac.aura.continue.plist'
         target.parent.mkdir(parents=True, exist_ok=True)
+        # launchd's search path has only the system folders; keep the one AURA's AI apps were found on.
         target.write_bytes(plistlib.dumps({'Label': 'com.viraltrac.aura.continue', 'ProgramArguments': argv, 'WorkingDirectory': str(product),
+                                          'EnvironmentVariables': {'PATH': os.environ.get('PATH', '')},
                                           'StartCalendarInterval': {'Month': moment.month, 'Day': moment.day, 'Hour': moment.hour, 'Minute': moment.minute}}))
         subprocess.run(['launchctl', 'unload', str(target)], capture_output=True)
         subprocess.run(['launchctl', 'load', str(target)], capture_output=True, check=True)
     elif shutil.which('systemd-run'):
         clear_wake()
-        subprocess.run(['systemd-run', '--user', '--unit=viraltrac-aura-continue', '--on-calendar=' + datetime.fromtimestamp(at).strftime('%Y-%m-%d %H:%M:%S'), *argv],
+        subprocess.run(['systemd-run', '--user', '--unit=viraltrac-aura-continue', '--on-calendar=' + datetime.fromtimestamp(at).strftime('%Y-%m-%d %H:%M:%S'),
+                        '--setenv=PATH=' + os.environ.get('PATH', ''), *argv],
                        capture_output=True, check=True)
     else:
         raise ValueError('This system has no supported scheduler, so AURA can only continue while it is open.')

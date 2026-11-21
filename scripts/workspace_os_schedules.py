@@ -5,7 +5,13 @@ request through that app, in the business's workspace, with the permission chose
 system decides when it runs; AURA keeps the request (name, instructions, app, model) and the last few results on this
 computer, and can list, pause, resume, change and remove each task with the system's own commands. Everything AURA
 adds is named for AURA: the "AURA" folder in Task Scheduler, com.viraltrac.aura.task.* launch agents, and cron lines
-marked "aura-task". Tasks run while the computer is on and keep running if the AURA folder is deleted, until removed.
+marked "aura-task". Tasks run while the person is signed in (Windows, macOS) or the computer is on (Linux), and stay
+on the scheduler if the AURA folder is deleted, until removed. A run missed while the computer slept or was off happens
+once when it is back (launchd does this on its own), and every run is told to check what is already done first.
+
+The scheduler starts programs with a minimal search path on macOS and Linux, so each task keeps the search path of the
+AURA that set it up, which is where its AI app was found. When AURA moves to a new folder (an upgrade), its tasks move
+with it the next time AURA starts.
 
   workspace_os_schedules.py create --business-id <id> --app claude --name "Weekly check" --when "weekly mon 09:00"
                                     --prompt-file <file> [--model <id>] [--effort <level>] [--permission <mode>]
@@ -22,6 +28,7 @@ from _common import PRODUCT_ROOT,new_id,workspace_root
 from workspace_startup import state_dir
 
 APPS = ('claude','codex','omp','pi')  # apps whose own scheduler AURA cannot reach from their command line
+NAMES = {'claude':'Claude Code','codex':'Codex','omp':'OMP','pi':'Pi'}
 # Each app's own name for running without asking; Pi has no permission modes.
 FULL = {'claude':'bypassPermissions','codex':'full','omp':'yolo','pi':'native'}
 DAYS = ('mon','tue','wed','thu','fri','sat','sun')
@@ -81,7 +88,8 @@ def _runner(ident):
     return [str(quiet if os.name=='nt' and quiet.is_file() else python),str(PRODUCT_ROOT/'scripts/workspace_os_schedules.py'),'run',ident,
             *(['--state',os.environ['AURA_STATE_DIR']] if os.environ.get('AURA_STATE_DIR') else [])]
 def _call(argv,data=None):
-    done=subprocess.run(argv,input=data,capture_output=True,text=True,encoding='utf-8',errors='replace',timeout=60,**FLAGS)
+    try:done=subprocess.run(argv,input=data,capture_output=True,text=True,encoding='utf-8',errors='replace',timeout=60,**FLAGS)
+    except FileNotFoundError:raise ValueError(f"This computer has no {Path(argv[0]).name} to schedule tasks with.") from None
     if done.returncode:raise ValueError((done.stderr or done.stdout).strip()[-400:] or 'The computer\'s scheduler did not accept this change.')
     return done.stdout
 
@@ -98,9 +106,12 @@ def _win_create(task):
     _call(argv)
     program,*rest=_runner(task['id']);quote=lambda v:"'"+str(v).replace("'","''")+"'"
     arguments=' '.join(f'"{a}"' for a in rest)
+    # Task Scheduler's defaults skip a run on battery and stop one when a laptop is unplugged; a missed run happens
+    # once when the computer is back, as on macOS. One run at a time is its default.
     _call(['powershell','-NoProfile','-NonInteractive','-Command',
            f"$a=New-ScheduledTaskAction -Execute {quote(program)} -Argument {quote(arguments)} -WorkingDirectory {quote(task['workspace'])}; "
-           "Set-ScheduledTask -TaskPath '\\AURA\\' -TaskName "+quote(task['id'])+" -Action $a | Out-Null"])
+           "$s=New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable; "
+           "Set-ScheduledTask -TaskPath '\\AURA\\' -TaskName "+quote(task['id'])+" -Action $a -Settings $s | Out-Null"])
     if task.get('paused'):_call(['schtasks','/Change','/TN',name,'/DISABLE'])
 
 
@@ -121,7 +132,9 @@ def _win_status_now():
 def _mac_label(ident):return f'com.viraltrac.aura.task.{ident}'
 def _mac_plist(ident):return Path.home()/'Library/LaunchAgents'/f'{_mac_label(ident)}.plist'
 def _mac_create(task):
-    when=task['when'];plist={'Label':_mac_label(task['id']),'ProgramArguments':_runner(task['id']),'WorkingDirectory':task['workspace']}
+    # Disabled keeps a paused task from coming back when launchd loads the person's agents at the next sign-in.
+    when=task['when'];plist={'Label':_mac_label(task['id']),'ProgramArguments':_runner(task['id']),'WorkingDirectory':task['workspace'],
+                             'Disabled':bool(task.get('paused'))}
     if when['every']=='hourly':plist['StartInterval']=3600
     else:
         hour,minute=(int(v) for v in when['time'].split(':'));slot={'Hour':hour,'Minute':minute}
@@ -138,8 +151,10 @@ def _mac_unload(ident):
 
 # Linux: lines in the person's own crontab, marked for AURA.
 def _cron_lines():
-    done=subprocess.run(['crontab','-l'],capture_output=True,text=True,timeout=30)
+    try:done=subprocess.run(['crontab','-l'],capture_output=True,text=True,timeout=30)
+    except FileNotFoundError:raise ValueError('This computer has no crontab to schedule tasks with. Install cron, or set the task up in an AI app with its own scheduler.') from None
     return done.stdout.splitlines() if done.returncode==0 else []
+def _sh(value):return "'"+str(value).replace("'","'\\''")+"'"
 def _cron_write(lines):_call(['crontab','-'],'\n'.join(lines)+'\n')
 def _cron_create(task):
     when=task['when'];mark=f"# aura-task:{task['id']}"
@@ -149,15 +164,41 @@ def _cron_create(task):
     elif every=='daily':spec=f'{int(minute)} {int(hour)} * * *'
     elif every=='weekly':spec=f'{int(minute)} {int(hour)} * * {(DAYS.index(when["day"])+1)%7}'
     else:spec=f'{int(minute)} {int(hour)} {when["day"]} * *'
-    command=' '.join("'"+a.replace("'","'\\''")+"'" for a in _runner(task['id']))
-    line=('#AURA-PAUSED ' if task.get('paused') else '')+f"{spec} cd '{task['workspace']}' && {command} {mark}"
+    command=' '.join(_sh(a) for a in _runner(task['id']))
+    line=('#AURA-PAUSED ' if task.get('paused') else '')+f"{spec} cd {_sh(task['workspace'])} && {command} {mark}"
     _cron_write([l for l in _cron_lines() if not l.endswith(mark)]+[line])
 
 
 def _place(task):
+    task['runner']=_runner(task['id'])  # what follow() compares, so tasks move along with AURA
     if os.name=='nt':_win_create(task)
     elif sys.platform=='darwin':_mac_create(task)
     else:_cron_create(task)
+
+
+def _native_ids():
+    """Every AURA task this computer's scheduler holds, whether or not this AURA still has its definition."""
+    if os.name=='nt':
+        found=_win_status_now()
+        if found is None:raise ValueError("This computer's Task Scheduler could not be read.")
+        return set(found)
+    if sys.platform=='darwin':
+        folder=Path.home()/'Library/LaunchAgents';prefix=_mac_label('')
+        return {p.name[len(prefix):-len('.plist')] for p in folder.glob(prefix+'*.plist')} if folder.is_dir() else set()
+    return {m[1] for m in (re.search(r'# aura-task:([A-Za-z0-9_-]+)$',l) for l in _cron_lines()) if m}
+
+
+def follow():
+    """When AURA runs from a different folder or Python than a task was set up with (an upgrade, a move), point the
+    task at this one, so deleting the old folder doesn't quietly stop it."""
+    moved=[]
+    for task in definitions():
+        if task.get('runner')==_runner(task['id']):continue
+        try:
+            task.setdefault('path',os.environ.get('PATH',''));_place(task);save(task);moved.append(task['id'])
+        except (ValueError,OSError,subprocess.SubprocessError):continue  # listed as it is, so the person sees its state
+    if moved:_STATUS['at']=0
+    return moved
 
 
 def create(bid,app,name,when,prompt,model='',effort='',permission='',workspace=None):
@@ -171,11 +212,20 @@ def create(bid,app,name,when,prompt,model='',effort='',permission='',workspace=N
     root=Path(workspace or workspace_root()).resolve()
     if not (root/'instances'/bid).is_dir():raise ValueError('Choose a business in this workspace.')
     task={'id':new_id(9).replace('-','x'),'business_id':bid,'app':app,'name':name,'prompt':prompt,'when':parse_when(when),'model':model,'effort':effort,
-          'permission':permission,'workspace':str(root),'created':time.time(),'paused':False}
+          'permission':permission,'workspace':str(root),'created':time.time(),'paused':False,'path':os.environ.get('PATH','')}
     save(task)
     try:_place(task)
     except Exception:definition_path(task['id']).unlink(missing_ok=True);raise
     return task
+
+
+def _remove_native(ident):
+    _STATUS['at']=0
+    if os.name=='nt':
+        try:_call(['schtasks','/Delete','/F','/TN',f'\\AURA\\{ident}'])
+        except ValueError:pass  # already gone from Task Scheduler
+    elif sys.platform=='darwin':_mac_unload(ident);_mac_plist(ident).unlink(missing_ok=True)
+    else:_cron_write([l for l in _cron_lines() if not l.endswith(f'# aura-task:{ident}')])
 
 
 def change(ident,action,values=None):
@@ -187,13 +237,9 @@ def change(ident,action,values=None):
         for key in ('name','prompt','model','effort'):
             if key in values and str(values[key]).strip():task[key]=str(values[key]).strip()
     elif action=='remove':
-        _STATUS['at']=0
-        if os.name=='nt':
-            try:_call(['schtasks','/Delete','/F','/TN',f'\\AURA\\{ident}'])
-            except ValueError:pass  # already gone from Task Scheduler
-        elif sys.platform=='darwin':_mac_unload(ident);_mac_plist(ident).unlink(missing_ok=True)
-        else:_cron_write([l for l in _cron_lines() if not l.endswith(f'# aura-task:{ident}')])
+        _remove_native(ident)
         definition_path(ident).unlink(missing_ok=True);definition_path(ident).with_suffix('.runs.json').unlink(missing_ok=True)
+        definition_path(ident).with_suffix('.lock').unlink(missing_ok=True)
         return {**task,'status':'removed'}
     else:raise ValueError('Choose pause, resume, edit or remove.')
     save(task);_STATUS['at']=0
@@ -210,10 +256,12 @@ def runs(ident):
 def listed():
     """Each AURA task with what the scheduler reports (Windows) or knows (macOS, Linux)."""
     status=_win_status() if os.name=='nt' else None
+    try:present=None if os.name=='nt' else _native_ids()
+    except (ValueError,OSError,subprocess.SubprocessError):present=None
     rows=[]
     for task in definitions():
         seen=(status or {}).get(task['id']);last=(runs(task['id']) or [{}])[-1]
-        gone=status is not None and not seen
+        gone=(status is not None and not seen) or (present is not None and task['id'] not in present)
         rows.append({**task,'schedule':describe_when(task['when']),'status':'missing' if gone else 'paused' if task.get('paused') or (seen or {}).get('state')=='Disabled' else 'active',
                      'next_run':(seen or {}).get('next',''),'last_run':last.get('at',''),'last_status':last.get('status',''),'last_error':last.get('error','')})
     return rows
@@ -225,11 +273,17 @@ def run(ident):
     from workspace_execution import Execution
     from workspace_connections import Connections
     task=load(ident);started=time.strftime('%Y-%m-%dT%H:%M:%S');record={'at':started,'status':'error'}
+    lock=_lock(ident)
     try:
         if task.get('paused'):record.update(status='skipped',error='Paused');return
+        if not lock:record.update(status='skipped',error='The previous run was still going.');return
+        if not (Path(task['workspace'])/'instances'/task['business_id']).is_dir():
+            raise ValueError('This business is no longer in its workspace. Remove the task, or move the business back.')
+        # The search path of the AURA that set the task up, where its app was found; the scheduler's own comes after.
+        os.environ['PATH']=os.pathsep.join(dict.fromkeys(p for p in (task.get('path','')+os.pathsep+os.environ.get('PATH','')).split(os.pathsep) if p))
         import workspace_ui
         choice=next((a for a in workspace_ui.installed_agents() if a['id']==task['app'] and a.get('argv')),None)
-        if not choice:raise ValueError(f"{task['app']} is not installed on this computer anymore.")
+        if not choice:raise ValueError(f"{NAMES.get(task['app'],task['app'])} isn't installed on this computer anymore, or isn't where it was when this task was set up.")
         command=list(choice['argv'])
         env={**os.environ,**Connections(state_dir()).environment(),'BUSINESSOS_WORKSPACE':task['workspace'],'PYTHONUTF8':'1'}
         execution=Execution();execution.permission=task.get('permission','native')
@@ -245,8 +299,21 @@ def run(ident):
         record['error']=str(error)[:600]
     finally:
         history=(runs(ident)+[record])[-20:]
-        try:definition_path(ident).with_suffix('.runs.json').write_text(json.dumps(history,ensure_ascii=False,indent=2),encoding='utf-8')
+        try:
+            if definition_path(ident).is_file():  # removed while it ran: leave nothing behind
+                path=definition_path(ident).with_suffix('.runs.json');tmp=path.with_suffix('.tmp-runs')
+                tmp.write_text(json.dumps(history,ensure_ascii=False,indent=2),encoding='utf-8');tmp.replace(path)
         except OSError:pass
+        if hasattr(lock,'close'):lock.close()
+
+
+def _lock(ident):
+    """Task Scheduler and launchd never start a task while its last run is still going; cron does, so lock there."""
+    if os.name=='nt' or sys.platform=='darwin':return True
+    import fcntl
+    store().mkdir(parents=True,exist_ok=True);handle=open(store()/f'{ident}.lock','a')
+    try:fcntl.flock(handle,fcntl.LOCK_EX|fcntl.LOCK_NB);return handle
+    except OSError:handle.close();return None
 
 
 def main():
@@ -259,11 +326,16 @@ def main():
     prompt=Path(a.prompt_file).read_text(encoding='utf-8') if a.prompt_file else None
     if a.action=='run':run(a.id);return
     if a.action=='list':result=listed()
-    elif a.action=='remove-all':result=[change(t['id'],'remove')['name'] for t in definitions()]
+    elif a.action=='remove-all':
+        result=[change(t['id'],'remove')['name'] for t in definitions()]
+        for ident in _native_ids():  # entries this settings folder has no definition for (another one, or deleted)
+            _remove_native(ident);result.append(f'{ident} (no saved details)')
     elif a.action=='create':result=create(a.business_id,a.app,a.name,a.when,prompt,a.model,a.effort,a.permission)
     elif a.action=='edit':result=change(a.id,'edit',{k:v for k,v in {'when':a.when,'prompt':prompt,'name':a.name,'model':a.model,'effort':a.effort}.items() if v})
     else:result=change(a.id,a.action)
-    print(json.dumps(result,ensure_ascii=False,indent=2))
+    # The saved search path and command are bookkeeping; leave them out of what the AI reads.
+    tidy=lambda row:{k:v for k,v in row.items() if k not in {'path','runner'}} if isinstance(row,dict) else row
+    print(json.dumps([tidy(r) for r in result] if isinstance(result,list) else tidy(result),ensure_ascii=False,indent=2))
 
 
 if __name__=='__main__':

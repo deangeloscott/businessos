@@ -41,7 +41,12 @@ function humanError(error){
   if(message&&message.length<=350&&!machine.test(message)&&!['TypeError','SyntaxError','ReferenceError','RangeError'].includes(error?.name))return message;
   return 'AURA couldn’t complete this action. Try again. If it keeps happening, report it from Settings.';
 }
-window.addEventListener('error',event=>{technicalError(event.error||{message:event.message});notice(humanError(event.error||event.message),true);});
+// Browser housekeeping messages (a layout pass deferred, another site's script) are not problems a person can act on.
+window.addEventListener('error',event=>{technicalError(event.error||{message:event.message});if(!event.error&&/ResizeObserver loop|^Script error\.?$/i.test(event.message||''))return;notice(humanError(event.error||event.message),true);});
+// Shortcut hints in the keys a Mac shows: Command for Ctrl where both work, Option for Alt.
+const MAC=/Mac|iPhone|iPad/.test(navigator.userAgentData?.platform||navigator.platform||'');
+const keyHint=text=>MAC?String(text).replace(/\bCtrl([ +])(?=[K,])/g,'⌘$1').replace(/\bAlt([ +])/g,'⌥$1'):text;
+if(MAC)document.addEventListener('DOMContentLoaded',()=>{for(const el of document.querySelectorAll('kbd'))el.textContent=keyHint(el.textContent);for(const el of document.querySelectorAll('[title]'))el.title=keyHint(el.title);});
 window.addEventListener('unhandledrejection',event=>{technicalError(event.reason);notice(humanError(event.reason),true);});
 
 const clientPerformance={requests:0,errors:0,total_ms:0,max_ms:0,message_formats:0,message_format_ms:0,long_tasks:0,long_task_ms:0,max_long_task_ms:0};
@@ -684,7 +689,12 @@ function usageAccountDetails(a) {
 }
 async function loadUsageLinks() {
   const business=state.business,workspace=state.data.workspace;
-  const data=await api(`/api/usage?business=${encodeURIComponent(business)}`);
+  let data;
+  try{data=await api(`/api/usage?business=${encodeURIComponent(business)}`);}
+  catch(error){
+    if($('#usage-account-links'))$('#usage-account-links').innerHTML=`<p class="usage-no-data">Couldn’t read your accounts. <button type="button" class="text-button compact" data-usage-links-retry="1">Try again</button></p>`;
+    throw error;
+  }
   if(state.business!==business||state.data.workspace!==workspace||!$('#usage-account-links'))return;
   const rows=data.accounts.map(a=>({account:a,controls:usageAccountLinks(a,data)})).filter(r=>r.controls);
   $('#usage-account-links').innerHTML=rows.length?rows.map(({account:a,controls})=>`<article class="usage-account"><div class="usage-account-heading"><strong>${esc(a.name)} · ${esc(a.label)}</strong></div><div class="usage-extra">${controls}</div></article>`).join(''):'<p class="usage-no-data">No account links to adjust.</p>';
@@ -1442,7 +1452,7 @@ const scheduleListNote=app=>(state.data.connection.schedules_on_computer||[]).in
 function scheduleForm() {
   const current=state.data.connection,apps=current.choices.filter(c=>c.available&&nativeConnection(c.id));
   const draft=state.scheduleDraft??={name:'',description:'',when:'',app:apps.some(c=>c.id===current.selected)?current.selected:apps[0]?.id||'',model:current.model||'',effort:current.effort||''};
-  return `<details id="schedule-add" class="schedule-add" ${state.scheduleAdding?'open':''}><summary class="secondary compact add-button">Add scheduled task</summary><form class="form-grid" id="schedule-form">${draft.collection_id?`<input type="hidden" name="collection_id" value="${esc(draft.collection_id)}"><p class="small-note">Save results to ${esc(draft.collection_name)}</p>`:''}<div class="schedule-basics"><label>Task name<input name="name" required maxlength="200" value="${esc(draft.name)}" placeholder="Weekly competitor check"></label><label>When?<input name="when" required maxlength="300" value="${esc(draft.when)}" placeholder="Every Monday at 9am"></label></div><label>What should it do?<textarea name="description" required rows="2" maxlength="20000" placeholder="Check competitor pricing and summarize meaningful changes.">${esc(draft.description)}</textarea></label><label>Workspace goal<select name="goal_id"><option value="">No workspace goal</option>${workspaceGoalRecords().map(g=>`<option value="${esc(g.ref)}" ${g.ref===draft.goal_id?'selected':''}>${esc(g.title)}</option>`).join('')}</select></label><label>Assistant<select name="assistant_id" id="schedule-assistant"><option value="">Unassigned</option>${(state.assistantProfiles||[]).map(p=>`<option value="${esc(p.id)}" ${p.id===draft.assistant_id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label><div class="schedule-run-with"><label>AI app<select name="app" id="schedule-app" required>${apps.map(c=>`<option value="${esc(c.id)}" ${c.id===draft.app?'selected':''}>${esc(c.name)}</option>`).join('')||'<option value="">Connect an AI app first</option>'}</select></label><label>Model<select name="model" id="schedule-model" required disabled><option>Finding models…</option></select></label><label id="schedule-effort-label" hidden>Effort<select name="effort" id="schedule-effort"></select></label></div><p id="schedule-create-status" class="small-note" role="status"></p><div class="inline-actions"><button class="primary" id="create-schedule" disabled>Create task →</button><button type="button" class="text-button" id="schedule-retry-models" hidden>Try again</button></div></form></details>`;
+  return `<details id="schedule-add" class="schedule-add" ${state.scheduleAdding?'open':''}><summary class="secondary compact add-button">Add scheduled task</summary><form class="form-grid" id="schedule-form">${draft.collection_id?`<input type="hidden" name="collection_id" value="${esc(draft.collection_id)}"><p class="small-note">Save results to ${esc(draft.collection_name)}</p>`:''}<div class="schedule-basics"><label>Task name<input name="name" required maxlength="200" value="${esc(draft.name)}" placeholder="Weekly competitor check"></label><label>When?<input name="when" required maxlength="300" value="${esc(draft.when)}" placeholder="Every Monday at 9am"></label></div><label>What should it do?<textarea name="description" required rows="2" maxlength="20000" placeholder="Check competitor pricing and summarize meaningful changes.">${esc(draft.description)}</textarea></label><label>Business goal<select name="goal_id"><option value="">No business goal</option>${workspaceGoalRecords().map(g=>`<option value="${esc(g.ref)}" ${g.ref===draft.goal_id?'selected':''}>${esc(g.title)}</option>`).join('')}</select></label><label>Assistant<select name="assistant_id" id="schedule-assistant"><option value="">Unassigned</option>${(state.assistantProfiles||[]).map(p=>`<option value="${esc(p.id)}" ${p.id===draft.assistant_id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label><div class="schedule-run-with"><label>AI app<select name="app" id="schedule-app" required>${apps.map(c=>`<option value="${esc(c.id)}" ${c.id===draft.app?'selected':''}>${esc(c.name)}</option>`).join('')||'<option value="">Connect an AI app first</option>'}</select></label><label>Model<select name="model" id="schedule-model" required disabled><option>Finding models…</option></select></label><label id="schedule-effort-label" hidden>Effort<select name="effort" id="schedule-effort"></select></label></div><p id="schedule-create-status" class="small-note" role="status"></p><div class="inline-actions"><button class="primary" id="create-schedule" disabled>Create task →</button><button type="button" class="text-button" id="schedule-retry-models" hidden>Try again</button></div></form></details>`;
 }
 async function loadScheduleModels(refresh=false) {
   const app=$('#schedule-app')?.value;if(!app)return;
@@ -1901,7 +1911,7 @@ function paintShellCommands(q){
   const terms=q.split(/\s+/).filter(Boolean);
   const found=terms.length&&shellSearchFilter==='all'&&!shellSearchFavorites?shellCommands().filter(c=>{const text=(c.label+' '+c.words).toLowerCase();return terms.every(t=>text.includes(t));}).sort((a,b)=>Number(!a.label.toLowerCase().startsWith(q))-Number(!b.label.toLowerCase().startsWith(q))).slice(0,5):[];
   list.hidden=!found.length;
-  list.innerHTML=found.map((c,i)=>`<li><button type="button" class="command-row" data-command="${i}"><span class="command-icon" aria-hidden="true">›</span><span>${esc(c.label)}</span><kbd>${esc(c.hint)}</kbd></button></li>`).join('');
+  list.innerHTML=found.map((c,i)=>`<li><button type="button" class="command-row" data-command="${i}"><span class="command-icon" aria-hidden="true">›</span><span>${esc(c.label)}</span><kbd>${esc(keyHint(c.hint))}</kbd></button></li>`).join('');
   list.onclick=event=>{const b=event.target.closest('[data-command]');if(!b)return;const c=found[Number(b.dataset.command)];$('#search-dialog').close();c?.run();};
 }
 let apiConnections=[];
@@ -1935,10 +1945,11 @@ async function showViraltracReport(source='') {
   const data=performance.data||{},summary=data.summary;
   const pretty=value=>esc(JSON.stringify(value,null,2));
   const fields=value=>Object.entries(value||{}).map(([key,val])=>`<div class="row"><span class="row-text"><strong>${esc(human(key))}</strong><span class="row-meta">${esc(val===null?'Unknown':typeof val==='object'?JSON.stringify(val):String(val))}</span></span></div>`).join('');
-  details('ViralTrac marketing summary',`<p>${esc(performance.window_applied?.start_date||'Unknown start')} – ${esc(performance.window_applied?.end_date||'Unknown end')} · Coverage: ${esc(performance.coverage||'unknown')}</p>
+  const period=[performance.window_applied?.start_date,performance.window_applied?.end_date].filter(Boolean).join(' – '),coverage=performance.coverage?'Coverage: '+performance.coverage:'';
+  details('ViralTrac marketing summary',`${period||coverage?`<p>${esc([period,coverage].filter(Boolean).join(' · '))}</p>`:''}
     ${result.message?`<p role="status">${esc(result.message)}</p>`:''}
     ${summary?`<div class="card">${fields(summary.stats)}</div>`:'<p>No performance summary is available. This does not mean zero activity.</p>'}
-    <h3>Source readiness</h3><p>Coverage: ${esc(readiness.coverage||'unknown')}</p>${Array.isArray(readiness.data?.readiness)?(readiness.data.readiness.length?readiness.data.readiness.map(r=>`<div class="row"><span class="row-text"><strong>${esc(human(r.platform||'Connection'))}</strong><span class="row-meta">${esc(r.reauth_required?'Reconnect required':human(r.status||r.auth_state||'unknown'))}${r.connection_id?' · '+esc(r.connection_id):''}</span>${r.last_error?`<span class="row-meta">${esc(r.last_error)}</span>`:''}</span></div>`).join(''):'<p>No connected sources were reported. Connect a source in ViralTrac to start collecting evidence.</p>'):fields(readiness.data)}
+    <h3>Source readiness</h3>${readiness.coverage?`<p>Coverage: ${esc(readiness.coverage)}</p>`:''}${Array.isArray(readiness.data?.readiness)?(readiness.data.readiness.length?readiness.data.readiness.map(r=>`<div class="row"><span class="row-text"><strong>${esc(human(r.platform||'Connection'))}</strong><span class="row-meta">${esc(r.reauth_required?'Reconnect required':human(r.status||r.auth_state||'Not reported'))}</span>${r.last_error?`<span class="row-meta">${esc(r.last_error)}</span>`:''}</span></div>`).join(''):'<p>No connected sources were reported. Connect a source in ViralTrac to start collecting evidence.</p>'):fields(readiness.data)}
     ${[...new Set([...(performance.reason_codes||[]),...(readiness.reason_codes||[])])].map(reason=>`<p class="small-note">${esc(human(reason))}</p>`).join('')}
     ${result.comparison?`<details open><summary>Changed for this reporting period</summary><p>Review these changes before updating conclusions based on the saved report.</p><h4>Previous</h4><pre style="white-space:pre-wrap;overflow-wrap:anywhere">${pretty(result.comparison.before)}</pre><h4>Current</h4><pre style="white-space:pre-wrap;overflow-wrap:anywhere">${pretty(result.comparison.after)}</pre></details>`:source?`<p>${result.status==='unchanged'?'No changes to measurements or coverage. The source check is up to date.':''}</p>`:''}
     <details><summary>Evidence, source scope and freshness</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere">${pretty(result.report)}</pre></details>
@@ -2151,7 +2162,9 @@ async function saveSharingSelection(){
 }
 async function loadSharingPackages(path=''){
   const current=sharing,request=sharing.discoveryRequest=(sharing.discoveryRequest||0)+1,status=$('#share-discovery-status');if(status)status.textContent='Looking for sharing packages…';
-  const result=await shareApi('discover',path?{path}:{});
+  let result;
+  try{result=await shareApi('discover',path?{path}:{});}
+  catch(error){if(sharing===current&&sharing.discoveryRequest===request&&status?.isConnected)status.textContent='Couldn’t look for sharing packages. Try Refresh.';throw error;}
   if(sharing!==current||sharing.discoveryRequest!==request)return;
   sharing.discovered=result;sharing.packageLimit=20;sharing.packageQuery='';
   if(sharing.tab==='import'&&$('#share-discovered')){$('#share-package-search').value='';renderDiscoveredPackages();}
@@ -2789,7 +2802,8 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(['update-check','update-install','update-later','update-skip','update-rollback'].includes(button.id)) {
     button.disabled=true;
     if(['update-install','update-rollback'].includes(button.id))state.allowUpdateRestart=true;
-    state.updates=await api('/api/updates',{action:({'update-check':'check','update-install':'install','update-later':'later','update-skip':'skip','update-rollback':'rollback'})[button.id]});
+    try{state.updates=await api('/api/updates',{action:({'update-check':'check','update-install':'install','update-later':'later','update-skip':'skip','update-rollback':'rollback'})[button.id]});}
+    catch(error){state.allowUpdateRestart=false;if(button.isConnected)button.disabled=false;throw error;}  // offline, say: the person can try again
     state.updateSignature='';renderUpdates();renderNotifications();
     if(['update-later','update-skip'].includes(button.id))$('#detail').close();
   }
@@ -2863,7 +2877,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.dataset.memoryGoalScope){state.memoryGoalScope=button.dataset.memoryGoalScope;renderMemory();$(`[data-memory-goal-scope="${state.memoryGoalScope}"]`)?.focus();}
   if(button.dataset.memoryGoals){state.memoryGoalStatus=button.dataset.memoryGoals;renderMemory();$(`[data-memory-goals="${state.memoryGoalStatus}"]`)?.focus();}
   if(button.hasAttribute('data-page-help'))pageHelp();
-  if(button.hasAttribute('data-goal-help'))details('How goals work','<p>A workspace goal is an outcome you can work toward across chats. A chat goal is an assignment for one conversation; it can contribute to a workspace goal.</p><p>When a goal is linked to a chat, AURA includes it with your next request. For a chat goal, Work toward goal starts the AI app’s native goal mode when the connection supports it. Saving or linking a goal does not start work. Your AI app handles execution and continuation.</p><p>Link useful saved files here, or ask your AI to link them when saving. AURA does not automatically assign every created file to a goal. A native completion report can complete its chat goal. Otherwise, mark completion explicitly. A finished reply alone does not complete a goal, and chat goals never automatically complete their workspace goal.</p>');
+  if(button.hasAttribute('data-goal-help'))details('How goals work','<p>A business goal is an outcome you can work toward across chats. A chat goal is an assignment for one conversation; it can contribute to a business goal.</p><p>When a goal is linked to a chat, AURA includes it with your next request. For a chat goal, Work toward goal starts the AI app’s native goal mode when the connection supports it. Saving or linking a goal does not start work. Your AI app handles execution and continuation.</p><p>Link useful saved files here, or ask your AI to link them when saving. AURA does not automatically assign every created file to a goal. A native completion report can complete its chat goal. Otherwise, mark completion explicitly. A finished reply alone does not complete a goal, and chat goals never automatically complete their business goal.</p>');
   if(button.dataset.copyItemLocation){await navigator.clipboard.writeText(button.dataset.copyItemLocation);notice('File location copied.');}
   if(button.hasAttribute('data-file-favorites')){state.fileFavoritesOnly=!state.fileFavoritesOnly;renderQuickFiles();renderFiles();document.querySelectorAll('[data-file-favorites]').forEach(b=>{b.setAttribute('aria-pressed',String(!!state.fileFavoritesOnly));b.classList.toggle('active',!!state.fileFavoritesOnly);});}
   if(button.dataset.fileFavorite){const marked=await toggleFileFavorite(button.dataset.fileFavorite);if(button.isConnected){button.setAttribute('aria-pressed',String(marked));button.textContent=marked?'★':'☆';button.title=marked?'Remove from favorites':'Add to favorites';button.setAttribute('aria-label',button.getAttribute('aria-label').replace(/^(Add|Remove) /,marked?'Remove ':'Add ').replace(/ (to|from) favorites$/,marked?' from favorites':' to favorites'));}}
@@ -3011,6 +3025,7 @@ document.addEventListener('click',event=>attempt(async()=>{
     $('#detail').close();notice('');await pollJob(job);await hydrateConversation();
   }
   if(button.dataset.usageLink){const target=$('#usage-link-'+button.dataset.usageLink).value;if(!target)throw new Error('Choose the matching account.');await api('/api/usage/link',{business:state.business,source:button.dataset.usageLink,target});await loadUsageLinks();}
+  if(button.dataset.usageLinksRetry){await loadUsageLinks();}
   if(button.dataset.usageUnlink){await api('/api/usage/link',{business:state.business,source:button.dataset.usageUnlink,target:''});await loadUsageLinks();}
   if(button.dataset.openWorkspace)await openStoredWorkspace(button.dataset.openWorkspace);
   if(button.dataset.storageBrowse){const r=await api('/api/locations/browse',{kind:button.dataset.kind||'folder'});if(r.path){$('#'+button.dataset.storageBrowse).value=r.path;if(button.dataset.storageBrowse==='new-workspace-parent')$('#new-workspace-location').textContent=r.path;}}
@@ -3550,7 +3565,7 @@ async function showArchivedItems(filter='all',query=''){
   if(!dialog.open)dialog.showModal();host.innerHTML='<p role="status">Reading archived and deleted items…</p>';
   const data=await api('/api/archive?business='+encodeURIComponent(state.business));
   if(!dialog.open||ticket!==state.archiveTicket||scope!==JSON.stringify([state.data.workspace,state.business]))return;
-  const labels={all:'All',archived:'Archived',deleted:'Deleted',recovery:'Recovery copies'},types={project:'Project',chat:'Chat',goal:'Goal',agent:'Agent',record:'Memory',collection:'Collection',file:'File',recovery:'File','deleted-file':'Deleted record','file-version':'Saved file copy'};let limit=50;
+  const labels={all:'All',archived:'Archived',deleted:'Deleted',recovery:'Recovery copies'},types={project:'Project',chat:'Chat',goal:'Goal',agent:'Agent',record:'Knowledge',collection:'Collection',file:'File',recovery:'File','deleted-file':'Deleted record','file-version':'Saved file copy'};let limit=50;
   host.innerHTML=`<label class="sr-only" for="archive-find">Find an archived or deleted item</label><input id="archive-find" class="search" type="search" placeholder="Find an item…"><div class="filters" id="archive-filters"></div><p id="archive-count" class="small-note" role="status"></p><div id="archive-list"></div><button type="button" id="archive-more" class="text-button" hidden>Show more items</button><p class="small-note archive-retention">Archived items and deleted goals stay until restored. Archiving does not pause native schedules or move files. Deleted records use local file history (up to 20 versions per file, 500 entries and 256 MB); older copies can be removed as history fills. Recovery copies follow their chosen retention.</p>${data.items.some(i=>i.kind==='recovery')?'<button type="button" class="text-button" id="archive-manage-recovery">Manage recovery copies</button>':''}${data.notes.map(n=>`<p class="small-note">${esc(n)}</p>`).join('')}`;
   $('#archive-find').value=query;
   const paint=()=>{
@@ -3580,7 +3595,7 @@ function indexShellSearch(source){
   const items=[
     ...source.chats.filter(c=>!c.archived&&!c.deleted_at&&!['deleted','trashed'].includes(c.status)).map(c=>({at:c.updated||c.created,type:'chats',label:'Chat',title:c.title,description:(c.summary||c.latest_request||c.description)?chatDescription(c):'',match:c.title+' '+((c.summary||c.latest_request||c.description)?chatDescription(c):''),attr:'data-chat',id:c.id})),
     ...source.files.filter(usefulFile).map(f=>({favoriteKeys:fileFavoriteKeys(f.path),at:f.modified,type:'files',label:'File',title:f.name,description:f.location_name||(!f.path.startsWith('asset/')?f.path:''),match:f.name+' '+f.path,attr:'data-search-file',id:f.path})),
-    ...source.records.filter(r=>!searchHidden(r.data)&&(r.type!=='Asset'||!fileRefs.has(r.ref))).map(r=>({at:r.data.updated_at||r.data.created_at,type:'records',label:'Memory',title:r.title,description:shareType(r.type||r.ref.split('/')[0]),match:r.title+' '+JSON.stringify(r.data),attr:'data-search-record',id:r.ref})),
+    ...source.records.filter(r=>!searchHidden(r.data)&&(r.type!=='Asset'||!fileRefs.has(r.ref))).map(r=>({at:r.data.updated_at||r.data.created_at,type:'records',label:'Knowledge',title:r.title,description:shareType(r.type||r.ref.split('/')[0]),match:r.title+' '+JSON.stringify(r.data),attr:'data-search-record',id:r.ref})),
     ...source.library.filter(libraryGuidance).map(i=>({favoriteKeys:[i.key,...(i.aliases||[])],at:i.updated_at,type:'library',label:'Library',title:i.title||i.name||i.id,description:[i.subtype||i.kind,(i.apps||[]).map(appName).join(', ')].filter(Boolean).join(' · '),attr:'data-search-library',id:i.key||i.id}))
   ];
   return items.map(i=>({...i,at:searchTimestamp(i.at),match:String(i.match||'').toLowerCase(),titleLower:String(i.title).toLowerCase()})).sort((a,b)=>b.at-a.at||a.titleLower.localeCompare(b.titleLower));
@@ -3653,7 +3668,7 @@ $('#conversation').addEventListener('scroll',()=>{clearTimeout(state.draftScroll
 $('#detail').addEventListener('close',()=>{if(shellReturnFocus?.isConnected&&!anchoredSurface&&!document.querySelector('dialog:modal')&&!$('#detail').open)shellReturnFocus.focus({preventScroll:true});});
 document.addEventListener('keydown',event=>{
   if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'){event.preventDefault();attempt(openShellSearch);}
-  if(event.altKey&&!event.ctrlKey&&!event.metaKey&&event.key.toLowerCase()==='n'){event.preventDefault();attempt(newShellChat);}
+  if(event.altKey&&!event.ctrlKey&&!event.metaKey&&event.code==='KeyN'){event.preventDefault();attempt(newShellChat);}
   if((event.ctrlKey||event.metaKey)&&event.key===','){event.preventDefault();openSettings();}
   if(event.key==='Escape'){
     if(event.defaultPrevented)return;

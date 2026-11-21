@@ -8,6 +8,7 @@ import mimetypes
 import os
 import re
 import shlex
+import shutil
 import sys
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -211,6 +212,31 @@ _PYTHON=re.compile(r'(?i)^(?:python(?:3(?:\.\d+)?)?|py)(?:\.exe)?$')
 _SHELLS={'bash':'posix','sh':'posix','zsh':'posix','pwsh':'powershell','powershell':'powershell'}
 
 
+def python(word):
+    """A Python the person installed: a bare name the shell finds on its path, or that same program, or AURA's own, by
+    its full path. Not a program of that name somewhere else, such as one written into the workspace."""
+    if not _PYTHON.match(Path(word).name):return False
+    if os.sep not in word and '/' not in word:return True
+    found=shutil.which(Path(word).name)
+    return Path(word).is_absolute() and Path(word).resolve() in {Path(sys.executable).resolve(),*([Path(found).resolve()] if found else [])}
+
+
+def within(arguments,place):
+    """Helper options that choose where it reads or writes stay on this workspace: --workspace names it and --output
+    goes inside it (argparse also accepts a shortened option name, so those count too)."""
+    from _common import workspace_root
+    root=workspace_root().resolve();words=list(arguments)
+    for i,word in enumerate(words):
+        name,_,value=word.partition('=')
+        if not name.startswith('--') or len(name)<3:continue
+        kind=next((k for k in ('workspace','output') if k.startswith(name[2:])),None)
+        if not kind:continue
+        if not value:value=words[i+1] if i+1<len(words) else ''
+        target=place(value) if value else None
+        if not target or (kind=='workspace' and target!=root) or (kind=='output' and not target.is_relative_to(root)):return False
+    return True
+
+
 def aura_helper(command,cwd,shell='posix'):
     """True when a shell command only runs AURA's own helpers from this AURA, optionally after `cd` and the workspace
     setting, joined by && or ;. Anything else (another program, pipes, redirects, substitutions) is asked about as usual.
@@ -225,6 +251,7 @@ def aura_helper(command,cwd,shell='posix'):
     if not text.strip() or re.search(r'[`\n\r]|\$[({]',text):return False
     try:
         lexer=shlex.shlex(text,posix=True,punctuation_chars=True);lexer.whitespace_split=True
+        lexer.commenters=''  # shlex ends a line at "#" even mid-word, where shells don't: "x#; rm y" is two commands
         if shell=='powershell':lexer.escape=''  # a backslash is part of a Windows path there, not an escape
         tokens=list(lexer)
     except ValueError:return False
@@ -245,14 +272,14 @@ def aura_helper(command,cwd,shell='posix'):
             name,value=words[0].split('=',1)
             if name=='BUSINESSOS_WORKSPACE' and place(value)!=workspace_root().resolve():return False  # only this workspace
             words=words[1:]
-        if not words or not (_PYTHON.match(Path(words[0]).name) and (os.sep not in words[0] and '/' not in words[0] or Path(words[0]).is_file())
-                             or Path(words[0]).resolve()==Path(sys.executable).resolve()):return False
+        if not words or not python(words[0]):return False
         rest=words[1:]
         while rest and rest[0] in {'-X','-u','-I','-B'}:rest=rest[2:] if rest[0]=='-X' else rest[1:]
         if not rest:return False
         script=place(rest[0]);name=script.stem
         if script.parent!=scripts or script.suffix!='.py' or not script.is_file() or name in ASK_FIRST:return False
         if name.startswith('_') or name.startswith('workspace_') and name not in {'workspace_context','workspace_summary'}:return False
+        if not within(rest[1:],place):return False
         ran=True
     return ran
 

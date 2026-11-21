@@ -35,4 +35,4 @@ python scripts/workspace_archive.py archive --workspace <folder> --business-id <
 python scripts/workspace_archive.py restore --workspace <folder> --business-id <id> --kind record --id=<record-id>
 ```
 
-These commands use the running local AURA service (`--url` selects another local address). Existing chat, goal, project and agent endpoints remain compatible. Direct `workspace_assistants.py archive/restore` also works offline on the same portable profile state. Product and native files are never deleted by an archive action.
+These commands go through the open AURA window, which they find on their own (`--url` names another local address). Existing chat, goal, project and agent endpoints remain compatible. Direct `workspace_assistants.py archive/restore` also works offline on the same portable profile state. Product and native files are never deleted by an archive action.

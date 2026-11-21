@@ -243,10 +243,13 @@ class ChatRun:
                 if job['status']=='complete' and job.get('progress')=='Background work is running' and not job.get('background_processes') \
                         and not any(c.get('status') in {'working','pending'} for c in job['subagents']):
                     job['progress']='Done'
-                workspace_usage.record(app.preferences,job,chat,app.agent['name'])
+                # Bookkeeping; whatever goes wrong in it, the chat below still records how the request ended.
+                try:workspace_usage.record(app.preferences,job,chat,app.agent['name'])
+                except Exception:job['usage_warning']='Usage for this request could not be recorded.'
                 try:app.check_usage_alerts(bid)
                 except (OSError,ValueError):pass
-                app.record_notification(job, chat)
+                try:app.record_notification(job, chat)
+                except Exception:pass
                 if chat:
                     if job['status']=='complete':
                         chat.pop('model_choice_pending',None)

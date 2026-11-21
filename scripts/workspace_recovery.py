@@ -205,7 +205,7 @@ def prepare(app,bid,ident,expected=None,reviewed=False):
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('action',choices=['check','prepare'])
     parser.add_argument('--workspace',type=Path,default=workspace_root());parser.add_argument('--business-id',required=True);parser.add_argument('--chat',required=True)
-    parser.add_argument('--url',default='http://127.0.0.1:4187');parser.add_argument('--revision');parser.add_argument('--reviewed',action='store_true');parser.add_argument('--json',action='store_true')
+    parser.add_argument('--url',default='');parser.add_argument('--revision');parser.add_argument('--reviewed',action='store_true');parser.add_argument('--json',action='store_true')
     from _common import parse_args_with_ids
     args=parse_args_with_ids(parser)
     from workspace_goals import live_change

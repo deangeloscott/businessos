@@ -97,7 +97,7 @@ def main():
     parser.add_argument('action',choices=['list','pin','unpin','move','projects','create-project','edit-project','remove-project','open-project'])
     parser.add_argument('--business-id',required=True);parser.add_argument('--chat');parser.add_argument('--project',default='')
     parser.add_argument('--name');parser.add_argument('--folder')
-    parser.add_argument('--workspace',type=Path,default=workspace_root());parser.add_argument('--url',default='http://127.0.0.1:4187')
+    parser.add_argument('--workspace',type=Path,default=workspace_root());parser.add_argument('--url',default='')
     parser.add_argument('--context',type=Path,help='JSON array of saved context references')
     from _common import parse_args_with_ids
     args=parse_args_with_ids(parser)

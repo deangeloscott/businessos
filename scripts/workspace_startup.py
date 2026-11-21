@@ -70,12 +70,25 @@ def status():
         return {'supported':True, 'enabled':False}
 
 
+def _aura_entry(target):
+    """An entry AURA wrote (it starts AURA's own launcher), as opposed to one the person made or changed by hand."""
+    try:data = target.read_bytes()
+    except OSError:return False
+    return any(mark in data for mark in (b'open_aura.py', 'open_aura.py'.encode('utf-16-le')))
+
+
 def configure(enabled, product, workspace, business='', extra=(), interpreter=None):
     target = registration()
     saved = state_dir() / 'startup.json'
     current = status()
-    if target.exists() and not current['enabled']:
+    # AURA's own entry whose record was lost (a cleared settings folder) is still AURA's to replace or turn off; one
+    # changed since AURA wrote it is the person's.
+    try:json.loads(saved.read_text(encoding='utf-8'))['sha256'];lost=False
+    except (OSError, ValueError, KeyError, TypeError):lost=True
+    if target.exists() and not current['enabled'] and not (lost and _aura_entry(target)):
         raise ValueError('An existing AURA startup entry was changed elsewhere. Remove it in your system startup settings first.')
+    if not enabled and target.exists() and not current['enabled']:
+        target.unlink()
     if not enabled:
         if current['enabled']:
             target.unlink()
@@ -103,15 +116,17 @@ def configure(enabled, product, workspace, business='', extra=(), interpreter=No
         subprocess.run([str(powershell), '-NoProfile', '-NonInteractive', '-EncodedCommand', encoded],
                        check=True, timeout=15, capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
     elif sys.platform == 'darwin':
+        # launchd starts programs with only the system folders on the search path; keep the one AI apps were found on.
         target.write_bytes(plistlib.dumps({'Label':'com.viraltrac.aura', 'ProgramArguments':argv,
-            'WorkingDirectory':str(product), 'RunAtLoad':True,
+            'WorkingDirectory':str(product), 'RunAtLoad':True, 'EnvironmentVariables':{'PATH':os.environ.get('PATH','')},
             'StandardOutPath':str(state_dir() / 'startup.log'),
             'StandardErrorPath':str(state_dir() / 'startup-error.log')}))
     else:
         def escaped(value):
             return '"' + str(value).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$').replace('%', '%%') + '"'
+        # A desktop session's search path may lack folders a shell adds (where AI apps are often installed).
         target.write_text('[Desktop Entry]\nType=Application\nName=AURA\nTerminal=false\nExec=' +
-                          ' '.join(map(escaped, argv)) + '\n', encoding='utf-8')
+                          ' '.join(map(escaped, ['env', 'PATH=' + os.environ.get('PATH', ''), *argv])) + '\n', encoding='utf-8')
     target.chmod(0o600)
     saved.write_text(json.dumps({'workspace':str(workspace), 'product':str(product),
                                 'sha256':hashlib.sha256(target.read_bytes()).hexdigest()}), encoding='utf-8')

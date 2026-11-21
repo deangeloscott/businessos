@@ -85,7 +85,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--app',required=True);parser.add_argument('--mode',default='native');parser.add_argument('--json',action='store_true')
     action=parser.add_mutually_exclusive_group();action.add_argument('--current',action='store_true');action.add_argument('--save',action='store_true')
-    parser.add_argument('--business-id');parser.add_argument('--chat');parser.add_argument('--url',default='http://127.0.0.1:4187')
+    parser.add_argument('--business-id');parser.add_argument('--chat');parser.add_argument('--url',default='')
     parser.add_argument('--workspace')
     from _common import parse_args_with_ids
     args=parse_args_with_ids(parser)

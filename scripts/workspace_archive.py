@@ -118,7 +118,7 @@ def main():
     parser.add_argument('action', choices=['list', 'archive', 'restore'])
     parser.add_argument('--business-id', required=True)
     parser.add_argument('--workspace', type=Path, default=workspace_root())
-    parser.add_argument('--url', default='http://127.0.0.1:4187', help='Running local AURA address')
+    parser.add_argument('--url', default='', help='Running local AURA address (found automatically when AURA is open)')
     parser.add_argument('--kind', choices=['chat', 'goal', 'recovery','project','agent','record','file','collection','deleted-file','file-version'])
     parser.add_argument('--id')
     parser.add_argument('--json', action='store_true')

@@ -27,7 +27,7 @@ context.api=async()=>chats;context.cachedApi=async path=>path.startsWith('/api/f
   assert.doesNotMatch(node('#shell-search-results').innerHTML,/Asset.json|See all matching|Opaque plugin|Opaque tool/);
   node('#shell-search').value='Customer guide';context.paintShellSearch();
   const mixed=node('#shell-search-results').innerHTML;
-  for(const label of ['Chat','File','Memory'])assert(mixed.includes('search-result-type">'+label));
+  for(const label of ['Chat','File','Knowledge'])assert(mixed.includes('search-result-type">'+label));
   assert(mixed.indexOf('data-chat=')<mixed.indexOf('data-search-file='),'Exact title precedes a partial title');
   vm.runInContext("shellSearchFilter='files'",context);context.paintShellSearch();
   assert.match(node('#shell-search-status').textContent,/^1 result$/);assert(!node('#shell-search-results').innerHTML.includes('data-chat='));

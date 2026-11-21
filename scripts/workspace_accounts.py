@@ -268,7 +268,10 @@ def codex_switch(account_id):
         raise ValueError('That Codex account needs to be signed in again.')
     auth = codex_home() / 'auth.json'
     temporary = auth.with_suffix('.aura-tmp')
-    temporary.write_text(record['auth'], encoding='utf-8')
+    # Readable by this person only, as Codex keeps it: the file holds their sign-in.
+    temporary.unlink(missing_ok=True)
+    with os.fdopen(os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), 'w', encoding='utf-8') as output:
+        output.write(record['auth'])
     temporary.replace(auth)
     data = load()
     for account in data['accounts']:

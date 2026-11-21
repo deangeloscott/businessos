@@ -53,7 +53,7 @@ def related(bid,goal):
 def check_chat(bid,ident,chat_id):
     goal=find(bid,ident);owner=metadata(goal).get('chat_id')
     if scope(goal)=='chat' and owner and owner!=chat_id:
-        raise ValueError('This goal belongs to another chat. Choose a workspace goal or create a goal for this chat.')
+        raise ValueError('This goal belongs to another chat. Choose a business goal or create a goal for this chat.')
     return goal
 
 
@@ -139,8 +139,8 @@ def save(bid,data):
     ident=data.get('id');old=find(bid,ident) if ident else None
     content={}
     info=dict(metadata(old or {}));chosen=data.get('scope',scope(old or {}))
-    if chosen not in {'chat','workspace'}:raise ValueError('Choose a chat goal or workspace goal.')
-    if old and scope(old)=='workspace' and chosen=='chat':raise ValueError('Create a separate chat goal instead of moving a shared workspace goal.')
+    if chosen not in {'chat','workspace'}:raise ValueError('Choose a chat goal or business goal.')
+    if old and scope(old)=='workspace' and chosen=='chat':raise ValueError('Create a separate chat goal instead of moving a shared business goal.')
     if not old or 'scope' in data:info['scope']=chosen
     if chosen=='chat':
         owner=data.get('chat_id',info.get('chat_id',''))
@@ -150,11 +150,11 @@ def save(bid,data):
         if 'workspace_goal_id' in data:
             parent=data['workspace_goal_id']
             if parent:
-                if not isinstance(parent,str) or parent==ident or (parent!=info.get('workspace_goal_ref') and scope(find(bid,parent))!='workspace'):raise ValueError('Choose a workspace goal to connect.')
+                if not isinstance(parent,str) or parent==ident or (parent!=info.get('workspace_goal_ref') and scope(find(bid,parent))!='workspace'):raise ValueError('Choose a business goal to connect.')
                 info['workspace_goal_ref']=parent
             else:info.pop('workspace_goal_ref',None)
     else:
-        if data.get('workspace_goal_id'):raise ValueError('Workspace goals cannot be nested.')
+        if data.get('workspace_goal_id'):raise ValueError('Business goals cannot be nested.')
         info.pop('chat_id',None);info.pop('workspace_goal_ref',None)
     if info!=metadata(old or {}):content['extensions']=extensions(old or {},info)
     for key,limit in [('name',2000),('horizon',300),('status',20)]:
@@ -239,7 +239,7 @@ def set_continuation(preferences,bid,chat_id,mode='manual',until=None):
     if not chat or not chat.get('goal_id'):raise ValueError('Choose a goal for this chat first.')
     goal=find(bid,chat['goal_id'])
     if mode=='native' and metadata(goal).get('workspace_goal_ref'):find(bid,metadata(goal)['workspace_goal_ref'])
-    if mode=='native' and any(not available(g) for g in related(bid,goal)):raise ValueError('Activate the chat goal and connected workspace goal before authorizing automatic continuation.')
+    if mode=='native' and any(not available(g) for g in related(bid,goal)):raise ValueError('Activate the chat goal and connected business goal before authorizing automatic continuation.')
     policy=continuation(chat['agent'],mode,until);policy['goal_basis']=continuation_basis(bid,goal)
     chat['continuation']=policy
     return policy
@@ -356,7 +356,7 @@ def review_reason(bid,goal_id,basis=None):
     except ValueError:return 'The selected goal is no longer available.'
     if metadata(goal).get('workspace_goal_ref'):
         try:find(bid,metadata(goal)['workspace_goal_ref'])
-        except ValueError:return 'The connected workspace goal is no longer available. Review the link.'
+        except ValueError:return 'The connected business goal is no longer available. Review the link.'
     if any(not available(g) for g in related(bid,goal)):return 'A selected goal is paused or completed.'
     if basis and continuation_basis(bid,goal)!=basis:return 'The goal changed. Review it before continuing.'
     return ''
@@ -373,9 +373,14 @@ def live_change(url,bid,payload,route='/api/goals'):
     from urllib.parse import urlparse
     from urllib.request import Request,urlopen
     from _common import PRODUCT_ROOT
+    if not url:
+        # AURA opens on a free port and records it; read that rather than assume one.
+        import workspace_startup
+        try:url='http://127.0.0.1:'+str(int(json.loads(workspace_startup.VisualInstance(PRODUCT_ROOT).path.read_text(encoding='utf-8'))['port']))
+        except (OSError,ValueError,KeyError,TypeError):raise ValueError('Open AURA first: this change goes through its open window. Or pass --url with the address AURA printed.') from None
     parts=urlparse(url)
     if parts.scheme!='http' or parts.hostname not in {'127.0.0.1','localhost','::1'} or parts.username or parts.password or parts.path not in {'','/'} or parts.query or parts.fragment:
-        raise ValueError('Use the local AURA address, such as http://127.0.0.1:4187.')
+        raise ValueError('Use the local address AURA printed, such as http://127.0.0.1:52817.')
     base=url.rstrip('/')
     with urlopen(base,timeout=10) as response:page=response.read().decode('utf-8')
     token=re.search(r'<meta name="aura-token" content="([^"]+)"',page)
@@ -392,7 +397,7 @@ def main():
     parser.add_argument('--workspace',type=Path,default=workspace_root());parser.add_argument('--business-id',required=True);parser.add_argument('--id');parser.add_argument('--basis');parser.add_argument('--input');parser.add_argument('--json',action='store_true')
     parser.add_argument('--token-budget',type=int);parser.add_argument('--chat');parser.add_argument('--asset');parser.add_argument('--mode',choices=['manual','native'],default='manual');parser.add_argument('--until',type=float)
     parser.add_argument('--scope',choices=['workspace','chat','all'],default='workspace');parser.add_argument('--show',choices=['active','current','completed','deleted','all'],default='active')
-    parser.add_argument('--url',default='http://127.0.0.1:4187',help='Running local AURA address for chat links, deletion/recovery and continuation choices')
+    parser.add_argument('--url',default='',help='Running local AURA address (found automatically when AURA is open) for chat links, deletion/recovery and continuation choices')
     from _common import parse_args_with_ids
     args=parse_args_with_ids(parser)
     with workspace_scope(args.workspace):

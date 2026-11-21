@@ -100,6 +100,8 @@ class Execution:
         self._force_stop()
 
     def _force_if_running(self):
+        # A kept-open app settles a stopped turn and stays open; by now it may be running the person's next request.
+        if self.native_session and (not self.native_session.active or self.native_session.active.execution is not self):return
         with self.lock:
             if not self.process or self.process.poll() is not None:return
         self._force_stop()

@@ -23,6 +23,7 @@ import secrets
 import shutil
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 import webbrowser
@@ -586,9 +587,19 @@ class Workspace:
         try:
             self.preferences = json.loads(self.settings_file.read_text(encoding='utf-8'))
             if not isinstance(self.preferences, dict):
-                self.preferences = {}
-        except (OSError, ValueError):
+                raise ValueError('not settings')
+        except FileNotFoundError:
             self.preferences = {}
+        except (OSError, ValueError):
+            # Unreadable settings (a crash mid-write, a bad edit): keep a copy before starting fresh, and say so,
+            # rather than overwrite the person's chats and connections at the next save.
+            self.preferences = {}
+            try:
+                kept = self.settings_file.with_name(self.settings_file.stem + time.strftime('.unreadable-%Y%m%d-%H%M%S.json'))
+                self.settings_file.replace(kept)
+                self.startup_note = f'AURA could not read its settings for this workspace, so it started fresh. The old file was kept as {kept.name} in {kept.parent}.'
+            except OSError:
+                pass
         if not isinstance(self.preferences.get('connection'), dict):
             self.preferences['connection'] = {}
         if not isinstance(self.preferences.get('seen'), list):
@@ -840,9 +851,14 @@ class Workspace:
 
     def save_preferences(self, portable=False):
         self.settings_file.parent.mkdir(parents=True, exist_ok=True)
-        temporary = self.settings_file.with_suffix('.tmp')
-        temporary.write_text(json.dumps(self.preferences), encoding='utf-8')
-        temporary.replace(self.settings_file)
+        # A temporary file of its own and a flush to disk, so two saves at once or a crash never leave half a file.
+        handle, temporary = tempfile.mkstemp(prefix=self.settings_file.name + '.', suffix='.tmp', dir=self.settings_file.parent)
+        try:
+            with os.fdopen(handle, 'w', encoding='utf-8') as output:
+                output.write(json.dumps(self.preferences));output.flush();os.fsync(output.fileno())
+            os.replace(temporary, self.settings_file)
+        except BaseException:
+            Path(temporary).unlink(missing_ok=True);raise
         if portable and self.portable_view_ok and business_directory():
             workspace_storage.save_view(workspace_root(),self.preferences)
 
@@ -1001,7 +1017,9 @@ class Workspace:
                     bool(self.running_jobs()) or
                     self.native_sessions.busy() or
                     (self.schedule_job and self.schedule_job['status'] == 'working') or
-                    (self.organization_job and self.organization_job['status'] == 'working'))
+                    (self.organization_job and self.organization_job['status'] == 'working') or
+                    # Built-in terminals end with AURA (a running Hermes gateway, an app's own update): wait for them too.
+                    any(t['alive'] for t in __import__('workspace_terminal').TERMINALS.list()))
 
     def record_notification(self, job, chat):
         # One receipt per finished request; no transcript or credential content.
@@ -2490,13 +2508,14 @@ class Workspace:
 
     def send_phone_notices(self):
         """While you're away from AURA, send what finished, is waiting for you or hit a problem after you left, to your
-        own chat, once each. A few at a time, the rest as one line. A send that fails is tried again on the next check."""
+        own chat, once each. A few at a time, the rest as one line. A send that fails is tried again a few minutes later."""
         import workspace_hermes_messages as hm
         if not self.phone_lock.acquire(blocking=False):return  # a slow send is still going
         try:
             with self.lock:setting=dict(self.preferences.get('phone_notices') or {})
             left=getattr(self,'ui_active_at',0)
             if not setting.get('on') or time.time()-left<setting.get('after',self.PHONE_AWAY):return
+            if time.time()<getattr(self,'phone_retry_at',0):return  # after a failed send, wait a few minutes, not 15 seconds
             choice=self.native_choice('hermes')
             if not choice:return
             now=time.time()
@@ -2513,7 +2532,7 @@ class Workspace:
                     saved=self.preferences.get('phone_notices')
                     if saved:saved['problem']=problem
                     self.save_preferences()
-                if problem:break
+                if problem:self.phone_retry_at=time.time()+300;break
         finally:self.phone_lock.release()
 
     def hermes_answering(self,chat):
@@ -3089,7 +3108,7 @@ class Workspace:
                 'records_revision':current_revision,'records_unchanged':revision==current_revision,
                 'diagnostics': diagnostics, 'workspace': str(workspace_root()),
                 'product': str(PRODUCT_ROOT), 'version': os_version(), 'refreshed': time.time(),
-                'workspace_note': self.workspace_note,
+                'workspace_note': self.workspace_note or getattr(self, 'startup_note', ''),
                 'organization': {k:self.organization_job[k] for k in ('status','action','progress') if k in self.organization_job} if self.organization_job else None,
                 'schedule_operation': self.schedule_state(bid),
                 'workspace_missing': not directory and workspace_catalog.selection().get('path')==str(workspace_root()),
@@ -3247,6 +3266,15 @@ class Workspace:
                     f"- Name: {name}\n- When: {payload.get('when','')}\n- Runs with: {runs}\n- Each time, it should:\n{payload.get('description','')}\n\n"
                     f"It's for {business}. Tell me once it's set up, and ask me if anything is unclear.")
             return {'kind':kind,'model':model,'effort':effort,'text':text[:20000],'title':'Schedule · '+(name or 'new task')[:80]}
+        if own.get('scheduler')=='computer' and action=='request':
+            helper=f'"{Path(sys.executable).as_posix()}" "{(PRODUCT_ROOT/"scripts/workspace_os_schedules.py").as_posix()}"'
+            text = (f"Please change my scheduled task “{name}”, which runs on this computer's own scheduler, using AURA's helper:\n"
+                    f"{helper} edit {own['native_id']} with only what changes: --when \"<timing>\", --name \"<name>\", "
+                    "--prompt-file \"<a file with the complete new instructions>\", --model <id> or --effort <level>.\n"
+                    "Write the timing as hourly, daily HH:MM, weekly mon HH:MM or monthly D HH:MM (local time).\n"
+                    f"- When: {own.get('schedule','')}\n- Each time, it currently does:\n{own.get('description','')}\n\n"
+                    f"What I'd like changed: {payload.get('request','').strip()}\nKeep everything else as it is, and tell me once it's saved.")
+            return {'kind':kind,'model':model,'effort':effort,'text':text[:20000],'title':'Schedule · '+(name or 'task')[:80]}
         if action in {'create','move'}:
             source = ''
             if action=='move':
@@ -3301,6 +3329,17 @@ class Workspace:
                 workspace_projects.bind(bid, 'task', task['id'], refs, wanted or '')
             except (ValueError, OSError):continue  # another business's collection, or one that is gone
 
+    def goal_block(self, bid, goal_id, root):
+        """The block a scheduled task's instructions carry for the goal it serves: check the goal before working."""
+        goal=workspace_goals.find(bid,goal_id)
+        if workspace_goals.scope(goal)!='workspace':raise ValueError('Scheduled tasks connect to business goals. Choose or create a business goal.')
+        goal_argv=[sys.executable,str(PRODUCT_ROOT / 'scripts/workspace_goals.py'),'check','--workspace',str(root),
+                   '--business-id',bid,'--id',goal['id'],'--basis',workspace_goals.fingerprint(goal),'--json']
+        return (f'\n\n[Aura goal]\nAura goal: {goal["id"]}. Before doing business work, execute this argument list '
+                f'(each string is a separate argument, not a shell command): {json.dumps(goal_argv)}. '
+                'If the goal is paused, completed or materially changed, report that it needs review and do not continue the assignment. '
+                'Keep useful outputs and a concise next step; link durable Assets through extensions.businessos.goal_ref.\n[/Aura goal]')
+
     def schedule_state(self, bid):
         job = self.schedule_job
         return {k:job[k] for k in ('id','business_id','action','status','message','task_id','created','updated') if k in job} if job and job['business_id']==bid else None
@@ -3322,10 +3361,28 @@ class Workspace:
         if task and task.get('scheduler')=='computer':
             # AURA's own task on the computer's scheduler: changed directly with the system's commands, no AI needed.
             import workspace_os_schedules as computer
-            if action not in {'edit','pause','resume','remove'}:raise ValueError('Change this task here, or remove it and set up a new one.')
+            if action not in {'edit','pause','resume','remove','request'}:raise ValueError('Change this task here, or remove it and set up a new one.')
             values={'when':payload.get('when') or payload.get('schedule'),'name':payload.get('name'),'prompt':payload.get('description'),
                     'model':payload.get('model'),'effort':payload.get('effort')}
+            # Its goal and where its results go are blocks in its own instructions, which AURA keeps: change them here.
+            links='goal_id' in payload or 'collection_id' in payload
+            if links:
+                prompt=values['prompt'] or task.get('description') or ''
+                if 'goal_id' in payload:
+                    prompt=re.sub(r'\n*\[Aura goal\].*?\[/Aura goal\]','',prompt,flags=re.S).rstrip()
+                    if payload['goal_id']:prompt+=self.goal_block(bid,payload['goal_id'],root)
+                if 'collection_id' in payload:
+                    prompt=re.sub(r'\n*\[Aura results\].*?\[/Aura results\]','',prompt,flags=re.S).rstrip()
+                    if payload['collection_id']:prompt+=workspace_collections.instructions(bid,payload['collection_id'])
+                if len(prompt)>20000:raise ValueError('Shorten the task instructions before adding this.')
+                values['prompt']=prompt;action='edit'
+            elif action=='request':
+                if not str(payload.get('request') or '').strip():raise ValueError('Describe what you would like to change.')
+                choice=self.native_choice(task['owner'])
+                if not choice:raise ValueError('Connect this AI app in Adjust AI settings, then try again.')
+                return {'status':'chat','business_id':bid,'chat':self.schedule_chat(bid,action,payload,task,task['owner'],choice,root)}
             computer.change(task['native_id'],action,{k:v for k,v in values.items() if v})
+            if links:self.sync_task_links(bid,workspace_schedules.inventory(workspaces=folders)['items'])
             if action=='remove':
                 with self.lock:self.preferences.setdefault('goal_tasks',{}).setdefault(bid,{}).pop(task['id'],None);self.save_preferences()
             self.schedule_job=dict(id=new_id(12),business_id=bid,action=action,status='complete',task_id=task['id'],created=time.time(),updated=time.time(),payload=payload,
@@ -3367,17 +3424,10 @@ class Workspace:
             description=re.sub(r'\n*\[Aura results\].*?\[/Aura results\]','',payload.get('description',(task or {}).get('description') or ''),flags=re.S).rstrip()
             if collection_id:description+=workspace_collections.instructions(bid,collection_id)
             payload['description']=description
-        goal=None
         remove_goal=action=='request' and payload.get('goal_id')=='' and payload.get('remove_goal') is True
-        if payload.get('goal_id'):
-            goal=workspace_goals.find(bid,payload['goal_id'])
-            if workspace_goals.scope(goal)!='workspace':raise ValueError('Scheduled tasks connect to workspace goals. Choose or create a workspace goal.')
-            goal_argv=[sys.executable,str(PRODUCT_ROOT / 'scripts/workspace_goals.py'),'check','--workspace',str(root),
-                       '--business-id',bid,'--id',goal['id'],'--basis',workspace_goals.fingerprint(goal),'--json']
-            goal_note=(f'\n\n[Aura goal]\nAura goal: {goal["id"]}. Before doing business work, execute this argument list '
-                f'(each string is a separate argument, not a shell command): {json.dumps(goal_argv)}. '
-                'If the goal is paused, completed or materially changed, report that it needs review and do not continue the assignment. '
-                'Keep useful outputs and a concise next step; link durable Assets through extensions.businessos.goal_ref.\n[/Aura goal]')
+        goal=workspace_goals.find(bid,payload['goal_id']) if payload.get('goal_id') else None
+        if goal:
+            goal_note=self.goal_block(bid,goal['id'],root)
             if action=='create' and '[Aura goal]' not in payload['description']:payload['description']+=goal_note
             elif action=='request':payload['request']+=' Replace the previous [Aura goal] block, if present, with this block in the saved native task instructions: '+goal_note
             if len(payload.get('description',''))>20000:raise ValueError('Shorten the task instructions before adding the goal.')
@@ -3665,6 +3715,15 @@ class Workspace:
             if selected_context['text']:prompt=prompt.replace('\nUser request:\n',selected_context['text']+'\nUser request:\n',1)
             if assistant and not reuse_context and not welcome and keep_warm_id is None:
                 prompt=prompt.replace('\nUser request:\n',workspace_assistants.guidance(assistant,child_native=protocol_kind in {'codex','omp','claude'},native_primary=assistant.get('native_primary',False))+'\nUser request:\n',1)
+            # What can still refuse this request (a removed account, the app's environment) is settled before the chat
+            # is marked working, so a refusal leaves it ready to try again.
+            command = list(self.agent['argv'])
+            kind = protocol_kind
+            env = self.agent_environment()
+            account = (chat or {}).get('account_id') if chat else getattr(self,'_request_account',None)
+            if kind=='claude' and account:
+                # The chosen Claude account for this chat; its own sign-in otherwise. An API key would take precedence.
+                env.pop('ANTHROPIC_API_KEY',None);env.update(workspace_accounts.claude_env(account))
             job = {'id': new_id(12), 'business_id': bid, 'status': 'working', 'reply': '', 'activity': [],
                    'created': time.time(), 'updated': time.time(), 'progress': 'Starting your AI'}
             if getattr(self,'_catch_up_from',None):job['catch_up_from']=self._catch_up_from
@@ -3785,12 +3844,6 @@ class Workspace:
                 execution.claim_continuation=lambda:''
                 execution.release_continuation=lambda:None
             self.executions[job['id']]=execution
-            command = list(self.agent['argv'])
-            kind = protocol_kind
-            env = self.agent_environment()
-            if kind=='claude' and chat.get('account_id'):
-                # The chosen Claude account for this chat; its own sign-in otherwise. An API key would take precedence.
-                env.pop('ANTHROPIC_API_KEY',None);env.update(workspace_accounts.claude_env(chat['account_id']))
             try:
                 project=next((p for p in workspace_chat_organization.projects(self,bid) if p['name']==chat.get('project')),None)
                 if project and not workspace_projects.target().is_file():workspace_projects.change(bid,{'action':'edit','id':project['id'],'name':project['name']},self.preferences.get('chat_projects',[]))
@@ -3916,7 +3969,14 @@ def main():
                             return
                 except (OSError, ValueError, KeyError):
                     pass
+                except Exception as error:  # anything else must not end resumes, notices and update checks for good
+                    message = f'{type(error).__name__}: {error}'
+                    if message != getattr(app, 'watch_error', ''):
+                        app.watch_error = message
+                        print(time.strftime('%Y-%m-%d %H:%M:%S') + ' AURA background check failed, continuing: ' + message, flush=True)
         threading.Thread(target=update_watch, daemon=True).start()
+        # Scheduled tasks on the computer's own scheduler follow this AURA if it now runs from another folder.
+        threading.Thread(target=lambda:__import__('workspace_os_schedules').follow(), daemon=True, name='aura-follow-tasks').start()
         if instance:
             instance.publish(server.server_port, app.token)
         url = f'http://127.0.0.1:{server.server_port}/' + ('?business=' + quote(args.business_id) if args.business_id else '')

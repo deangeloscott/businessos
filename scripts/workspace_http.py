@@ -106,7 +106,8 @@ def handler_for(app):
 
         def guard(self):
             expected = f'127.0.0.1:{self.server.server_port}'
-            if self.headers.get('Host') != expected:
+            # Only the ordinary "/path" form: a full URL in the request line would skip the "/api/" token check below.
+            if self.headers.get('Host') != expected or not self.path.startswith('/'):
                 raise PermissionError('Open the local address printed by AURA.')
             origin = self.headers.get('Origin')
             if origin and origin != 'http://' + expected:
@@ -118,7 +119,7 @@ def handler_for(app):
                     cookies=SimpleCookie(self.headers.get('Cookie',''));cookie=cookies.get('aura_media_'+str(self.server.server_port))
                     media_authorized=bool(cookie and secrets.compare_digest(cookie.value,app.media_token))
                 except CookieError:pass
-            if self.path.startswith('/api/') and not media_authorized and not secrets.compare_digest(self.headers.get('X-Aura-Token', ''), app.token):
+            if self.path.startswith('/api/') and not media_authorized and not secrets.compare_digest(self.headers.get('X-Aura-Token', '').encode('utf-8','replace'), app.token.encode()):
                 raise PermissionError('Refresh the AURA page to reconnect.')
             expected_workspace=self.headers.get('X-Aura-Workspace')
             if self.command=='POST' and expected_workspace and expected_workspace!=str(workspace_root()):

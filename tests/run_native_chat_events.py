@@ -54,9 +54,13 @@ def main():
         assert aura_helper(f'"{py}" "{helpers/"set_attention_status.py"}" {bid} item resolved',str(base)),'any helper that is not on the ask-first list'
         pwsh=['C:/tools/pwsh.exe','-Command',f'& "{py}" {helpers/"workspace_context.py"} handoff {bid}']
         assert aura_helper(pwsh,str(base)),"Codex's PowerShell call, with a Windows path left as it is"
+        assert aura_helper(f'"{py}" "{helpers/"workspace_context.py"}" recall --business-id {bid} --workspace "{base/"workspace"}" --search "issue #4"',str(base)),'this workspace, named'
         for unsafe in (f'"{py}" "{helpers/"enter.py"}" q && del notes.txt',f'"{py}" "{helpers/"enter.py"}" q > out.txt',f'"{py}" "{helpers/"enter.py"}" "$(whoami)"',
                        f'"{py}" "{helpers/"forget.py"}" {bid} record',f'"{py}" "{helpers/"workspace_ui.py"}"',f'BUSINESSOS_WORKSPACE="{base}" "{py}" "{helpers/"remember.py"}" {bid}',
-                       ['C:/tools/pwsh.exe','-Command',f'"{py}" {helpers/"setup.py"}'],['C:/tools/node.exe','-e','x']):
+                       ['C:/tools/pwsh.exe','-Command',f'"{py}" {helpers/"setup.py"}'],['C:/tools/node.exe','-e','x'],
+                       f'"{py}" "{helpers/"enter.py"}" q#; del notes.txt',  # "#" inside a word is not a comment to a shell
+                       f'"{py}" "{helpers/"process_plan.py"}" --output "{base}/elsewhere.json"',f'"{py}" "{helpers/"enter.py"}" q --work="{base}"',
+                       f'./python "{helpers/"enter.py"}" q'):
             assert not aura_helper(unsafe,str(base)),unsafe
         import workspace_native_requests as requests
         answered=[];execution=type('Execution',(),{'native_cwd':str(base)})()

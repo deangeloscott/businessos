@@ -189,6 +189,9 @@ def run(command,kind,cwd,env,prompt,native_id,model,effort,update,execution):
                     if execution.interrupt_requested or result.get('stopReason')=='cancelled':raise Stopped()
                     if not final.strip():raise ValueError('The native app finished without a text reply. Check its conversation before retrying.')
                     output={'reply':final,'native_id':native,'usage':usage}
+                    if result.get('stopReason') in {'max_tokens','max_turn_requests'}:
+                        # Saved as it is, but not passed off as a finished answer.
+                        update(stop_note='This reply stopped early: your AI app reached its limit for one reply. Ask it to continue.')
                     if execution.native_goal:update(native_goal={'status':'needs_review','reason':'The native request ended. This connection does not report a structured goal completion verdict.'})
                     if not session:return output
                     call=session.next(output,events,incoming)

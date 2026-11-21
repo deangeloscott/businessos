@@ -57,7 +57,12 @@ def main():
                         raise AssertionError('Modified startup entry was removed')
                     except ValueError:
                         pass
-                    target.unlink()
+                    # With AURA's record of it lost (a cleared settings folder), its own entry can still be turned off.
+                    (startup.state_dir() / 'startup.json').unlink()
+                    startup.configure(False, ROOT, workspace)
+                    assert not target.exists()
+                    if platform == 'darwin':assert startup.configure(True, ROOT, workspace, bid)['enabled'] and 'PATH' in plistlib.loads(target.read_bytes())['EnvironmentVariables']
+                    else:assert startup.configure(True, ROOT, workspace, bid)['enabled'] and 'Exec="env" "PATH=' in target.read_text()
                     startup.configure(False, ROOT, workspace)
         pi = workspace / '.pi/schedule-prompts.json'
         pi.parent.mkdir()
@@ -231,6 +236,14 @@ def main():
                     assert row['schedule']=='weekly mon 09:00' and row['schedule_raw']=='FREQ=WEEKLY;BYHOUR=9;BYMINUTE=0;BYDAY=MO' and row['editable']
                     post_task({'id':row['id'],'action':'pause'});assert app.schedule_job['status']=='complete' and computer.load(made['id'])['paused']
                     post_task({'id':row['id'],'action':'edit','schedule':'daily 07:30'});assert computer.load(made['id'])['when']=={'every':'daily','time':'07:30'}
+                    # Where its results go is part of its own instructions, changed here; a change in words is a chat with its app.
+                    post_task({'id':row['id'],'app':'claude','action':'edit','collection_id':destination['id']})
+                    assert '[Aura results]' in computer.load(made['id'])['prompt'] and projects.binding(bid,'task',row['id'])['collection_id']==destination['id']
+                    with patch.object(view,'installed_agents',return_value=[choice,{'id':'claude','name':'Claude Code','argv':['claude']}]):
+                        asked=post_task({'id':row['id'],'app':'claude','action':'request','request':'Make it Tuesdays'})
+                    assert asked['status']=='chat' and f"edit {made['id']}" in asked['chat']['text'] and 'Make it Tuesdays' in asked['chat']['text']
+                    computer.definition_path(made['id']).with_suffix('.runs.json').write_text(json.dumps([{'at':'2026-11-16T08:30:02','status':'complete','reply':'Two new reviews.'}]),encoding='utf-8')
+                    assert schedules.history(row['id'])['items'][0]['status']=='Finished' and schedules.result(row['id'])['text']=='Two new reviews.','its runs, as AURA recorded them'
                     post_task({'id':row['id'],'action':'remove'});assert app.schedule_job['message']=='Task removed.'
                     assert not computer.definitions() and not any(t.get('scheduler')=='computer' for t in schedules.inventory()['items'])
                 calls=[]  # each system's entry, built for every kind of timing (a monthly day is not a weekday)
@@ -241,6 +254,21 @@ def main():
                         computer._win_create(sample);computer._cron_create(sample)
                     assert calls[-1][1].splitlines()[0]=='0 5 * * * backup.sh' and calls[-1][1].splitlines()[-1].startswith('5 9 15 * *'),'cron keeps the person\'s own lines'
                     assert ['/SC','MONTHLY','/D','15','/ST','09:05']==[a for a in calls[-3][0] if a in {'/SC','MONTHLY','/D','15','/ST','09:05'}]
+                    assert '-AllowStartIfOnBatteries' in calls[-2][0][-1],'a laptop on battery still runs its tasks'
+                    computer._cron_create({**sample,'workspace':"/home/me/Sam's shop"})
+                    assert "cd '/home/me/Sam'\\''s shop' &&" in calls[-1][1],'a folder name with an apostrophe stays one word'
+                with patch.object(computer,'_mac_unload'),patch.object(computer,'_call',return_value=''),patch.object(computer,'_mac_plist',return_value=Path(tmp)/'task.plist'):
+                    computer._mac_create({**sample,'paused':True})
+                    assert plistlib.loads((Path(tmp)/'task.plist').read_bytes())['Disabled'],'a paused macOS task stays paused at the next sign-in'
+                # A task follows AURA to a new folder, keeps the search path its app was found on, and checks its business first.
+                with patch.object(computer,'_place',side_effect=lambda t:t.update(runner=computer._runner(t['id']))) as placing:
+                    moved=computer.create(bid,'claude','Moved','daily 06:00','x');assert moved['path']==os.environ.get('PATH','')
+                    computer.save({**computer.load(moved['id']),'runner':['old-python','old-folder/workspace_os_schedules.py']})
+                    assert computer.follow()==[moved['id']] and computer.follow()==[] and placing.call_count==2
+                    computer.save({**computer.load(moved['id']),'business_id':'gone-business'})
+                    with patch.object(view,'installed_agents',side_effect=AssertionError('no app runs for a business that is gone')):computer.run(moved['id'])
+                    assert 'no longer in its workspace' in computer.runs(moved['id'])[-1]['error']
+                    with patch.object(computer,'_remove_native'):computer.change(moved['id'],'remove')
                     with patch.object(view,'installed_agents',return_value=[choice,{'id':'claude','name':'Claude Code','argv':['claude']}]):
                         asked=post_task(dict(payload,app='claude',name='Morning brief',when='Every weekday at 8am'))
                     assert asked['status']=='chat' and 'workspace_os_schedules.py' in asked['chat']['text'] and 'Every weekday at 8am' in asked['chat']['text']

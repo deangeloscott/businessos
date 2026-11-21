@@ -239,7 +239,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action',choices=['list','read','save']);parser.add_argument('--app',required=True)
     parser.add_argument('--business-id',required=True);parser.add_argument('--scope',default='project')
-    parser.add_argument('--file');parser.add_argument('--input');parser.add_argument('--url',default='http://127.0.0.1:4187')
+    parser.add_argument('--file');parser.add_argument('--input');parser.add_argument('--url',default='')
     args=parser.parse_args()
     from workspace_goals import live_change
     from urllib.parse import urlencode
