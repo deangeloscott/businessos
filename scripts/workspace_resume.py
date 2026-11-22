@@ -130,13 +130,13 @@ def schedule_wake(product):
         target.write_bytes(plistlib.dumps({'Label': 'com.viraltrac.aura.continue', 'ProgramArguments': argv, 'WorkingDirectory': str(product),
                                           'EnvironmentVariables': {'PATH': os.environ.get('PATH', '')},
                                           'StartCalendarInterval': {'Month': moment.month, 'Day': moment.day, 'Hour': moment.hour, 'Minute': moment.minute}}))
-        subprocess.run(['launchctl', 'unload', str(target)], capture_output=True)
-        subprocess.run(['launchctl', 'load', str(target)], capture_output=True, check=True)
+        subprocess.run(['launchctl', 'unload', str(target)], capture_output=True, timeout=30)
+        subprocess.run(['launchctl', 'load', str(target)], capture_output=True, check=True, timeout=30)
     elif shutil.which('systemd-run'):
         clear_wake()
         subprocess.run(['systemd-run', '--user', '--unit=viraltrac-aura-continue', '--on-calendar=' + datetime.fromtimestamp(at).strftime('%Y-%m-%d %H:%M:%S'),
                         '--setenv=PATH=' + os.environ.get('PATH', ''), *argv],
-                       capture_output=True, check=True)
+                       capture_output=True, check=True, timeout=30)
     else:
         raise ValueError('This system has no supported scheduler, so AURA can only continue while it is open.')
     return {'scheduled': True, 'at': at}
@@ -148,10 +148,10 @@ def clear_wake():
     elif sys.platform == 'darwin':
         target = Path.home() / 'Library/LaunchAgents/com.viraltrac.aura.continue.plist'
         if target.exists():
-            subprocess.run(['launchctl', 'unload', str(target)], capture_output=True)
+            subprocess.run(['launchctl', 'unload', str(target)], capture_output=True, timeout=30)
             target.unlink()
     elif shutil.which('systemctl'):
-        subprocess.run(['systemctl', '--user', 'stop', 'viraltrac-aura-continue.timer'], capture_output=True)
+        subprocess.run(['systemctl', '--user', 'stop', 'viraltrac-aura-continue.timer'], capture_output=True, timeout=30)
     return {'scheduled': False}
 
 

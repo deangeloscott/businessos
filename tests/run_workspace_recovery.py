@@ -52,6 +52,32 @@ def main():
             raise AssertionError('Nested backups must be refused')
         except ValueError:
             pass
+        # A long backup, restore or move reports each file and stops when asked, leaving nothing half-made.
+        def stop_at(step_name):
+            seen = []
+            def report(step, done=0, total=0):
+                seen.append(step)
+                if step == step_name:raise ValueError('Stopped.')
+            return report, seen
+        report, seen = stop_at('Checking the backup')
+        before = sorted(backups.iterdir())
+        try:workspace_storage.backup(source, backups, report=report);raise AssertionError('expected the stop')
+        except ValueError:assert sorted(backups.iterdir()) == before and 'Copying files' in seen, 'a stopped backup saves nothing'
+        for kind, step in (('restore', 'Restoring your files'), ('relocate', 'Checking nothing changed')):
+            report, _ = stop_at(step);folder = base / ('Stopped ' + kind)
+            try:
+                if kind == 'restore':workspace_storage.restore(saved['path'], folder, report)
+                else:workspace_storage.relocate(source, folder, report)
+                raise AssertionError('expected the stop')
+            except ValueError:assert not folder.exists(), f'a stopped {kind} removes its unfinished copy'
+        # Linked files are listed once each (each was compared with every other: minutes for a few thousand).
+        linked_folder = base / 'research'
+        for index in range(3000):(linked_folder / f'{index // 500}').mkdir(parents=True, exist_ok=True);(linked_folder / f'{index // 500}' / f'{index}.txt').write_text(str(index))
+        (source / 'instances' / bid / 'assets').mkdir(exist_ok=True)
+        (source / 'instances' / bid / 'assets' / 'research.json').write_text(json.dumps({'location_reference':str(linked_folder)}), encoding='utf-8')
+        started = time.monotonic();plan = workspace_storage.backup_plan(source, True)
+        assert plan['files'] > 3000 and time.monotonic() - started < 10, 'listing linked files grows with the square of their number'
+        (source / 'instances' / bid / 'assets' / 'research.json').unlink()
         tampered = base / 'tampered.zip'
         with zipfile.ZipFile(saved['path']) as original, zipfile.ZipFile(tampered, 'w') as bad:
             for item in original.infolist():

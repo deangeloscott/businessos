@@ -17,6 +17,39 @@ VIEW_FILE = '.businessos/view.json'
 PRIVATE = {'.git', '.businessos', '.aura-runtime', '.venv', 'venv', 'node_modules', '__pycache__',
            'credentials', 'secrets', '.ssh', '.aws', '.azure', '.codex', '.claude', '.pi', '.hermes', '.gemini'}
 OUTPUT_DIRS = {'deliverables', 'outputs', 'exports', 'projects', 'work'}
+# Already compressed: stored as they are in a backup, since compressing them again costs time and saves nothing.
+PACKED = {'.zip', '.gz', '.tgz', '.bz2', '.xz', '.7z', '.rar', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.avif',
+          '.mp4', '.mov', '.m4v', '.webm', '.mkv', '.avi', '.mp3', '.m4a', '.aac', '.ogg', '.opus', '.flac',
+          '.docx', '.xlsx', '.pptx', '.odt', '.ods', '.odp', '.epub', '.woff', '.woff2'}
+
+
+def _quiet(step, done=0, total=0):
+    """The default report for a long copy: nothing to show, nothing to stop."""
+
+
+def _hashed(rows, report, step):
+    """The rows with their contents' fingerprints, reporting each file so a long read can be followed and stopped."""
+    out = []
+    for index, (rel, path, _, size) in enumerate(rows):
+        report(step, index, len(rows))
+        out.append((rel, path, _sha256(path), size))
+    report(step, len(rows), len(rows))
+    return out
+
+
+def _remove_written(target, written, created):
+    """Undo a copy that did not finish: only the files it wrote, then folders it left empty. The target was new or
+    empty when the copy started, so nothing else is touched."""
+    for rel in reversed(written):
+        try:(target / rel).unlink(missing_ok=True)
+        except OSError:pass
+    for folder in sorted({p for rel in written for p in (target / rel).parents if p.is_relative_to(target) and p != target},
+                         key=lambda p:len(p.parts), reverse=True):
+        try:folder.rmdir()
+        except OSError:pass
+    if created:
+        try:target.rmdir()
+        except OSError:pass
 
 
 def transient_file(path):
@@ -163,6 +196,11 @@ def backup_plan(source, include_linked=False, hashes=False):
     rows, excluded = workspace_files(source, hashes)
     view = load_view(source)
     links, overrides, folder_targets = [], {}, {}
+    # What is already listed, by place in the backup and by original file: checked once per file instead of
+    # rescanning every listed file (a few thousand linked files took minutes).
+    placed, originals = {r[0] for r in rows}, {r[1]:r[0] for r in rows}
+    def add(row):
+        rows.append(row);placed.add(row[0]);originals.setdefault(row[1], row[0])
     businesses = {b['id'] for b in workspace_catalog.preview(source)['businesses']}
     for bid, items in view.get('file_locations', {}).items():
         if bid not in businesses:
@@ -188,8 +226,8 @@ def backup_plan(source, include_linked=False, hashes=False):
                 if private_file(rel):
                     continue
                 target_rel = destination / rel
-                if not any(r[0] == target_rel for r in rows):
-                    rows.append((target_rel,file,digest,size))
+                if target_rel not in placed:
+                    add((target_rel,file,digest,size))
             if not relative_link:
                 item.update(path=(destination if path.is_dir() else destination / path.name).as_posix(), relative=True)
     # Native apps/CLIs can save Assets without ever using the UI's folder linker.
@@ -209,15 +247,15 @@ def backup_plan(source, include_linked=False, hashes=False):
             links.append({'name':path.name,'path':str(path),'missing':not valid,'included':bool(include_linked and valid)})
         if not valid or (not internal and not include_linked):
             continue
-        existing = next((r[0] for r in rows if r[1] == path),None)
+        existing = originals.get(path)
         rel = existing or (path.relative_to(source) if internal else Path('attachments') / record.parent.parent.name / 'imported' / record.stem / path.name)
         if path.is_dir():
             rel = folder_targets.get(os.path.normcase(str(path)),rel)
             for child,file,digest,size in workspace_files(path,hashes)[0]:
-                if not any(r[0]==rel / child for r in rows):
-                    rows.append((rel / child,file,digest,size))
+                if rel / child not in placed:
+                    add((rel / child,file,digest,size))
         elif not existing:
-            rows.append((rel,path,_sha256(path) if hashes else '',path.stat().st_size))
+            add((rel,path,_sha256(path) if hashes else '',path.stat().st_size))
         if not internal:
             data['location_reference'] = rel.as_posix()
             overrides[record.relative_to(source).as_posix()] = json.dumps(data,ensure_ascii=False,indent=2).encode('utf-8')
@@ -279,14 +317,21 @@ def inspect(value):
     return {'path':str(root), 'businesses':data['business_directory']}
 
 
-def backup(source, destination, include_linked=False):
+def backup(source, destination, include_linked=False, report=_quiet):
+    """A verified ZIP of the workspace. `report(step, done, total)` follows the work and stops it by raising."""
     source, destination = Path(source).resolve(), Path(destination).expanduser().resolve(strict=True)
     if not destination.is_dir() or destination.is_relative_to(source) or destination.is_relative_to(PRODUCT_ROOT):
         raise ValueError('Choose a backup folder outside your workspace and the AURA product folder.')
-    plan = backup_plan(source, include_linked, hashes=True)
+    report('Listing your files')
+    plan = backup_plan(source, include_linked)
     rows = plan['rows']
     if not rows:
         raise ValueError('There is no workspace data to back up yet.')
+    # A backup that was cut off (AURA closed mid-way) leaves its unfinished file; clear those once they are old.
+    for old in destination.glob('.aura-backup-*.tmp'):
+        try:
+            if old.stat().st_mtime < datetime.now().timestamp() - 86400:old.unlink()
+        except OSError:pass
     stamp = datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S-%f')
     output = destination / ('AURA-backup-' + stamp + '.zip')
     overrides = dict(plan['overrides'])
@@ -296,27 +341,41 @@ def backup(source, destination, include_linked=False):
                 'source_workspace':str(source), 'linked_locations':plan['links'],
                 'workspace_profile':{k:v for k,v in workspace_catalog.read_json(source / '.businessos/workspace.json',{}).items()
                                      if k in {'profile','knowledge_enabled'}},
-                'files':{rel.as_posix():{'sha256':digest, 'bytes':size} for rel, _, digest, size in rows}}
-    for name, value in overrides.items():
-        manifest['files'][name] = {'sha256':hashlib.sha256(value).hexdigest(), 'bytes':len(value)}
+                'files':{}}
     # Publish only a complete verified archive. No machine credentials/preferences.
     fd, temp = tempfile.mkstemp(prefix='.aura-backup-', suffix='.tmp', dir=destination)
     os.close(fd)
     staged = Path(temp)
     try:
         with zipfile.ZipFile(staged, 'w', compression=zipfile.ZIP_DEFLATED) as z:
-            for rel, path, digest, size in rows:
-                if rel.as_posix() not in overrides:
-                    z.write(path, rel.as_posix())
+            for index, (rel, path, _, _) in enumerate(rows):
+                report('Copying files', index, len(rows))
+                name = rel.as_posix()
+                if name in overrides:
+                    continue
+                # Each file's fingerprint is taken as it is written, so the backup reads it once here.
+                info = zipfile.ZipInfo.from_file(path, name)
+                info.compress_type = zipfile.ZIP_STORED if path.suffix.lower() in PACKED else zipfile.ZIP_DEFLATED
+                digest, size = hashlib.sha256(), 0
+                with path.open('rb') as reader, z.open(info, 'w', force_zip64=info.file_size > 1 << 30) as writer:
+                    while chunk := reader.read(1 << 20):
+                        digest.update(chunk);writer.write(chunk);size += len(chunk)
+                manifest['files'][name] = {'sha256':digest.hexdigest(), 'bytes':size}
             for name, value in overrides.items():
                 z.writestr(name,value)
+                manifest['files'][name] = {'sha256':hashlib.sha256(value).hexdigest(), 'bytes':len(value)}
             z.writestr('AURA-BACKUP.json', json.dumps(manifest, indent=2))
         with zipfile.ZipFile(staged) as z:
-            for name, record in manifest['files'].items():
+            for index, (name, record) in enumerate(manifest['files'].items()):
+                report('Checking the backup', index, len(manifest['files']))
                 with z.open(name) as stream:
                     if hashlib.file_digest(stream, 'sha256').hexdigest() != record['sha256']:
                         raise ValueError('A file changed during backup. Nothing was replaced; try again when work has finished.')
-        if [(str(r), digest) for r, _, digest, _ in backup_plan(source,include_linked,hashes=True)['rows']] != [(str(r), digest) for r, _, digest, _ in rows]:
+        # Nothing changed while it was copied: the same files, with the same contents as were written.
+        now = backup_plan(source, include_linked)['rows']
+        if [r[0] for r in now] != [r[0] for r in rows] or any(
+                manifest['files'][rel.as_posix()]['sha256'] != digest
+                for rel, path, digest, _ in _hashed([r for r in now if r[0].as_posix() not in overrides], report, 'Checking nothing changed')):
             raise ValueError('The workspace changed during backup. Try again when work has finished.')
         staged.replace(output)
     finally:
@@ -324,14 +383,14 @@ def backup(source, destination, include_linked=False):
     return {'path':str(output), 'files':len(manifest['files']), 'verified':True, 'links':plan['links']}
 
 
-def restore(archive, destination):
+def restore(archive, destination, report=_quiet):
     try:
-        return _restore(archive, destination)
+        return _restore(archive, destination, report)
     except (zipfile.BadZipFile, KeyError, TypeError, RuntimeError, json.JSONDecodeError):
         raise ValueError('This backup could not be verified. Choose an AURA backup ZIP; the original workspace was not changed.') from None
 
 
-def _restore(archive, destination):
+def _restore(archive, destination, report=_quiet):
     archive = Path(archive).expanduser().resolve(strict=True)
     target = Path(destination).expanduser().resolve()
     if target.is_relative_to(workspace_root().resolve()) or target.is_relative_to(PRODUCT_ROOT) or (target.exists() and (not target.is_dir() or any(target.iterdir()))):
@@ -351,7 +410,8 @@ def _restore(archive, destination):
         if len(names) != len({name.casefold() for name in names}) or set(names) != set(manifest['files']) | {'AURA-BACKUP.json'}:
             raise ValueError('The backup contents do not match its file list. The original was not changed.')
         stage = Path(temporary)
-        for name, record in manifest['files'].items():
+        for index, (name, record) in enumerate(manifest['files'].items()):
+            report('Checking the backup', index, len(manifest['files']))
             rel = PurePosixPath(name)
             allowed = (rel.parts and (rel.parts[0] in NAMESPACES if manifest['format']=='aura-workspace-backup-1'
                        else not private_file(rel) or name in {VIEW_FILE,'.businessos/projects.json'}))
@@ -371,8 +431,9 @@ def _restore(archive, destination):
         # deliberately empty; the existing migration helper retains the source.
         from migrate_workspace import _copy_verified
         rows = [(Path(name),stage / name,record['sha256'],record['bytes']) for name,record in manifest['files'].items()]
+        created = not target.exists()
         target.mkdir(exist_ok=True)
-        _copy_verified(target, rows)
+        _copy_into(target, rows, report, created, 'Restoring your files')
         normalize_file_links(target, manifest.get('source_workspace'))
         # Set up only scaffold/profile, in a separate process so active selection
         # does not change until the caller explicitly opens this restored folder.
@@ -386,22 +447,40 @@ def _restore(archive, destination):
     return {'path':str(target), 'files':len(rows), 'verified':True}
 
 
-def relocate(source, destination):
+def _copy_into(target, rows, report, created, step):
+    """Copy and verify each file into a new or empty folder; one that stops or fails part-way removes what it wrote."""
+    from migrate_workspace import _copy_verified, _verify_target
+    written = []
+    try:
+        for index, row in enumerate(rows):
+            report(step, index, len(rows))
+            _copy_verified(target, [row]);written.append(row[0])
+        report('Checking the copy', 0, 0)
+        _verify_target(target, rows)
+    except BaseException:
+        _remove_written(target, written, created);raise
+
+
+def relocate(source, destination, report=_quiet):
     """Copy, verify, then reconnect elsewhere; originals are never removed or merged."""
     source, target = Path(source).resolve(), Path(destination).expanduser().resolve()
     if target == source or target.is_relative_to(source) or source.is_relative_to(target) or target.is_relative_to(PRODUCT_ROOT):
         raise ValueError('Choose a separate workspace folder outside the AURA application.')
     if target.exists() and any(target.iterdir()):
         raise ValueError('That folder already contains files. Open it separately or choose a new folder.')
-    rows = backup_plan(source,hashes=True)['rows']
+    report('Listing your files')
+    rows = backup_plan(source)['rows']
     if not rows:
         raise ValueError('There is no saved workspace data to copy.')
-    from migrate_workspace import _copy_verified, _verify_target
+    rows = _hashed(rows, report, 'Reading your files')
+    created = not target.exists()
     target.mkdir(parents=True, exist_ok=True)
-    _copy_verified(target,rows)
-    _verify_target(target,rows)
-    if [(str(r),digest) for r,_,digest,_ in backup_plan(source,hashes=True)['rows']] != [(str(r),digest) for r,_,digest,_ in rows]:
-        raise ValueError('The source changed while copying. The original is intact; finish active work before trying again.')
+    _copy_into(target, rows, report, created, 'Copying to the new folder')
+    try:
+        if [(str(r),digest) for r,_,digest,_ in _hashed(backup_plan(source)['rows'], report, 'Checking nothing changed')] != [(str(r),digest) for r,_,digest,_ in rows]:
+            raise ValueError('The source changed while copying. The original is intact; finish active work before trying again.')
+    except BaseException:
+        _remove_written(target, [r[0] for r in rows], created);raise
     normalize_file_links(target,str(source))
     profile = workspace_catalog.read_json(source / '.businessos/workspace.json',{})
     flags = {'creationflags':subprocess.CREATE_NO_WINDOW} if os.name == 'nt' else {}

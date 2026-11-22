@@ -17,7 +17,7 @@ class ClientTools:
     def kill(self,row):
         process=row['process']
         if process.poll() is not None:return
-        if os.name=='nt':subprocess.run(['taskkill','/PID',str(process.pid),'/T','/F'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,creationflags=subprocess.CREATE_NO_WINDOW)
+        if os.name=='nt':subprocess.run(['taskkill','/PID',str(process.pid),'/T','/F'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=20,creationflags=subprocess.CREATE_NO_WINDOW)
         else:
             try:os.killpg(process.pid,signal.SIGKILL)
             except ProcessLookupError:pass

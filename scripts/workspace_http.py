@@ -17,6 +17,15 @@ from workspace_ui import (BaseHTTPRequestHandler, MAX_BODY, MEDIA, NATIVE_AGENTS
     workspace_sharing, workspace_startup, workspace_storage, workspace_support, workspace_usage)
 
 
+class Held:
+    """AURA's lock for one change, which slow work lets go of part-way (see Workspace.run_operation)."""
+    def __init__(self, lock):self.lock, self.held = lock, False
+    def __enter__(self):self.lock.acquire();self.held = True;return self
+    def release(self):
+        if self.held:self.held = False;self.lock.release()
+    def __exit__(self, *error):self.release()
+
+
 def handler_for(app):
     class Handler(BaseHTTPRequestHandler):
         server_version = 'AURA-local'
@@ -165,6 +174,8 @@ def handler_for(app):
                     match=re.fullmatch(r'/api/media/map/(\d{1,2})/(\d{1,7})/(\d{1,7})\.png',route)
                     if not match:raise ValueError('This map area is unavailable.')
                     self.send(200,workspace_views.tile(*match.groups()),'image/png')
+                elif route == '/api/workspaces/operation':
+                    self.send(200,{'operation':app.operation_view()})
                 elif route == '/api/chats/continue':
                     with app.lock:root=app.workspace_path
                     with workspace_scope(root):
@@ -522,6 +533,7 @@ def handler_for(app):
                     self.send(200,result);return
                 if route in {'/api/documents/save','/api/documents/open'}:
                     with app.lock:
+                        if app.operation and route.endswith('/save'):raise ValueError(app.operation_busy())
                         expected=data.get('workspace') or self.headers.get('X-Aura-Workspace')
                         if expected!=app.workspace_path:raise ValueError('The workspace changed. Reopen this file before saving.')
                         if app.organization_job and app.organization_job['status']=='working':raise ValueError('Wait for workspace organization before changing files.')
@@ -698,14 +710,29 @@ def handler_for(app):
                     elif action=='cancel_resume':result=app.resume_cancel(bid,chat_id)
                     else:raise ValueError('Choose how to continue.')
                     self.send(200,result);return
+                if route == '/api/chat/stop':
+                    # Before the lock below: Stop must work even when a change is waiting on something.
+                    with app.lock:root=app.workspace_path
+                    with workspace_scope(root):self.send(200, app.stop_chat(selected(data.get('business')), data.get('id')))
+                    return
+                if route == '/api/workspaces/operation/stop':
+                    op=app.operation
+                    if op and op['can_stop']:op['stop'].set();op['stopping']=True
+                    self.send(200,{'operation':app.operation_view()});return
                 if route == '/api/locations/browse':
                     if data.get('kind') not in {'folder', 'file'}:
                         raise ValueError('Choose a file or folder.')
                     self.send(200, {'path': workspace_locations.choose(data['kind'])})
                     return
-                with app.lock:
+                with Held(app.lock) as held:
                     for key in list(app.read_cache):
                         if key[0] not in {'records','support-machine'}:app.read_cache.pop(key,None)
+                    if route == '/api/lifecycle' and isinstance(data.get('handover'),str):
+                        # Another AURA folder was opened and asked this one to close. If it can't now, say so here.
+                        app.handover_note = (f"AURA was opened from another folder ({data['handover'][:300]}), but this one is still working, so it stayed "
+                                             "open. When it has finished, quit it in Settings and open AURA again.")
+                    if app.operation and route not in {'/api/notifications','/api/usage/settings'}:
+                        raise ValueError(app.operation_busy())
                     if getattr(app, 'update_restart', False):
                         raise ValueError('AURA is restarting. Your workspace will reopen in a moment.')
                     if app.organization_job and app.organization_job['status']=='working' and route not in {'/api/organization/stop','/api/notifications','/api/usage/settings','/api/updates'}:
@@ -721,14 +748,15 @@ def handler_for(app):
                         action = route.rsplit('/', 1)[1]
                         store = app.settings_file.parent
                         if action in {'prepare', 'prepare-public', 'package'}:
+                            locations = list(app.preferences['file_locations'].get(bid,[]))
                             if action == 'prepare-public':
-                                result = workspace_exchange.prepare(workspace_root(),bid,data.get('keys'),data.get('name',''),data.get('note',''),
-                                    data.get('kind','starter'),data.get('description',''),data.get('author',''),data.get('based_on',''),store,app.preferences['file_locations'].get(bid,[]))
+                                result = app.run_operation(held,'sharing','Preparing a sharing package',lambda report:workspace_exchange.prepare(workspace_root(),bid,data.get('keys'),data.get('name',''),data.get('note',''),
+                                    data.get('kind','starter'),data.get('description',''),data.get('author',''),data.get('based_on',''),store,locations),can_stop=False)
                             elif action == 'prepare':
-                                result = workspace_sharing.prepare(workspace_root(), bid, data.get('keys'), data.get('name',''), data.get('note',''), store,
-                                                                   app.preferences['file_locations'].get(bid, []))
+                                result = app.run_operation(held,'sharing','Preparing a sharing package',lambda report:workspace_sharing.prepare(workspace_root(), bid, data.get('keys'), data.get('name',''), data.get('note',''), store,
+                                                                   locations),can_stop=False)
                             else:
-                                result = workspace_exchange.import_package(data.get('path',''), store)
+                                result = app.run_operation(held,'sharing','Reading a sharing package',lambda report:workspace_exchange.import_package(data.get('path',''), store),can_stop=False)
                                 try:
                                     workspace_sharing.remember_package(workspace_root(), bid, data['path'])
                                 except (OSError, ValueError):
@@ -763,9 +791,9 @@ def handler_for(app):
                                 if result['destination'] == str(workspace_root()) and result['business'] == bid and (workspace_sharing._job(data['id'], store) / 'source.json').exists():
                                     raise ValueError('Choose a different business or workspace to receive the copy.')
                             elif action == 'apply':
-                                result = workspace_sharing.apply(data['id'], data.get('include_updates') is True, store)
+                                result = app.run_operation(held,'sharing','Copying shared work in',lambda report:workspace_sharing.apply(data['id'], data.get('include_updates') is True, store),can_stop=False)
                             elif action == 'export':
-                                result = workspace_sharing.export_package(data['id'], data.get('path',''), store)
+                                result = app.run_operation(held,'sharing','Saving a sharing package',lambda report:workspace_sharing.export_package(data['id'], data.get('path',''), store),can_stop=False)
                             else:
                                 raise ValueError('Choose a supported sharing action.')
                         self.send(200, result)
@@ -840,6 +868,7 @@ def handler_for(app):
                         app.save_preferences(portable=True)
                         self.send(200, result)
                     elif route == '/api/workspaces/preview':
+                        held.release()
                         result = workspace_catalog.candidates(str(data.get('path','')))
                         for row in result['items']:
                             if row['kind'] == 'workspace':
@@ -891,17 +920,20 @@ def handler_for(app):
                         self.send(200,opened)
                     elif route == '/api/workspaces/relocate':
                         app.save_preferences()
-                        copied = workspace_storage.relocate(workspace_root(),str(data.get('path','')))
-                        self.send(200,{**app.open_workspace(copied['path'],preserve_local=True), **copied})
+                        root=workspace_root()
+                        copied = app.run_operation(held,'relocate','Copying this workspace to its new folder',lambda report:workspace_storage.relocate(root,str(data.get('path','')),report))
+                        with app.lock:self.send(200,{**app.open_workspace(copied['path'],preserve_local=True), **copied})
                     elif route == '/api/workspaces/backup-preview':
                         app.save_preferences()
-                        plan = workspace_storage.backup_plan(workspace_root(),data.get('include_linked') is True)
+                        root=workspace_root();held.release()
+                        plan = workspace_storage.backup_plan(root,data.get('include_linked') is True)
                         self.send(200,{k:plan[k] for k in ('files','bytes','links','excluded')})
                     elif route == '/api/workspaces/backup':
                         app.save_preferences()
-                        self.send(200, workspace_storage.backup(workspace_root(), str(data.get('path','')),data.get('include_linked') is True))
+                        root=workspace_root()
+                        self.send(200, app.run_operation(held,'backup','Backing up this workspace',lambda report:workspace_storage.backup(root, str(data.get('path','')),data.get('include_linked') is True,report)))
                     elif route == '/api/workspaces/restore':
-                        self.send(200, workspace_storage.restore(str(data.get('archive','')), str(data.get('path',''))))
+                        self.send(200, app.run_operation(held,'restore','Restoring a backup',lambda report:workspace_storage.restore(str(data.get('archive','')), str(data.get('path','')),report)))
                     elif route == '/api/connections/session-only':
                         app.connections.session_only = True
                         self.send(200, {'ok':True})
@@ -1294,8 +1326,6 @@ def handler_for(app):
                         if known and not str(data.get('text','')).lstrip().startswith('/'):
                             text=text.replace('\nUser request:\n','\nWhat AURA knows about this business, for an AI that cannot read these files:\n'+known+'\n\nUser request:\n',1)
                         self.send(200,{'text':text.replace('\nUser request:\n',context['text']+'\nUser request:\n',1),'references':context['references']})
-                    elif route == '/api/chat/stop':
-                        self.send(200, app.stop_chat(selected(data.get('business')), data.get('id')))
                     elif route == '/api/chat':
                         bid = selected(data.get('business'))
                         self.send(202, app.start_chat(bid, data.get('text'), data.get('history'), data.get('welcome') is True, data.get('schedule_id'),data.get('organization_id'),chat_id=data.get('chat_id'),files=data.get('files'),connection=data.get('connection'),assistant_id=data.get('assistant_id'),references=data.get('references'),goal_id=data.get('goal_id'),permission_mode=data.get('permission_mode'),project=data.get('project')))

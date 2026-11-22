@@ -376,7 +376,7 @@ def live_change(url,bid,payload,route='/api/goals'):
     if not url:
         # AURA opens on a free port and records it; read that rather than assume one.
         import workspace_startup
-        try:url='http://127.0.0.1:'+str(int(json.loads(workspace_startup.VisualInstance(PRODUCT_ROOT).path.read_text(encoding='utf-8'))['port']))
+        try:url='http://127.0.0.1:'+str(int(json.loads(workspace_startup.RunningAura(PRODUCT_ROOT).path.read_text(encoding='utf-8'))['port']))
         except (OSError,ValueError,KeyError,TypeError):raise ValueError('Open AURA first: this change goes through its open window. Or pass --url with the address AURA printed.') from None
     parts=urlparse(url)
     if parts.scheme!='http' or parts.hostname not in {'127.0.0.1','localhost','::1'} or parts.username or parts.password or parts.path not in {'','/'} or parts.query or parts.fragment:

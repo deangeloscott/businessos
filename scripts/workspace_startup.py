@@ -134,7 +134,7 @@ def configure(enabled, product, workspace, business='', extra=(), interpreter=No
 
 
 class VisualInstance:
-    """One normal launcher per product; explicit server invocations stay independent."""
+    """A lock held by one process at a time, with a record of where it can be reached (see RunningAura)."""
     def __init__(self, product):
         identity = hashlib.sha256(str(Path(product).resolve()).encode()).hexdigest()[:16]
         self.path = state_dir() / ('running-' + identity + '.json')
@@ -164,24 +164,6 @@ class VisualInstance:
                 return False
         return True
 
-    def existing(self):
-        for _ in range(20):
-            try:
-                record = json.loads(self.path.read_text(encoding='utf-8'))
-                port = int(record['port'])
-                if not 1 <= port <= 65535:
-                    raise ValueError('Invalid local port')
-                url = 'http://127.0.0.1:' + str(port)
-                request = Request(url + '/api/state', headers={'X-Aura-Token':record['token']})
-                with urlopen(request, timeout=.5) as response:
-                    data = json.load(response)
-                if data['product'] == self.product:
-                    return url + '/'
-            except (OSError, ValueError, KeyError, TypeError):
-                pass
-            time.sleep(.15)
-        raise ValueError('AURA is already starting. Wait a moment and open it again.')
-
     def publish(self, port, token):
         temporary = self.path.with_suffix('.tmp')
         temporary.write_text(json.dumps({'port':port, 'token':token}), encoding='utf-8')
@@ -193,3 +175,105 @@ class VisualInstance:
             self.path.unlink(missing_ok=True)
             self.handle.close()
             self.handle = None
+
+
+def _held(lock_path):
+    """Whether another process holds this lock file now (checked without keeping it)."""
+    try:handle = Path(lock_path).open('a+b')
+    except OSError:return False
+    try:
+        if os.name == 'nt':
+            import msvcrt
+            handle.seek(0)
+            try:msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+            except OSError:return True
+            handle.seek(0);msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+            try:fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:return True
+            fcntl.flock(handle, fcntl.LOCK_UN)
+        return False
+    finally:handle.close()
+
+
+class RunningAura(VisualInstance):
+    """The one AURA open for these AURA settings, whichever AURA folder it runs from. Two would each keep their own copy
+    of the same settings file and overwrite each other's changes (a new chat could vanish), and both would send phone
+    notices, import phone chats and move scheduled tasks to themselves."""
+    def __init__(self, product):
+        super().__init__(product)
+        self.path = state_dir() / 'running.json'
+
+    def publish(self, port, token):
+        temporary = self.path.with_suffix('.tmp')
+        temporary.write_text(json.dumps({'port':port, 'token':token, 'product':self.product}), encoding='utf-8')
+        temporary.chmod(0o600)
+        temporary.replace(self.path)
+
+    @staticmethod
+    def _answering(path):
+        """The record of an AURA that is open and answering: {'url','token','product'}, or None."""
+        try:
+            record = json.loads(Path(path).read_text(encoding='utf-8'))
+            port = int(record['port'])
+            if not 1 <= port <= 65535:return None
+            url = 'http://127.0.0.1:' + str(port)
+            with urlopen(Request(url + '/api/state', headers={'X-Aura-Token':record['token']}), timeout=2) as response:
+                data = json.load(response)
+            return {'url':url + '/', 'token':record['token'], 'product':str(data.get('product') or record.get('product') or '')}
+        except (OSError, ValueError, KeyError, TypeError):
+            return None
+
+    def running(self, wait=3.0):
+        """The open AURA holding these settings, waiting briefly for one that is still starting."""
+        until = time.monotonic() + wait
+        while True:
+            found = self._answering(self.path)
+            if found or time.monotonic() >= until:return found
+            time.sleep(.15)
+
+    def older(self):
+        """An AURA from before this check (it kept one record per AURA folder) that is open on these settings."""
+        for record in sorted(state_dir().glob('running-*.json')):
+            if _held(record.with_suffix('.lock')):
+                found = self._answering(record)
+                if found:return {**found, 'lock':str(record.with_suffix('.lock'))}
+        return None
+
+    def hand_over(self, other):
+        """Ask another open AURA to close so this one can open, as its own Quit does. It stays open, says why on its
+        page, and the answer here is its reason, when it is working (a chat, a backup, task setup)."""
+        body = json.dumps({'action':'quit', 'handover':self.product}).encode('utf-8')
+        request = Request(other['url'] + 'api/lifecycle', data=body, method='POST',
+                          headers={'X-Aura-Token':other['token'], 'Content-Type':'application/json'})
+        try:
+            with urlopen(request, timeout=10):return ''
+        except OSError as error:
+            try:return json.loads(error.read().decode('utf-8')).get('error') or 'It did not close.'
+            except (AttributeError, OSError, ValueError):return 'It did not answer. Close it, then open AURA again.'
+
+    def take_over(self, other, wait=40.0):
+        """Hand over from another open AURA and wait until it has closed (this one then holds the settings). Returns ''
+        once it has, or the reason it hasn't."""
+        reason = self.hand_over(other)
+        if reason:return reason
+        closed = (lambda:not _held(other['lock'])) if other.get('lock') else self.acquire
+        until = time.monotonic() + wait
+        while time.monotonic() < until:
+            if closed():return ''
+            time.sleep(.25)
+        return 'It is still closing. Open AURA again in a moment.'
+
+
+def follow(product, launch_target=None):
+    """When AURA opens from another folder (a new version unpacked beside the old one), "Start AURA when I sign in"
+    follows it, so the old folder doesn't start at the next sign-in and its scheduled tasks don't move back to it.
+    An automatic update keeps the original launcher, which already opens the current version."""
+    product = Path(product).resolve()
+    current = status()
+    if not current.get('enabled') or not current.get('product') or not current.get('workspace'):return False
+    saved = Path(current['product']).resolve()
+    if saved == product or (launch_target and launch_target(saved) == product):return False
+    configure(True, product, current['workspace'])
+    return True

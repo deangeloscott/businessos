@@ -1,17 +1,19 @@
-"""AURA tasks on the computer's own scheduler: Task Scheduler on Windows, launchd on macOS, cron on Linux.
+"""AURA tasks on the computer's own scheduler: Task Scheduler on Windows, launchd on macOS, and on Linux systemd user
+timers (cron where systemd isn't running).
 
 For AI apps without a scheduler AURA can reach, a task is an entry in the operating system's scheduler that runs one
 request through that app, in the business's workspace, with the permission chosen when it was set up. The operating
 system decides when it runs; AURA keeps the request (name, instructions, app, model) and the last few results on this
 computer, and can list, pause, resume, change and remove each task with the system's own commands. Everything AURA
-adds is named for AURA: the "AURA" folder in Task Scheduler, com.viraltrac.aura.task.* launch agents, and cron lines
-marked "aura-task". Tasks run while the person is signed in (Windows, macOS) or the computer is on (Linux), and stay
-on the scheduler if the AURA folder is deleted, until removed. A run missed while the computer slept or was off happens
-once when it is back (launchd does this on its own), and every run is told to check what is already done first.
+adds is named for AURA: the "AURA" folder in Task Scheduler, com.viraltrac.aura.task.* launch agents, aura-task-*
+systemd units, and cron lines marked "aura-task". Tasks run while the person is signed in (on Linux with cron, while the
+computer is on), and stay on the scheduler if the AURA folder is deleted, until removed. A run missed while the computer
+slept or was off happens once when it is back (cron alone can't), and every run is told to check what is already done
+first. A run never starts while the task's previous run is still going.
 
 The scheduler starts programs with a minimal search path on macOS and Linux, so each task keeps the search path of the
-AURA that set it up, which is where its AI app was found. When AURA moves to a new folder (an upgrade), its tasks move
-with it the next time AURA starts.
+AURA that set it up, which is where its AI app was found. When AURA moves to a new folder (an upgrade), or a Linux
+computer gains systemd, its tasks move with it the next time AURA starts.
 
   workspace_os_schedules.py create --business-id <id> --app claude --name "Weekly check" --when "weekly mon 09:00"
                                     --prompt-file <file> [--model <id>] [--effort <level>] [--permission <mode>]
@@ -149,11 +151,65 @@ def _mac_unload(ident):
     except (OSError,subprocess.SubprocessError):pass
 
 
-# Linux: lines in the person's own crontab, marked for AURA.
+# Linux: a systemd user timer per task, the native scheduler on most Linux desktops; where systemd isn't running, a
+# line in the person's own crontab.
+_SYSTEMD={}
+def _systemd():
+    """Whether this person's systemd is running to start timers (checked once per run of this helper)."""
+    if 'ok' not in _SYSTEMD:
+        try:_SYSTEMD['ok']=subprocess.run(['systemctl','--user','show-environment'],capture_output=True,timeout=15).returncode==0
+        except (OSError,subprocess.SubprocessError):_SYSTEMD['ok']=False
+    return _SYSTEMD['ok']
+def _via():return 'taskscheduler' if os.name=='nt' else 'launchd' if sys.platform=='darwin' else 'systemd' if _systemd() else 'cron'
+def runs_while():
+    """When tasks on this computer's scheduler can run, in the person's words."""
+    return 'the computer is on' if _via()=='cron' else "you're signed in"
+def _unit_dir():return Path(os.environ.get('XDG_CONFIG_HOME') or Path.home()/'.config')/'systemd/user'
+def _unit(ident,kind):return _unit_dir()/f'aura-task-{ident}.{kind}'
+def _systemctl(*argv):return _call(['systemctl','--user',*argv])
+def _literal(value):return str(value).replace('%','%%')  # systemd expands %-specifiers in most settings
+def _quoted(value,command=True):
+    """One quoted value in a unit file, kept literal: specifiers, and in a command its $variables too."""
+    value=_literal(value).replace('\\','\\\\').replace('"','\\"')
+    return '"'+(value.replace('$','$$') if command else value)+'"'
+def _calendar(when):
+    if when['every']=='hourly':return '*-*-* *:00:00'
+    at=when['time']+':00'
+    if when['every']=='daily':return f'*-*-* {at}'
+    if when['every']=='weekly':return f"{when['day'].capitalize()} *-*-* {at}"
+    return f"*-*-{int(when['day']):02d} {at}"
+def _systemd_create(task):
+    """A oneshot service that runs the task and a timer that starts it. systemd never starts a service that is still
+    running, and Persistent= runs a missed time once when the computer is back."""
+    folder=_unit_dir();folder.mkdir(parents=True,exist_ok=True)
+    name=_literal(re.sub(r'[\r\n]',' ',task['name']))
+    _unit(task['id'],'service').write_text(
+        f"[Unit]\nDescription=AURA task: {name}\n\n[Service]\nType=oneshot\nWorkingDirectory={_literal(task['workspace'])}\n"
+        f"Environment={_quoted('PATH='+task.get('path',''),command=False)}\nExecStart={' '.join(_quoted(a) for a in _runner(task['id']))}\n",encoding='utf-8')
+    _unit(task['id'],'timer').write_text(
+        f"[Unit]\nDescription=AURA task: {name}\n\n[Timer]\nOnCalendar={_calendar(task['when'])}\nPersistent=true\n\n"
+        "[Install]\nWantedBy=timers.target\n",encoding='utf-8')
+    _systemctl('daemon-reload')
+    _systemctl('disable' if task.get('paused') else 'enable','--now',f"aura-task-{task['id']}.timer")
+def _systemd_remove(ident):
+    try:subprocess.run(['systemctl','--user','disable','--now',f'aura-task-{ident}.timer'],capture_output=True,timeout=30)
+    except (OSError,subprocess.SubprocessError):pass
+    for kind in ('timer','service'):_unit(ident,kind).unlink(missing_ok=True)
+    try:subprocess.run(['systemctl','--user','daemon-reload'],capture_output=True,timeout=30)
+    except (OSError,subprocess.SubprocessError):pass
+def _systemd_ids():
+    folder=_unit_dir()
+    return {p.name[len('aura-task-'):-len('.timer')] for p in folder.glob('aura-task-*.timer')} if folder.is_dir() else set()
 def _cron_lines():
     try:done=subprocess.run(['crontab','-l'],capture_output=True,text=True,timeout=30)
-    except FileNotFoundError:raise ValueError('This computer has no crontab to schedule tasks with. Install cron, or set the task up in an AI app with its own scheduler.') from None
+    except FileNotFoundError:raise ValueError('This computer has neither systemd nor cron running to schedule tasks with. Set the task up in an AI app with its own scheduler.') from None
     return done.stdout.splitlines() if done.returncode==0 else []
+def _cron_ids():
+    try:return {m[1] for m in (re.search(r'# aura-task:([A-Za-z0-9_-]+)$',l) for l in _cron_lines()) if m}
+    except ValueError:return set()
+def _cron_remove(ident):
+    if ident not in _cron_ids():return
+    _cron_write([l for l in _cron_lines() if not l.endswith(f'# aura-task:{ident}')])
 def _sh(value):return "'"+str(value).replace("'","'\\''")+"'"
 def _cron_write(lines):_call(['crontab','-'],'\n'.join(lines)+'\n')
 def _cron_create(task):
@@ -165,14 +221,19 @@ def _cron_create(task):
     elif every=='weekly':spec=f'{int(minute)} {int(hour)} * * {(DAYS.index(when["day"])+1)%7}'
     else:spec=f'{int(minute)} {int(hour)} {when["day"]} * *'
     command=' '.join(_sh(a) for a in _runner(task['id']))
-    line=('#AURA-PAUSED ' if task.get('paused') else '')+f"{spec} cd {_sh(task['workspace'])} && {command} {mark}"
+    # cron turns an unescaped % into a line break, even inside quotes
+    line=('#AURA-PAUSED ' if task.get('paused') else '')+f"{spec} cd {_sh(task['workspace'])} && {command}".replace('%',r'\%')+f" {mark}"
     _cron_write([l for l in _cron_lines() if not l.endswith(mark)]+[line])
 
 
 def _place(task):
     task['runner']=_runner(task['id'])  # what follow() compares, so tasks move along with AURA
+    via=_via()
+    if task.get('via') and task['via']!=via:_remove_native(task['id'],task['via'])  # cron before systemd was running
+    task['via']=via
     if os.name=='nt':_win_create(task)
     elif sys.platform=='darwin':_mac_create(task)
+    elif via=='systemd':_systemd_create(task)
     else:_cron_create(task)
 
 
@@ -185,7 +246,8 @@ def _native_ids():
     if sys.platform=='darwin':
         folder=Path.home()/'Library/LaunchAgents';prefix=_mac_label('')
         return {p.name[len(prefix):-len('.plist')] for p in folder.glob(prefix+'*.plist')} if folder.is_dir() else set()
-    return {m[1] for m in (re.search(r'# aura-task:([A-Za-z0-9_-]+)$',l) for l in _cron_lines()) if m}
+    if _via()=='cron':return {m[1] for m in (re.search(r'# aura-task:([A-Za-z0-9_-]+)$',l) for l in _cron_lines()) if m}
+    return _systemd_ids()|_cron_ids()
 
 
 def follow():
@@ -193,7 +255,7 @@ def follow():
     task at this one, so deleting the old folder doesn't quietly stop it."""
     moved=[]
     for task in definitions():
-        if task.get('runner')==_runner(task['id']):continue
+        if task.get('runner')==_runner(task['id']) and task.get('via',_via())==_via():continue
         try:
             task.setdefault('path',os.environ.get('PATH',''));_place(task);save(task);moved.append(task['id'])
         except (ValueError,OSError,subprocess.SubprocessError):continue  # listed as it is, so the person sees its state
@@ -219,13 +281,17 @@ def create(bid,app,name,when,prompt,model='',effort='',permission='',workspace=N
     return task
 
 
-def _remove_native(ident):
+def _remove_native(ident,via=None):
     _STATUS['at']=0
     if os.name=='nt':
         try:_call(['schtasks','/Delete','/F','/TN',f'\\AURA\\{ident}'])
         except ValueError:pass  # already gone from Task Scheduler
     elif sys.platform=='darwin':_mac_unload(ident);_mac_plist(ident).unlink(missing_ok=True)
-    else:_cron_write([l for l in _cron_lines() if not l.endswith(f'# aura-task:{ident}')])
+    elif via=='cron':_cron_remove(ident)
+    elif via=='systemd':_systemd_remove(ident)
+    else:  # either kind, so nothing is left behind
+        if _systemd() or _unit(ident,'timer').exists():_systemd_remove(ident)
+        _cron_remove(ident)
 
 
 def change(ident,action,values=None):
@@ -308,7 +374,8 @@ def run(ident):
 
 
 def _lock(ident):
-    """Task Scheduler and launchd never start a task while its last run is still going; cron does, so lock there."""
+    """Task Scheduler, launchd and systemd never start a task while its last run is still going; cron does, so lock
+    there (on Linux always: a task moved from cron to systemd could overlap once)."""
     if os.name=='nt' or sys.platform=='darwin':return True
     import fcntl
     store().mkdir(parents=True,exist_ok=True);handle=open(store()/f'{ident}.lock','a')

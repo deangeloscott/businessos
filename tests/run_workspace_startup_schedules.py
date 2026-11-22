@@ -113,12 +113,12 @@ def main():
         server = ThreadingHTTPServer(('127.0.0.1',0), handler_for(app))
         worker = threading.Thread(target=server.serve_forever,daemon=True)
         worker.start()
-        first, second = startup.VisualInstance(ROOT), startup.VisualInstance(ROOT)
+        first, second = startup.RunningAura(ROOT), startup.RunningAura(ROOT / 'another-aura-folder')
         try:
             assert first.acquire()
             first.publish(server.server_port,app.token)
-            assert not second.acquire()
-            assert second.existing() == f'http://127.0.0.1:{server.server_port}/'
+            assert not second.acquire(), 'one AURA at a time for these settings, from whichever folder'
+            assert second.running()['url'] == f'http://127.0.0.1:{server.server_port}/'
             # A separate task operation may run while a real chat is busy. It
             # must not select a connection, replace that job, or add a chat.
             from workspace_execution import Execution
@@ -257,6 +257,23 @@ def main():
                     assert '-AllowStartIfOnBatteries' in calls[-2][0][-1],'a laptop on battery still runs its tasks'
                     computer._cron_create({**sample,'workspace':"/home/me/Sam's shop"})
                     assert "cd '/home/me/Sam'\\''s shop' &&" in calls[-1][1],'a folder name with an apostrophe stays one word'
+                    computer._cron_create({**sample,'workspace':'/home/me/100% shop'})
+                    assert "'/home/me/100\\% shop'" in calls[-1][1],'cron reads a bare % as a line break'
+                # Linux with systemd: a timer and a oneshot service per task (systemd itself is stubbed here; the real
+                # thing was checked on Ubuntu).
+                units=Path(tmp)/'systemd-units';calls.clear()
+                with patch.object(computer,'_call',side_effect=lambda argv,data=None:calls.append(argv) or ''),patch.object(computer,'_unit_dir',return_value=units):
+                    for when,calendar in (('hourly','*-*-* *:00:00'),('daily 07:00','*-*-* 07:00:00'),('weekly sun 18:30','Sun *-*-* 18:30:00'),('monthly 5 09:05','*-*-05 09:05:00')):
+                        computer._systemd_create({**sample,'when':computer.parse_when(when),'workspace':'/home/me/50% "best" $shop','path':'/opt/apps:/usr/bin','name':'Weekly %u'})
+                        timer=(units/'aura-task-abcDEF123456.timer').read_text()
+                        assert f'OnCalendar={calendar}' in timer and 'Persistent=true' in timer,'a missed run happens once when the computer is back'
+                    service=(units/'aura-task-abcDEF123456.service').read_text()
+                    assert 'WorkingDirectory=/home/me/50%% "best" $shop' in service and 'Environment="PATH=/opt/apps:/usr/bin"' in service and 'Type=oneshot' in service
+                    assert 'Description=AURA task: Weekly %%u' in service,'systemd would expand %u'
+                    assert calls[-1][-3:]==['enable','--now','aura-task-abcDEF123456.timer']
+                    computer._systemd_create({**sample,'paused':True,'workspace':'/w','name':'x'});assert calls[-1][-3]=='disable','a paused timer stays off'
+                for via,words in (('systemd',"you're signed in"),('cron','the computer is on')):
+                    with patch.object(computer,'_via',return_value=via):assert computer.runs_while()==words
                 with patch.object(computer,'_mac_unload'),patch.object(computer,'_call',return_value=''),patch.object(computer,'_mac_plist',return_value=Path(tmp)/'task.plist'):
                     computer._mac_create({**sample,'paused':True})
                     assert plistlib.loads((Path(tmp)/'task.plist').read_bytes())['Disabled'],'a paused macOS task stays paused at the next sign-in'
@@ -311,6 +328,10 @@ def main():
         running = None
         try:
             running = current_instance()
+            # A second server on the same settings would overwrite this one's: it is refused, with where AURA is open.
+            again = subprocess.run([sys.executable, str(ROOT / 'scripts/workspace_ui.py'), '--workspace', str(workspace), '--no-open'],
+                                   capture_output=True, text=True, encoding='utf-8', timeout=60)
+            assert again.returncode == 1 and f"127.0.0.1:{running['port']}" in again.stdout, again.stdout
             assert lifecycle(running,'restart')['status'] == 'restart'
             assert process.wait(timeout=10) == 0
             replacement = current_instance(running['token'])

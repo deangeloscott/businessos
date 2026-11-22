@@ -5,7 +5,6 @@ import os
 import re
 from pathlib import Path
 import subprocess
-import sys
 import sqlite3
 from contextlib import closing
 
@@ -191,7 +190,7 @@ def inventory(codex_home=None, hermes_home=None, workspaces=(), antigravity_home
             append(t['app'],'computer',t['id'],app=computer.NAMES.get(t['app'],t['app']),name=t['name'],description=t['prompt'],schedule=computer.when_text(t['when']),
                    schedule_raw=computer.rrule(t['when']),model=t.get('model',''),effort=t.get('effort',''),status=t['status'],next_run=t['next_run'],
                    last_run=t['last_run'],last_status=t['last_status'],last_error=t['last_error'],workspace=[t['workspace']],editable=True,scheduler='computer',
-                   runtime="Runs on this computer's own scheduler while "+('the computer is on' if sys.platform.startswith('linux') else "you're signed in"))
+                   runtime="Runs on this computer's own scheduler while "+computer.runs_while())
     except (ValueError,OSError) as exc:notes.append('This computer’s scheduler could not be read: '+str(exc)[:200])
     return {'items':items, 'notes':notes,
             'support':'Shows local Codex and Hermes schedules, Pi schedule-prompt jobs in opened workspaces, and Google Antigravity schedule sidecars. Live-chat timers, Claude schedules and cloud-only jobs are not automatically listed. Enabled means configured; the owning app must still be running.'}

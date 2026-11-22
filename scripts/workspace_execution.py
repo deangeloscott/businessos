@@ -87,16 +87,21 @@ class Execution:
 
     def stop(self):
         if self.native_session and (not self.native_session.active or self.native_session.active.execution is not self):return
-        # Native cancellation gets the first chance to settle tools and children.
-        # A timer supplies the process-tree fallback without holding the UI lock.
+        # Native cancellation gets the first chance to settle tools and children; after 5 seconds the process tree is
+        # closed. The polite cancel is written to the app's input, which waits if the app has stopped reading it (a
+        # hung app), so it goes out on its own thread with the force-close already set: Stop never waits on the app.
         with self.lock:
-            if self.interrupt and not self.interrupt_requested and self.process and self.process.poll() is None:
-                self.interrupt_requested=True
-                try:self.interrupt()
-                except (OSError,ValueError):pass
-                else:
-                    timer=threading.Timer(5,self._force_if_running);timer.daemon=True;timer.start()
-                    return
+            interrupt=self.interrupt if self.interrupt and not self.interrupt_requested and self.process and self.process.poll() is None else None
+            if interrupt:self.interrupt_requested=True
+        if interrupt:
+            timer=threading.Timer(5,self._force_if_running);timer.daemon=True;timer.start()
+            failed=[]
+            def ask():
+                try:interrupt()
+                except (OSError,ValueError) as error:failed.append(error)
+            sender=threading.Thread(target=ask,daemon=True,name='aura-stop');sender.start();sender.join(1)
+            if not failed:return  # sent, or still waiting on the app: the timer closes it
+            timer.cancel()
         self._force_stop()
 
     def _force_if_running(self):
@@ -117,8 +122,11 @@ class Execution:
                 self.requests.close()
                 return
             if os.name == 'nt':
-                result = subprocess.run(['taskkill', '/PID', str(process.pid), '/T', '/F'],
-                                        capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
+                try:
+                    result = subprocess.run(['taskkill', '/PID', str(process.pid), '/T', '/F'],
+                                            capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW, timeout=20)
+                except subprocess.TimeoutExpired:
+                    process.kill();result = subprocess.CompletedProcess([], 0 if process.poll() is not None else 1)
                 if result.returncode and process.poll() is None:
                     self.stopped.clear()
                     raise ValueError('The request could not be stopped. Open your AI app to stop it there.')

@@ -73,6 +73,15 @@ async function api(path, data, options={}) {
   }catch(error){failed=true;if(!error.readable){const readable=new Error(humanError(error));readable.readable=true;throw readable;}throw error;}
   finally{const elapsed=performance.now()-started;clientPerformance.requests++;clientPerformance.errors+=Number(failed);clientPerformance.total_ms+=elapsed;clientPerformance.max_ms=Math.max(clientPerformance.max_ms,elapsed);}
 }
+// A backup, restore or move runs while the rest of AURA keeps working. While the page waits for it, show how far
+// along it is, with a way to stop it.
+async function withOperation(host, work){
+  let live=true;
+  (async()=>{while(live){try{const o=(await api('/api/workspaces/operation')).operation;
+      if(o&&live&&host?.isConnected)host.innerHTML=`<p>${esc(o.stopping?'Stopping…':(o.step||o.label))}${!o.stopping&&o.total?` · ${o.done.toLocaleString()} of ${o.total.toLocaleString()} files`:''}</p>${o.can_stop&&!o.stopping?'<button type="button" class="text-button" data-operation-stop>Stop</button>':''}`;}catch{}
+    await new Promise(r=>setTimeout(r,700));}})();
+  try{return await work();}finally{live=false;if(host?.isConnected)host.innerHTML='';}
+}
 function notice(text, error=false) {
   if(error)text=humanError(text);
   $('#notice').textContent=text; $('#notice').classList.toggle('error',error); $('#notice').hidden=!text;
@@ -2453,7 +2462,7 @@ async function addWorkspace() {
   details('Add or open a workspace',`<div class="organization-actions"><button class="secondary" id="organize-work">Bring existing work together</button><button class="text-button" id="aura-recovery">AURA Recovery</button></div><section class="workspace-open"><h3>Found on your computer</h3>${found.length?`<div class="card workspace-candidates">${workspaceRows(found)}</div>`:'<p>No other saved workspaces found yet.</p>'}${r.items.filter(w=>w.kind==='attention').map(w=>`<div class="connection-guide"><strong>${esc(w.name)} · Needs attention</strong><p>${esc(w.note)}</p><button class="text-button" data-organization-help="${esc(w.path)}">Ask your AI to help →</button></div>`).join('')}${missing.map(w=>`<p>${esc(w.name)} · Folder missing <button class="text-button" data-find-workspace="${esc(w.path)}">Find folder…</button></p>`).join('')}${r.notes.length?'<p class="small-note">Some folders could not be checked. Choose a folder to look further.</p>':''}
     <form id="open-workspace-form" class="form-grid"><label>Look in another folder<input id="open-workspace-path" name="path" required placeholder="Or paste its location"></label><div class="workspace-open-actions"><button type="button" class="secondary" data-storage-browse="open-workspace-path">Browse…</button><button class="secondary">Preview →</button></div></form></section>
     <details class="workspace-create"><summary>Create a new workspace</summary><form id="create-workspace-form" class="form-grid"><label>Workspace name<input name="name" required maxlength="160" autocomplete="organization"></label><input id="new-workspace-parent" name="parent" type="hidden" value="${esc(r.default_home)}"><p class="small-note storage-path" id="new-workspace-location">${esc(r.default_home)}</p><button type="button" class="text-button" data-storage-browse="new-workspace-parent">Choose another location…</button><button class="primary">Create workspace →</button></form></details>
-    ${state.business?`<details class="workspace-open"><summary>Change where this workspace is saved</summary><p>Copy and verify your saved work, then use the new folder. The original stays in place.</p><form id="relocate-workspace-form" class="form-grid"><label>New workspace folder<input id="relocate-workspace-path" name="path" required value="${esc(r.default_home+'/'+(state.data.businesses.find(b=>b.id===state.business)?.id||'my-workspace'))}"></label><button type="button" class="text-button" data-storage-browse="relocate-workspace-path">Choose folder…</button><button class="secondary">Copy & use this folder →</button></form></details>`:''}`);
+    ${state.business?`<details class="workspace-open"><summary>Change where this workspace is saved</summary><p>Copy and verify your saved work, then use the new folder. The original stays in place.</p><form id="relocate-workspace-form" class="form-grid"><label>New workspace folder<input id="relocate-workspace-path" name="path" required value="${esc(r.default_home+'/'+(state.data.businesses.find(b=>b.id===state.business)?.id||'my-workspace'))}"></label><button type="button" class="text-button" data-storage-browse="relocate-workspace-path">Choose folder…</button><button class="secondary">Copy & use this folder →</button></form><div id="relocate-progress" role="status"></div></details>`:''}`);
 }
 
 async function organizeWork() {
@@ -2981,6 +2990,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.dataset.action==='edit-business') { const b=rows('Business')[0]; details('Workspace details',`<form id="business-form" class="form-grid"><label>Workspace name<input name="name" value="${esc(b.title)}" required maxlength="160"></label><label>What does your business do? <span class="muted">Optional</span><textarea name="description" maxlength="2000" rows="3">${esc(b.data?.description||'')}</textarea></label><button class="primary">Save</button></form>`); }
   if(button.id==='session-keys-only'){await api('/api/connections/session-only',{});await showApiConnections();}
   if(button.id==='organize-work')await organizeWork();
+  if(button.matches('[data-operation-stop]')){button.disabled=true;button.textContent='Stopping…';await api('/api/workspaces/operation/stop',{});return;}
   if(button.id==='organization-stop'){await api('/api/organization/stop',{});button.disabled=true;button.textContent='Stopping…';}
   if(button.id==='organization-apply'){await api('/api/organization/apply',{id:state.organizationReview.id});organizationProgress();await pollOrganization();}
   if(button.id==='organization-discard'){await api('/api/organization/discard',{id:state.organizationReview.id});await auraRecovery();}
@@ -3063,14 +3073,15 @@ document.addEventListener('submit',event=>{
       }
       if(form.getAttribute('id')==='relocate-workspace-form') {
         rememberChatDraft();
-        await api('/api/workspaces/relocate',{path:data.get('path')});
+        submit.disabled=true;
+        try{await withOperation($('#relocate-progress'),()=>api('/api/workspaces/relocate',{path:data.get('path')}));}finally{submit.disabled=false;}
         for(const dialog of document.querySelectorAll('dialog[open]'))dialog.close();
         state.business='';state.hydrated=false;state.chat=[];state.chatMeta=null;state.newAssistantId=null;state.newAssistantName='';state.catalog=null;state.library=[];
         await refresh();notice('Copied and verified. You’re using the new folder; the original is still there.');return;
       }
     if(form.getAttribute('id')==='backup-workspace-form'||form.getAttribute('id')==='restore-workspace-form'){
       submit.disabled=true;
-      try{const restoring=form.getAttribute('id')==='restore-workspace-form', r=await api('/api/workspaces/'+(restoring?'restore':'backup'),{...Object.fromEntries(data),include_linked:data.has('include_linked')});
+      try{const restoring=form.getAttribute('id')==='restore-workspace-form', r=await withOperation($('#storage-result'),()=>api('/api/workspaces/'+(restoring?'restore':'backup'),{...Object.fromEntries(data),include_linked:data.has('include_linked')}));
         $('#storage-result').innerHTML=`<p>${restoring?'Your files were restored and verified. Open the restored workspace to continue.':'Backup saved and verified.'}</p><p class="storage-path">${esc(r.path)}</p><button class="text-button" data-copy-path="${esc(r.path)}">Copy location</button>${restoring?`<button class="primary" data-open-workspace="${esc(r.path)}">Open restored workspace →</button>`:''}`;
       }finally{submit.disabled=false;}return;
     }

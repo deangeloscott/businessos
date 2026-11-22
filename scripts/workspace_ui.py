@@ -575,6 +575,7 @@ class Workspace:
         self.usage_refresh = {'reporting':[], 'checked':0}
         self.usage_refresh_lock = threading.Lock()
         self.organization_job = None
+        self.operation = None  # a long workspace operation (backup, restore, move, sharing): see run_operation
         self.workspace_note = ''
         self.portable_view_ok = True
         self.notification_focus_until = 0
@@ -1018,6 +1019,7 @@ class Workspace:
                     self.native_sessions.busy() or
                     (self.schedule_job and self.schedule_job['status'] == 'working') or
                     (self.organization_job and self.organization_job['status'] == 'working') or
+                    self.operation is not None or
                     # Built-in terminals end with AURA (a running Hermes gateway, an app's own update): wait for them too.
                     any(t['alive'] for t in __import__('workspace_terminal').TERMINALS.list()))
 
@@ -1807,6 +1809,33 @@ class Workspace:
         names={workspace_usage.account('openai',a.get('account'))['id']:a['nickname'] for a in workspace_accounts.load()['accounts'] if a['app']=='codex' and a.get('account')}
         return [{**r,'nickname':names[r['id']]} if r.get('id') in names else r for r in rows]
 
+    def operation_view(self):
+        op = self.operation
+        return {k:op[k] for k in ('kind','label','step','done','total','can_stop','stopping')} if op else None
+
+    def operation_busy(self):
+        """Why changes wait while a long operation runs, with how far along it is."""
+        op = self.operation
+        far = f" ({op['done']:,} of {op['total']:,} files)" if op.get('total') else ''
+        return f"AURA is {op['label'][0].lower()+op['label'][1:]}{far}. Wait for it to finish" + (', or stop it.' if op['can_stop'] else '.')
+
+    def run_operation(self, held, kind, label, work, can_stop=True):
+        """Run slow work (a backup, restore, move or sharing package) without holding AURA's lock, so every page keeps
+        updating and other chats keep running. Changes wait until it ends (they are refused with its progress), which
+        keeps the work consistent. `work(report)` calls report(step, done, total), which stops it once Stop is pressed."""
+        if self.operation:raise ValueError(self.operation_busy())
+        stop = threading.Event()
+        op = {'kind':kind, 'label':label, 'step':'', 'done':0, 'total':0, 'can_stop':can_stop, 'stopping':False, 'stop':stop}
+        self.operation = op
+        def report(step, done=0, total=0):
+            if stop.is_set():raise ValueError('Stopped. Nothing was changed.' if kind != 'backup' else 'Stopped. No backup was saved.')
+            op.update(step=step, done=done, total=total)
+        held.release()
+        try:
+            return work(report)
+        finally:
+            with self.lock:self.operation = None
+
     def notify(self, bid, chat_id, title, kind='limit', task_id=None, goal_id=None, collection_id=None, item_title=None, item_id=None):
         """A bell notification for something that happened while the user may not be looking."""
         refs={k:v for k,v in {'task_id':task_id,'goal_id':goal_id,'collection_id':collection_id,'item_title':item_title,'item_id':item_id}.items() if v}
@@ -1844,6 +1873,16 @@ class Workspace:
         return {'chat':workspace_recovery.revision(chat),'settings':workspace_context.digest({k:chat.get(k) for k in
                     ('connection','model','effort','permission_mode','context_refs','project','account_id')}),
                 'goal':workspace_goals.continuation_basis(bid,workspace_goals.find(bid,goal_id)) if goal_id else None}
+
+    def follow_product(self):
+        import workspace_os_schedules
+        for step in (workspace_os_schedules.follow,
+                     lambda:workspace_startup.follow(PRODUCT_ROOT, workspace_updates.launch_target),
+                     lambda:any(r.get('status','pending')=='pending' for r in workspace_resume.pending()) and self.resume_wake()):
+            try:step()
+            except (OSError, ValueError, subprocess.SubprocessError) as error:
+                print(time.strftime('%Y-%m-%d %H:%M:%S') + ' Could not move ' + ('scheduled tasks' if step is workspace_os_schedules.follow else 'startup or wake-up') +
+                      ' to this AURA folder: ' + str(error)[:300], flush=True)
 
     def resume_wake(self):
         if workspace_accounts.load()['policy'].get('resume')=='closed':
@@ -3108,8 +3147,9 @@ class Workspace:
                 'records_revision':current_revision,'records_unchanged':revision==current_revision,
                 'diagnostics': diagnostics, 'workspace': str(workspace_root()),
                 'product': str(PRODUCT_ROOT), 'version': os_version(), 'refreshed': time.time(),
-                'workspace_note': self.workspace_note or getattr(self, 'startup_note', ''),
+                'workspace_note': self.workspace_note or getattr(self, 'startup_note', '') or getattr(self, 'handover_note', ''),
                 'organization': {k:self.organization_job[k] for k in ('status','action','progress') if k in self.organization_job} if self.organization_job else None,
+                'operation': self.operation_view(),
                 'schedule_operation': self.schedule_state(bid),
                 'workspace_missing': not directory and workspace_catalog.selection().get('path')==str(workspace_root()),
                 'workspace_default': workspace_root().resolve()==(workspace_catalog.default_home() / 'My workspace').resolve(),
@@ -3859,15 +3899,19 @@ class Workspace:
             return {'id': job['id'], 'status': job['status'], 'chat_id':chat['id'],'business_id':bid,'workspace':str(root),'references':job.get('references',[]),'goal_id':job.get('goal_id','')}
 
     def stop_chat(self, bid, ident):
-        job = self.find_job(ident,bid)
-        if job['status'] == 'working':
-            execution=self.executions.get(ident,self.execution)
-            chat=next((c for c in self.preferences['chats'] if c['id']==job.get('chat_id') and c['business_id']==bid),None)
-            if chat:chat.pop('continuation',None);self.save_preferences()
-            if execution and hasattr(execution,'continuation'):execution.continuation={'mode':'manual'}
+        # The bookkeeping holds AURA's lock; stopping the app does not, so an app that has hung can't hold up AURA.
+        with self.lock:
+            job = self.find_job(ident,bid)
+            execution = None
+            if job['status'] == 'working':
+                execution=self.executions.get(ident,self.execution)
+                chat=next((c for c in self.preferences['chats'] if c['id']==job.get('chat_id') and c['business_id']==bid),None)
+                if chat:chat.pop('continuation',None);self.save_preferences()
+                if execution and hasattr(execution,'continuation'):execution.continuation={'mode':'manual'}
+                job.update(stopping=True, progress='Stopping this request…', updated=time.time())
+        if execution:
             execution.stop()
             execution.requests.close()
-            job.update(stopping=True, progress='Stopping this request…', updated=time.time())
         return {'id':job['id'], 'status':job['status']}
 
 
@@ -3898,13 +3942,32 @@ def main():
         agent = json.loads(Path(args.agent_file).read_text(encoding='utf-8'))
         if not isinstance(agent, dict) or not isinstance(agent.get('name'), str) or not isinstance(agent.get('argv'), list) or not agent['argv'] or not all(isinstance(a, str) and a for a in agent['argv']):
             parser.error('Agent file requires a name and a non-empty argv list. Keep credentials in the agent, not this file.')
-    instance = workspace_startup.VisualInstance(PRODUCT_ROOT) if args.reuse else None
-    if instance and not instance.acquire():
-        url = instance.existing()
-        if not args.no_open:
-            webbrowser.open(url)
-        print('AURA is already running: ' + url, flush=True)
-        return
+    # One AURA at a time for these settings, from whichever folder it runs (see RunningAura). Opening AURA again shows
+    # the open one; opening it from another folder (a new version) asks the open one to close first, as its Quit does.
+    # A start nobody is watching (sign-in, a wake-up) leaves an open AURA alone: that one does the work.
+    instance = workspace_startup.RunningAura(PRODUCT_ROOT)
+    person = args.reuse and not args.no_open
+    def show(found, note=''):
+        if args.reuse and not args.no_open:webbrowser.open(found['url'])
+        print(note or ('AURA is already running: ' + found['url']), flush=True)
+    if not instance.acquire():
+        found = instance.running()
+        if not found:
+            print('AURA is already starting. Wait a moment and open it again.', flush=True);raise SystemExit(1)
+        if not args.reuse:
+            print(f"AURA is already running at {found['url']} from {found['product']}, with the same settings. Close it "
+                  "first, or give this copy its own settings folder with AURA_STATE_DIR.", flush=True);raise SystemExit(1)
+        if Path(found['product']).resolve() == PRODUCT_ROOT.resolve() or not person:
+            show(found);return
+        reason = instance.take_over(found)
+        if reason:
+            show(found, f"AURA is still open from {found['product']}, so this copy didn't open: {reason}");return
+    older = instance.older()
+    if older:
+        reason = instance.take_over(older) if person else 'it is running with the same settings.'
+        if reason:
+            instance.close()
+            show(older, f"An earlier AURA is still open from {older['product']}, so this copy didn't open: {reason}");return
     server = None
     update_stop = threading.Event()
     try:
@@ -3975,10 +4038,10 @@ def main():
                         app.watch_error = message
                         print(time.strftime('%Y-%m-%d %H:%M:%S') + ' AURA background check failed, continuing: ' + message, flush=True)
         threading.Thread(target=update_watch, daemon=True).start()
-        # Scheduled tasks on the computer's own scheduler follow this AURA if it now runs from another folder.
-        threading.Thread(target=lambda:__import__('workspace_os_schedules').follow(), daemon=True, name='aura-follow-tasks').start()
-        if instance:
-            instance.publish(server.server_port, app.token)
+        # When AURA now runs from another folder, what starts it from outside follows: tasks on the computer's own
+        # scheduler, "Start AURA when I sign in" and the wake-up that continues chats after a plan limit.
+        threading.Thread(target=app.follow_product, daemon=True, name='aura-follow').start()
+        instance.publish(server.server_port, app.token)
         url = f'http://127.0.0.1:{server.server_port}/' + ('?business=' + quote(args.business_id) if args.business_id else '')
         names=', '.join(b['name'] for b in business_directory())[:80]
         banner=f'\n  AURA  ·  {os_version()}\n'+(f'  Workspace: {names}\n' if names else '')+f'  Open: {url}\n  Keep this window open while you use AURA. Ctrl+C closes it.\n'
@@ -3998,8 +4061,7 @@ def main():
             server.server_close()
             print(time.strftime('%Y-%m-%d %H:%M:%S') + ' AURA stopped: ' +
                   ('update' if getattr(app, 'update_restart', False) else getattr(app, 'close_reason', 'closed')), flush=True)
-        if instance:
-            instance.close()
+        instance.close()
     if getattr(app, 'update_restart', False):
         workspace_updates.handoff(app.updates, workspace_root(), app.restart_business, server.server_port, app.launch_extra)
     elif getattr(app, 'restart_requested', False):

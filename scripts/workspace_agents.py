@@ -84,7 +84,7 @@ class Metadata:
         except subprocess.TimeoutExpired:
             # Only this metadata subprocess and its launcher children; no prompt was sent.
             if __import__('os').name == 'nt':
-                subprocess.run(['taskkill', '/PID', str(self.process.pid), '/T', '/F'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=subprocess.CREATE_NO_WINDOW)
+                subprocess.run(['taskkill', '/PID', str(self.process.pid), '/T', '/F'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=20, creationflags=subprocess.CREATE_NO_WINDOW)
             else:
                 self.process.terminate()
             self.process.wait(timeout=5)
