@@ -3968,6 +3968,7 @@ def main():
         if reason:
             instance.close()
             show(older, f"An earlier AURA is still open from {older['product']}, so this copy didn't open: {reason}");return
+    instance.hold_older()
     server = None
     update_stop = threading.Event()
     try:

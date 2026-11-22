@@ -253,6 +253,22 @@ class RunningAura(VisualInstance):
             try:return json.loads(error.read().decode('utf-8')).get('error') or 'It did not close.'
             except (AttributeError, OSError, ValueError):return 'It did not answer. Close it, then open AURA again.'
 
+    def hold_older(self):
+        """Hold the sign each earlier AURA folder checks before starting (one per folder, left in this settings
+        folder by every one that has run here), so opening an old folder beside this one doesn't start a second
+        AURA on the same settings. Released when this one closes."""
+        self.older_signs = []
+        for record in sorted(state_dir().glob('running-*.lock')):
+            sign = VisualInstance(record)
+            sign.path = record.with_suffix('.json')
+            if sign.acquire():self.older_signs.append(sign)
+
+    def close(self):
+        for sign in getattr(self, 'older_signs', []):
+            if sign.handle:sign.handle.close();sign.handle = None
+        self.older_signs = []
+        super().close()
+
     def take_over(self, other, wait=40.0):
         """Hand over from another open AURA and wait until it has closed (this one then holds the settings). Returns ''
         once it has, or the reason it hasn't."""
