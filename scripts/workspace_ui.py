@@ -2560,10 +2560,14 @@ class Workspace:
             for items,line in due:
                 problem=hm.send(argv,env,setting.get('platform','telegram'),line)
                 with self.lock:
-                    if not problem:
+                    # A send that ran out of time may have arrived: try once more, then stop, so at worst it comes twice.
+                    retrying=problem==hm.TIMED_OUT and not all(n.get('phone_timed_out') for n in items)
+                    if not problem or problem==hm.TIMED_OUT and not retrying:
                         for n in items:n['phone']=True
+                    elif retrying:
+                        for n in items:n['phone_timed_out']=True
                     saved=self.preferences.get('phone_notices')
-                    if saved:saved['problem']=problem
+                    if saved:saved['problem']='' if retrying else problem  # "check your phone" only once AURA stops trying
                     self.save_preferences()
                 if problem:self.phone_retry_at=time.time()+300;break
         finally:self.phone_lock.release()

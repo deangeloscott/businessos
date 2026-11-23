@@ -11,6 +11,8 @@ const context={state:{business:'bakery',projects:[],data:{records,aura_preferenc
 context.window.window=context.window;vm.createContext(context);
 const aura=process.argv[2];
 vm.runInContext(fs.readFileSync(path.join(path.dirname(aura),'workspace-links.js'),'utf8'),context);
+// How a number goal's target reads is shared with the rest of the page (goalAim in app.js).
+{const app=fs.readFileSync(path.join(path.dirname(aura),'app.js'),'utf8');vm.runInContext(app.slice(app.indexOf('function goalAim('),app.indexOf('function goalInfo(')),context);}
 vm.runInContext(fs.readFileSync(aura,'utf8')+';this.view=window.auraView;this.links=window.auraLinks;',context);
 const v=context.view,L=context.links;
 
@@ -18,7 +20,8 @@ const v=context.view,L=context.links;
 const G1={id:'G1',name:'Reach 100 reviews',metric:'Google reviews',unit:'reviews',direction:'higher_better',target:100,latest:87,reached:false,points:[{at:'a',value:64},{at:'b',value:87}]};
 const G2={id:'G2',name:'Top 3',unit:'place',direction:'lower_better',target:3,latest:4,reached:false},G3={id:'G3',name:'Be loved locally'},G4={id:'G4',name:'Grants',unit:'USD',direction:'higher_better',target:20000,latest:5000};
 assert.equal(v.goalLine(G1),'87 of 100 reviews','the unit is said once');
-assert.equal(v.goalLine(G2),'4 · target 3 place or lower');
+assert.equal(v.goalLine(G2),'4th · target 3rd or better','a ranking reads as places, never "3 place or lower"');
+assert.equal(v.goalLine({...G2,unit:'minutes',latest:32,target:25}),'32 minutes · target 25 minutes or less');
 assert.equal(v.goalLine(G3),'No number yet');assert.equal(v.goalLine(G4),'$5,000 of $20,000');
 assert.equal(v.goalLine({...G1,latest:null}),'No measurement yet');assert.equal(v.goalLine({...G1,reached:true}),'Reached');
 assert.equal(v.goalDone(G1),.87);assert.equal(v.goalDone(G2),.75);assert.equal(v.goalDone(G3),0);assert.equal(v.goalDone({...G2,reached:true}),1);

@@ -153,19 +153,19 @@ def prepare(root, bid, keys, name, note='', kind='starter', description='', auth
         raise
 
 
-def import_package(path,store=None):
-    try:return _import_package(path,store)
+def import_package(path,store=None,report=share._quiet):
+    try:return _import_package(path,store,report)
     except (zipfile.BadZipFile, RuntimeError, json.JSONDecodeError, KeyError, TypeError):
         raise ValueError('This package could not be read. Choose a verified AURA sharing or InnovationPackage ZIP.') from None
 
 
-def _import_package(path,store=None):
+def _import_package(path,store=None,report=share._quiet):
     path=share.unlinked(path)
     if path.stat().st_size>share.MAX_BYTES:raise ValueError('Choose a smaller sharing package.')
     with zipfile.ZipFile(path) as archive:
         names=archive.namelist()
         if 'AURA-SHARE.json' in names:
-            result=share.import_package(path,store)
+            result=share.import_package(path,store,report)
             manifest,payload=share.load_package(result['id'],store)
             profile=payload/'files/COMMUNITY.json'
             if profile.is_file():result['community_profile']=share.read(profile)

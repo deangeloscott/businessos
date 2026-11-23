@@ -213,7 +213,7 @@ window.auraContinuity=(()=>{
           if(!current(key,ticket,host)||reviewId!==selection)return;const restore=$('#history-restore');restore.disabled=true;
           try{const result=await api('/api/history/restore',{business:state.business,id:selected.id,expected_revision:selected.current_revision});if(current(key,ticket,host)){$('#history-restore-status').textContent=(result.warning||'Restored.')+' Reopen the file to see it.';}}
           catch(error){if(current(key,ticket,host)){$('#history-restore-status').textContent=humanError(error);restore.disabled=false;}}
-        });review.scrollIntoView({block:'nearest',behavior:'smooth'});
+        });review.scrollIntoView({block:'nearest',behavior:typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
       }finally{if(button.isConnected)button.disabled=false;}
     });paint();
   }

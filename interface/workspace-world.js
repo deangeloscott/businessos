@@ -157,7 +157,10 @@ const cssHue = (h, l = 68, a = 1) => `hsla(${h},${kit ? 70 : 78}%,${kit ? Math.m
 const gval = (G, d) => { let v = null; for (const p of G.points) if (p.day <= d + .01) v = p.value; return v; };
 const gdone = (G, d) => { const v = gval(G, d); if (v == null) return 0; return G.direction === 'lower_better' ? clamp(G.target / Math.max(v, 1e-9), 0, 1) : clamp(v / (G.target || 1), 0, 1); };
 const amount = (v, unit) => unit === 'USD' ? '$' + Number(v).toLocaleString(undefined, { maximumFractionDigits: v < 10 ? 2 : 0 }) : Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 }) + (unit && !['count', 'rank', 'USD'].includes(unit) ? ' ' + unit : '');
-const goalText = G => { const v = gval(G, S.day); return G.reached && S.day >= M.T - .01 ? 'reached' : v == null ? 'no number yet' : G.direction === 'lower_better' ? `${amount(v, G.unit === 'USD' ? 'USD' : '')} · target ${amount(G.target, G.unit)} or lower` : `${amount(v, G.unit === 'USD' ? 'USD' : '')} of ${amount(G.target, G.unit)}`; };
+/* The same wording as goalAim in app.js: places in a ranking read as places, other lower-is-better targets say "or less". */
+const rankish = u => /^(rank|ranking|place|position|spot)s?$/i.test(String(u || '').trim());
+const nth = n => { const v = Math.round(Number(n)), m = v % 100, s = ['th', 'st', 'nd', 'rd']; return v.toLocaleString() + (s[(m - 20) % 10] || s[m] || s[0]); };
+const goalText = G => { const v = gval(G, S.day); return G.reached && S.day >= M.T - .01 ? 'reached' : v == null ? 'no number yet' : G.direction === 'lower_better' ? (rankish(G.unit) ? `${nth(v)} · target ${nth(G.target)} or better` : `${amount(v, G.unit === 'USD' ? 'USD' : '')} · target ${amount(G.target, G.unit)} or less`) : `${amount(v, G.unit === 'USD' ? 'USD' : '')} of ${amount(G.target, G.unit)}`; };
 const dateOf = d => M.date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 function load(feed) { const t = d => d ? Date.parse(d) : NaN, all = [t(feed.business.since)];
   feed.lands.forEach(l => l.items.forEach(i => all.push(t(i.first_seen)))); feed.findings.forEach(f => all.push(t(f.at))); feed.changes.forEach(c => all.push(t(c.at))); feed.goals.forEach(x => (x.points || []).forEach(p => all.push(t(p.at))));

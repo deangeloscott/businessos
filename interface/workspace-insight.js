@@ -55,6 +55,7 @@ window.auraInsight=(()=>{
     const key=scope();await refresh(true);if(key!==scope())return;
     const record=state.data.records.find(r=>r.ref===ref);if(!record){notice('This memory is no longer available.',true);return;}
     details('Correct saved memory',`<p><strong>${esc(record.title)}</strong></p><p class="small-note">Your AI will read the current record and apply your correction.</p><form id="memory-correction" class="form-grid"><label>What should change?<textarea name="correction" rows="4" required></textarea></label><div class="inline-actions"><button class="primary">Apply correction</button><button type="button" class="text-button" data-close="detail">Cancel</button></div></form>`);
+    $('#memory-correction textarea').focus();  // the one thing to do here, so the keyboard starts in it
     $('#memory-correction').onsubmit=e=>{e.preventDefault();attempt(async()=>{
       if(key!==scope())return;const correction=new FormData(e.target).get('correction').trim();if(!correction)return;
       $('#detail').close();await submitRequest(`Correct the saved workspace memory "${record.title}" (${ref}). Read its current record at ${record.path}. Apply this correction through the existing AURA memory helper, preserve unrelated fields, and verify the save.\n\nUser correction:\n${correction}`);

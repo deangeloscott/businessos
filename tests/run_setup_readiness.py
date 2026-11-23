@@ -66,6 +66,13 @@ def main():
             req(stated['receipt']['object_types']=={'BusinessClaim':1,'SourceRecord':1},'a stated fact needs only its words and the message')
             try:remember(bid,{'said':'we open at 7am','objects':[{'object_type':'BusinessClaim','content':{'statement':'Opening is at seven.'}}]});req(False,'a paraphrase was saved as their words')
             except ValueError as error:req('"said"' in str(error),'the failure says how to fix it')
+            # Correcting it later sources the fact to the new message: before, the save was refused against the old one,
+            # and an AI worked around it by deleting the fact and saving new ones.
+            claim=next(o['id'] for o in stated['objects'] if o['object_type']=='BusinessClaim')
+            fixed=remember(bid,{'said':'Actually we open at 6:30am on weekdays now.','objects':[{'object_ref':claim,'content':{'statement':'we open at 6:30am on weekdays'}}]})
+            req([o['operation'] for o in fixed['objects'] if o['object_type']=='BusinessClaim']==['updated'],'a correction updates the same fact')
+            now=object_index(bid)[claim][0];source=next(o['id'] for o in fixed['objects'] if o['object_type']=='SourceRecord')
+            req(now['source_ref']==source and now['support_quote']=='we open at 6:30am on weekdays','the corrected fact quotes the new message, not the old one')
             errors,_,_=validate_business(bid,True);req(not errors,f'setup/persistence state must remain valid: {errors}')
             # Any name works: accents become plain letters, other alphabets get a stable short ID, and a similar
             # name gets its own.

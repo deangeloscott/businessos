@@ -624,18 +624,6 @@ def handler_for(app):
                         result=workspace_focus.public(workspace_focus.save(bid,data.get('areas')) if 'areas' in data else workspace_focus.get(bid))
                         if 'text' in data:result['suggested']=workspace_focus.suggest(data['text'])
                     app.read_cache.clear();self.send(200,result);return
-                if route == '/api/attention':
-                    # Done and its Undo on a "Needs you" item: the same status change the AI makes with set_attention_status.
-                    import set_attention_status
-                    status={'done':'resolved','undo':data.get('previous') if data.get('previous') in {'open','acknowledged'} else 'open'}.get(data.get('action'))
-                    if not status:raise ValueError('Choose Done or Undo.')
-                    with app.lock:root=app.workspace_path
-                    with workspace_scope(root):
-                        bid=selected(data.get('business'))
-                        if not set_attention_status.find_item(bid,str(data.get('id') or ''))[0]:
-                            raise ValueError('This was already cleared or moved. Refresh to see what still needs you.')
-                        result=set_attention_status.set_status(bid,str(data.get('id')),status,note='Marked done in AURA.' if status=='resolved' else None)
-                    app.read_cache.clear();self.send(200,{'status':status,'previous':result['from']});return
                 if route == '/api/collection-view':
                     if data.get('action')!='place':raise ValueError('Choose a map action.')
                     with app.lock:root=app.workspace_path
@@ -751,7 +739,7 @@ def handler_for(app):
                         raise ValueError('Workspace organization is running. Wait or stop it before making changes.')
                     if app.schedule_job and app.schedule_job['status']=='working' and (route in {'/api/lifecycle','/api/workspaces/open','/api/workspaces/create','/api/example','/api/workspaces/relocate','/api/workspaces/restore'} or route.startswith('/api/organization/')):
                         raise ValueError('Wait for task setup or stop it before changing workspaces or restarting AURA.')
-                    if app.running_jobs(None if route in {'/api/lifecycle','/api/workspaces/relocate','/api/workspaces/restore'} else workspace_root()) and route not in {'/api/goals','/api/chat/answer','/api/archive','/api/permissions','/api/assistants','/api/agents','/api/native-agents','/api/delegation-settings','/api/preferences','/api/profile','/api/interface/reset','/api/chats/recover','/api/chats/archive','/api/chats/reconnect','/api/notifications','/api/chat','/api/chat/stop','/api/chats/new','/api/chats/open','/api/chats/rename','/api/chats/organize','/api/projects','/api/chats/model','/api/chats/personalization','/api/chats/context','/api/connect','/api/workspaces/open','/api/usage/settings','/api/context-settings','/api/updates','/api/schedules/action','/api/schedules/stop'}:
+                    if app.running_jobs(None if route in {'/api/lifecycle','/api/workspaces/relocate','/api/workspaces/restore'} else workspace_root()) and route not in {'/api/goals','/api/chat/answer','/api/archive','/api/attention','/api/permissions','/api/assistants','/api/agents','/api/native-agents','/api/delegation-settings','/api/preferences','/api/profile','/api/interface/reset','/api/chats/recover','/api/chats/archive','/api/chats/reconnect','/api/notifications','/api/chat','/api/chat/stop','/api/chats/new','/api/chats/open','/api/chats/rename','/api/chats/organize','/api/projects','/api/chats/model','/api/chats/personalization','/api/chats/context','/api/connect','/api/workspaces/open','/api/usage/settings','/api/context-settings','/api/updates','/api/schedules/action','/api/schedules/stop'}:
                         raise ValueError('Your agent is working. Wait for its reply before changing this workspace.')
                     if route in {'/api/preferences','/api/locations'}:
                         app.load_portable()
@@ -766,9 +754,9 @@ def handler_for(app):
                                     data.get('kind','starter'),data.get('description',''),data.get('author',''),data.get('based_on',''),store,locations),can_stop=False)
                             elif action == 'prepare':
                                 result = app.run_operation(held,'sharing','Preparing a sharing package',lambda report:workspace_sharing.prepare(workspace_root(), bid, data.get('keys'), data.get('name',''), data.get('note',''), store,
-                                                                   locations),can_stop=False)
+                                                                   locations, report),can_stop=False)
                             else:
-                                result = app.run_operation(held,'sharing','Reading a sharing package',lambda report:workspace_exchange.import_package(data.get('path',''), store),can_stop=False)
+                                result = app.run_operation(held,'sharing','Reading a sharing package',lambda report:workspace_exchange.import_package(data.get('path',''), store, report),can_stop=False)
                                 try:
                                     workspace_sharing.remember_package(workspace_root(), bid, data['path'])
                                 except (OSError, ValueError):
@@ -803,9 +791,9 @@ def handler_for(app):
                                 if result['destination'] == str(workspace_root()) and result['business'] == bid and (workspace_sharing._job(data['id'], store) / 'source.json').exists():
                                     raise ValueError('Choose a different business or workspace to receive the copy.')
                             elif action == 'apply':
-                                result = app.run_operation(held,'sharing','Copying shared work in',lambda report:workspace_sharing.apply(data['id'], data.get('include_updates') is True, store),can_stop=False)
+                                result = app.run_operation(held,'sharing','Copying shared work in',lambda report:workspace_sharing.apply(data['id'], data.get('include_updates') is True, store, report),can_stop=False)
                             elif action == 'export':
-                                result = app.run_operation(held,'sharing','Saving a sharing package',lambda report:workspace_sharing.export_package(data['id'], data.get('path',''), store),can_stop=False)
+                                result = app.run_operation(held,'sharing','Saving a sharing package',lambda report:workspace_sharing.export_package(data['id'], data.get('path',''), store, report),can_stop=False)
                             else:
                                 raise ValueError('Choose a supported sharing action.')
                         self.send(200, result)
@@ -857,6 +845,17 @@ def handler_for(app):
                     elif route == '/api/archive':
                         bid=selected(data.get('business'))
                         self.send(200,workspace_archive.change(app,bid,data.get('kind'),data.get('id'),data.get('action','restore')))
+                    elif route == '/api/attention':
+                        # Done and its Undo on a "Needs you" item: the same status change the AI makes with set_attention_status.
+                        import set_attention_status
+                        status={'done':'resolved','undo':data.get('previous') if data.get('previous') in {'open','acknowledged'} else 'open'}.get(data.get('action'))
+                        if not status:raise ValueError('Choose Done or Undo.')
+                        with workspace_scope(app.workspace_path):
+                            bid=selected(data.get('business'))
+                            if not set_attention_status.find_item(bid,str(data.get('id') or ''))[0]:
+                                raise ValueError('This was already cleared or moved. Refresh to see what still needs you.')
+                            result=set_attention_status.set_status(bid,str(data.get('id')),status,note='Marked done in AURA.' if status=='resolved' else None)
+                        app.read_cache.clear();self.send(200,{'status':status,'previous':result['from']})
                     elif route == '/api/recovery/update':
                         self.send(200,workspace_organization.recover(data['id'],data['action'],app.settings_file.parent,
                             int(data['days']) if 'days' in data else None,app.organization_references()))

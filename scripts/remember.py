@@ -75,16 +75,24 @@ def _receipt(rows):
     return {'status':'saved','objects':len(rows),'created':created,'updated':updated,'object_types':dict(sorted(types.items())),'validation':'passed'}
 
 
-def _stated(payload):
+def _stated(payload,index=None):
     """With the person's own message as "said", AURA keeps it as the source of the facts they stated in this save and
     fills in what such a fact needs (its source, authority, kind, status and quote). The caller writes only each
-    fact's statement, in the person's words; the usual check that those words are theirs still applies."""
+    fact's statement, in the person's words; the usual check that those words are theirs still applies. A correction
+    to a fact the person stated earlier is sourced to the new message too, since that is now where its words come from."""
     said=payload.get('said') if isinstance(payload,dict) else None
     if said is None:return payload,False
     if not isinstance(said,str) or not said.strip():raise ValueError('"said" must be the person’s message, as text.')
     items=[];used=False
     for item in payload.get('objects') or []:
-        if isinstance(item,dict) and item.get('object_type')=='BusinessClaim' and not item.get('object_ref') and isinstance(item.get('content'),dict):
+        existing=(index or {}).get(item.get('object_ref'),(None,))[0] if isinstance(item,dict) else None
+        if (isinstance(existing,dict) and existing.get('object_type')=='BusinessClaim' and existing.get('authority')=='explicit_user'
+                and isinstance(item.get('content'),dict) and 'statement' in item['content']):
+            content=dict(item['content'])
+            content.setdefault('support_quote',str(content.get('statement') or '').strip().rstrip('.!'))
+            content.setdefault('source_ref','@said');used=True
+            item={**item,'content':content}
+        elif isinstance(item,dict) and item.get('object_type')=='BusinessClaim' and not item.get('object_ref') and isinstance(item.get('content'),dict):
             content=dict(item['content'])
             for key,value in (('claim_kind','approved_business_claim'),('status','approved'),('authority','explicit_user')):content.setdefault(key,value)
             if content['authority']=='explicit_user':
@@ -105,12 +113,13 @@ def _stated(payload):
 def remember(business_id,payload):
     resolved=resolve_business(business_id)
     if resolved.get('status')!='resolved':raise ValueError(resolved.get('reason') or 'Organization could not be resolved.')
-    payload,stated=_stated(payload)
-    bid=resolved['business_id'];items=payload.get('objects') if isinstance(payload,dict) else None
+    bid=resolved['business_id'];index=object_index(bid)
+    payload,stated=_stated(payload,index)
+    items=payload.get('objects') if isinstance(payload,dict) else None
     if not isinstance(items,list) or not items:raise ValueError('Input requires a non-empty objects list.')
     provenance=payload.get('provenance') if isinstance(payload.get('provenance'),dict) else None
 
-    index=object_index(bid);known_ids=set(index);aliases={};prepared=[];targets=set()
+    known_ids=set(index);aliases={};prepared=[];targets=set()
     for number,item in enumerate(items,1):
         if not isinstance(item,dict):raise ValueError(f'objects[{number-1}] must be an object.')
         existing_ref=item.get('object_ref');typ=_item_type(item,index,number);content=item.get('content')

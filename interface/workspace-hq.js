@@ -146,7 +146,7 @@ window.auraHQ=(()=>{
       const tracked=typeof g.target==='number',has=tracked&&typeof g.latest==='number';
       const done=has?(g.direction==='lower_better'?(g.latest<=g.target?1:g.target/g.latest):Math.min(1,g.latest/(g.target||1))):0;
       const meter=tracked?`<span class="hq-meter ${g.reached?'reached':''}" role="img" aria-label="${has?esc(measure(g.latest,g.unit)+' of '+measure(g.target,g.unit)):'No measurement yet'}"><i style="width:${Math.round(Math.max(0,Math.min(1,done))*100)}%"></i></span>`:'';
-      const note=tracked?(has?`${measure(g.latest,g.unit)} ${g.direction==='lower_better'?'· target '+measure(g.target,g.unit):'of '+measure(g.target,g.unit)}${g.reached?' · Reached':''}`:'No measurement yet'):'Not measured yet';
+      const note=tracked?(has?`${g.direction==='lower_better'?goalAim(g.latest,g.target,g.unit,g.direction,v=>measure(v,g.unit)).latest:measure(g.latest,g.unit)} ${g.direction==='lower_better'?'· target '+goalAim(g.latest,g.target,g.unit,g.direction,v=>measure(v,g.unit)).target:'of '+measure(g.target,g.unit)}${g.reached?' · Reached':''}`:'No measurement yet'):'Not measured yet';
       return `<button type="button" class="hq-row stack" data-record="${esc(g.id)}"><span class="hq-row-text"><strong>${esc(g.name)}</strong><small>${esc(note)}</small></span>${meter}</button>`;}).join('')}</div>`,
       s.totals.goals>s.goals.length?`<small>${s.totals.goals} in all</small>`:'');
   }

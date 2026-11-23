@@ -29,6 +29,12 @@ from workspace_startup import state_dir
 
 FORMAT = 'aura-selected-share-1'
 MAX_FILES, MAX_BYTES = 10000, 2 * 1024 ** 3
+
+
+def _quiet(step, done=0, total=0):
+    """No progress to show, for callers that don't follow along (see Workspace.run_operation)."""
+
+
 SECRET_FIELDS = {'password', 'api_key', 'apikey', 'access_token', 'refresh_token', 'private_key', 'credentials', 'secrets',
                  'permission_mode','harness_permissions','approval_grants','pending_requests'}
 
@@ -454,10 +460,10 @@ def _secrets(value):
     return isinstance(value, list) and any(_secrets(v) for v in value)
 
 
-def prepare(root, bid, keys, name='', note='', store=None, locations=None):
+def prepare(root, bid, keys, name='', note='', store=None, locations=None, report=_quiet):
     ident = uuid.uuid4().hex
     try:
-        return _prepare(root, bid, keys, name, note, store, locations, ident)
+        return _prepare(root, bid, keys, name, note, store, locations, ident, report)
     except Exception:
         job = _job(ident, store)
         if job.exists():
@@ -465,7 +471,7 @@ def prepare(root, bid, keys, name='', note='', store=None, locations=None):
         raise
 
 
-def _prepare(root, bid, keys, name, note, store, locations, ident):
+def _prepare(root, bid, keys, name, note, store, locations, ident, report):
     root = unlinked(root)
     org = business(root, bid)
     if not isinstance(keys,list) or not keys or len(keys)>MAX_FILES or any(not isinstance(key,str) for key in keys):
@@ -517,17 +523,21 @@ def _prepare(root, bid, keys, name, note, store, locations, ident):
     file_keys = [k for k in chosen if not k.startswith('record:')]
     file_seen = set()
     folder_inputs = []
+    walked = []
     for key in file_keys:
-        row = available[key]
-        path = Path(row['_path'])
-        paths = walk(path, notes)
+        walked.append((key, available[key], Path(available[key]['_path']), walk(Path(available[key]['_path']), notes)))
+        if sum(len(paths) for *_, paths in walked) > MAX_FILES * 2:  # duplicates aside, far past the limit already
+            raise ValueError('Choose a smaller transfer (up to 10,000 files or 2 GB).')
+    total, size = len({file for *_, paths in walked for file in paths}), sum(e['bytes'] for e in entries)
+    for key, row, path, paths in walked:
         if row['kind'] == 'folder':
             folder_inputs.append({'path':str(path), 'files':[str(p) for p in paths]})
         for file in paths:
             if file in file_seen:
                 continue
+            report('Copying files', len(file_seen), total)
             file_seen.add(file)
-            if len(entries) >= MAX_FILES or sum(e['bytes'] for e in entries) + file.stat().st_size > MAX_BYTES:
+            if len(entries) >= MAX_FILES or size + file.stat().st_size > MAX_BYTES:
                 raise ValueError('Choose a smaller transfer (up to 10,000 files or 2 GB).')
             relative = file.relative_to(root).as_posix() if file.is_relative_to(root) else row['location'] + ('/' + file.relative_to(path).as_posix() if path.is_dir() else '')
             rel = 'files/' + relative
@@ -539,6 +549,7 @@ def _prepare(root, bid, keys, name, note, store, locations, ident):
                 raise ValueError('A selected file changed. Review the selection again.')
             entries.append({'key':'file:' + relative, 'kind':'file', 'title':file.name, 'path':rel, 'sha256':before,
                             'bytes':target.stat().st_size, 'supporting':key not in keys, 'dependencies':[]})
+            size += entries[-1]['bytes']
             inputs.append({'path':str(file), 'sha256':before})
     if not entries:
         raise ValueError('There are no readable items in this selection.')
@@ -625,24 +636,26 @@ def load_package(ident, store=None):
     return manifest, payload
 
 
-def check_source(ident, store=None):
+def check_source(ident, store=None, report=_quiet):
     source = read(_job(ident, store) / 'source.json')
     if not source:
         return
     try:
-        for row in source['inputs']:
+        for position, row in enumerate(source['inputs']):
+            report('Checking the original files are unchanged', position, len(source['inputs']))
             if _sha256(unlinked(row['path'])) != row['sha256']:
                 raise ValueError('changed')
         for row in source.get('folders', []):
             if [str(p) for p in walk(row['path'], [])] != row['files']:
                 raise ValueError('changed')
-    except (OSError, ValueError):
+    except (OSError, ValueError) as error:
+        if str(error).startswith('Stopped'):raise  # Stop, not a changed source
         raise ValueError('The source changed or is unavailable. Prepare a fresh sharing review.') from None
 
 
-def export_package(ident, destination, store=None):
+def export_package(ident, destination, store=None, report=_quiet):
     manifest, payload = load_package(ident, store)
-    check_source(ident, store)
+    check_source(ident, store, report)
     output = unlinked(destination)
     if output.suffix.lower() != '.zip' or output.exists():
         raise ValueError('Choose a new ZIP file name. Existing files are not replaced.')
@@ -652,12 +665,13 @@ def export_package(ident, destination, store=None):
     try:
         with zipfile.ZipFile(temporary, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
             archive.write(payload / 'AURA-SHARE.json', 'AURA-SHARE.json')
-            for item in manifest['items']:
+            for position, item in enumerate(manifest['items']):
+                report('Saving files into the package', position, len(manifest['items']))
                 archive.write(payload / safe(item['path']), item['path'])
         # Validate actual archived bytes, rather than only trusting the source hashes.
-        loaded = import_package(temporary, store)
+        loaded = import_package(temporary, store, lambda step, done=0, total=0: report('Checking the saved package', done, total))
         shutil.rmtree(_job(loaded['id'], store))
-        check_source(ident, store)
+        check_source(ident, store, report)
         source_info=read(_job(ident,store)/'source.json',{})
         if source_info.get('community') and Path(temporary).stat().st_size>10*1024**2:
             raise ValueError('This public package exceeds 10 MB compressed. Select fewer files before exporting.')
@@ -716,7 +730,7 @@ def _archive_manifest(archive):
     return manifest
 
 
-def import_package(archive_path, store=None):
+def import_package(archive_path, store=None, report=_quiet):
     ident = uuid.uuid4().hex
     job = _job(ident, store)
     payload = job / 'payload'
@@ -724,7 +738,8 @@ def import_package(archive_path, store=None):
         with zipfile.ZipFile(unlinked(archive_path)) as archive:
             manifest = _archive_manifest(archive)
             infos = archive.infolist()
-            for info in infos:
+            for position, info in enumerate(infos):
+                report('Reading files', position, len(infos))
                 rel = safe(info.filename)
                 path = payload / rel
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -845,20 +860,20 @@ def _copy_file(source, destination):
         Path(temporary).unlink(missing_ok=True)
 
 
-def apply(ident, include_updates=False, store=None):
+def apply(ident, include_updates=False, store=None, report=_quiet):
     plan = read(_job(ident, store) / 'review.json')
     if not plan:
         raise ValueError('Review the destination before adding shared work.')
     with destination_lock(plan['destination']):
-        return _apply(ident, include_updates, store)
+        return _apply(ident, include_updates, store, report)
 
 
-def _apply(ident, include_updates=False, store=None):
+def _apply(ident, include_updates=False, store=None, report=_quiet):
     plan = read(_job(ident, store) / 'review.json')
     if not plan:
         raise ValueError('Review the destination before adding shared work.')
     manifest, payload = load_package(ident, store)
-    check_source(ident, store)
+    check_source(ident, store, report)
     target = unlinked(plan['destination'])
     bid = plan['business']
     current = review(ident, target, bid, plan['new_name'], store)
@@ -922,7 +937,8 @@ def _apply(ident, include_updates=False, store=None):
             rel = archive_rel + '/' + row['path']
             if not (target / rel).exists():
                 write(rel, payload / safe(row['path']))
-        for row in changes:
+        for position, row in enumerate(changes):
+            report('Copying shared work in', position, len(changes))
             for field, expected in (('target','expected_file'), ('record','expected_record')):
                 path = unlinked(target / safe(row[field]))
                 actual = _sha256(path) if path.exists() else None

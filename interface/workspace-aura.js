@@ -16,7 +16,7 @@ window.auraView=(()=>{
   let ctx=null,shiftTimer;
 
   /* A goal in words, from its saved measurements only. */
-  const goalLine=g=>typeof g.target!=='number'?'No number yet':g.reached?'Reached':typeof g.latest!=='number'?'No measurement yet':g.direction==='lower_better'?`${value(g.latest,g.unit==='USD'?'USD':'')} · target ${value(g.target,g.unit)} or lower`:`${value(g.latest,g.unit==='USD'?'USD':'')} of ${value(g.target,g.unit)}`;
+  const goalLine=g=>typeof g.target!=='number'?'No number yet':g.reached?'Reached':typeof g.latest!=='number'?'No measurement yet':g.direction==='lower_better'?(a=>`${a.latest} · target ${a.target}`)(goalAim(g.latest,g.target,g.unit,g.direction,v=>value(v,g.unit))):`${value(g.latest,g.unit==='USD'?'USD':'')} of ${value(g.target,g.unit)}`;
   const goalDone=g=>g.reached?1:typeof g.latest!=='number'||typeof g.target!=='number'?0:g.direction==='lower_better'?Math.min(1,g.target/Math.max(g.latest,1e-9)):Math.min(1,Math.max(0,g.latest)/(g.target||1));
   const FLABEL={supported:'Supported',unverified:'Not yet verified',challenged:'Challenged by new evidence',needs_review:'Due for review',out_of_date:'Out of date'};
   /* One small mark per kind of thing, in the text colour, so a row or a box says what it is at a glance. */
