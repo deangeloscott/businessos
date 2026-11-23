@@ -122,6 +122,13 @@ def findings(bid,ident,limit=30,at=None):
             'needs_review':sum(r['needs_review'] for r in current),'replaced':replaced[:10],'replaced_total':len(replaced),'source_memory':sources[:20]}
 
 
+def units(value):
+    """What a field's numbers are in, from the producer: a currency code (USD) or words (reviews, out of 5, minutes).
+    The interface shows "$7.50" or "4.5 out of 5" instead of a bare 7.5; nothing is inferred from field names."""
+    if not isinstance(value,dict) or len(value)>100:raise ValueError('Give units as an object of field name to unit, like {"price":"USD"}.')
+    return {string(k,'field name',120):string(v,'unit',40) for k,v in value.items()}
+
+
 def references(value):
     if not isinstance(value,list) or len(value)>200:raise ValueError('Choose a bounded list of source references.')
     out=[]
@@ -152,6 +159,7 @@ def create(bid,data):
        'mode':mode,'purpose':string(data.get('purpose',''),'purpose',2000,True),'project_refs':list(dict.fromkeys(project_refs)),
        'source_refs':references(data.get('source_refs',[])),'source_copies':copies(data.get('source_copies') or 'quotes'),'created_at':now(),'updated_at':now(),'version':1,
        'items':[],'feedback':{},'checks':[],'receipts':{}}
+    if data.get('units'):d['units']=units(data['units'])
     if data.get('producer') or context:
         v=data.get('producer') or context
         if not isinstance(v,dict) or v.get('kind') not in {'chat','task','agent','session'}:raise ValueError('Choose a chat, task, or agent producer.')
@@ -166,6 +174,7 @@ def configure(bid,ident,data):
     if 'purpose' in data:d['purpose']=string(data['purpose'],'purpose',2000,True)
     if 'source_refs' in data:d['source_refs']=references(data['source_refs'])
     if 'source_copies' in data:d['source_copies']=copies(data['source_copies'])
+    if 'units' in data:d['units']=units(data['units'] or {})
     if 'project_refs' in data:
         values=data['project_refs']
         if not isinstance(values,list) or len(values)>100:raise ValueError('Choose a bounded list of projects.')
@@ -389,7 +398,7 @@ def show(bid,ident,q='',view='current',offset=0,limit=50,at=None,item_id='',hist
     if item_id:
         selected=next((effective(i,d['feedback'],at) for i in d['items'] if i['id']==item_id),None)
         if not selected:raise ValueError('This result is unavailable. Refresh the collection.')
-        return {'item':selected,'revision':revision(d),'collection_id':d['id']}
+        return {'item':selected,'revision':revision(d),'collection_id':d['id'],'units':d.get('units',{})}
     from workspace_views import shapes
     rows=select(d,view,q,at)
     offset=max(0,int(offset));limit=max(1,min(100,int(limit)))
@@ -397,7 +406,7 @@ def show(bid,ident,q='',view='current',offset=0,limit=50,at=None,item_id='',hist
         return {**{k:v for k,v in r.items() if k not in {'fields','reported','summary','source_refs','correction_note','trail'}},'summary':r.get('summary','')[:800],
                 'fields':{k:(v if isinstance(v,(bool,int,float)) or v is None else str(v)[:200]) for k,v in list(r.get('fields',{}).items())[:6]},'excerpt':True,
                 'source_count':len(r.get('source_refs') or []),'checked_at':max((s.get('last_checked_at') or '' for s in r.get('source_refs') or []),default='')}
-    return {**{k:d[k] for k in ('id','name','mode','purpose','project_refs','version','producer','last_upkeep_at') if k in d},'source_copies':d.get('source_copies','quotes'),'revision':revision(d),
+    return {**{k:d[k] for k in ('id','name','mode','purpose','project_refs','version','producer','last_upkeep_at','units') if k in d},'source_copies':d.get('source_copies','quotes'),'revision':revision(d),
             **findings(bid,ident,at=at),
             'items':[compact(r) for r in rows[offset:offset+limit]],'total':len(rows),'offset':offset,'limit':limit,'latest_check':check_summary(d['checks'][-1]) if d['checks'] else None,
             'history':[check_summary(c) for c in reversed(d['checks'])] if history else [],'history_count':len(d['checks']),

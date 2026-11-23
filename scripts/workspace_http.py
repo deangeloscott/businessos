@@ -737,7 +737,7 @@ def handler_for(app):
                         raise ValueError('AURA is restarting. Your workspace will reopen in a moment.')
                     if app.organization_job and app.organization_job['status']=='working' and route not in {'/api/organization/stop','/api/notifications','/api/usage/settings','/api/updates'}:
                         raise ValueError('Workspace organization is running. Wait or stop it before making changes.')
-                    if app.schedule_job and app.schedule_job['status']=='working' and (route in {'/api/lifecycle','/api/workspaces/open','/api/workspaces/create','/api/example','/api/workspaces/relocate','/api/workspaces/restore'} or route.startswith('/api/organization/')):
+                    if app.schedule_job and app.schedule_job['status']=='working' and (route in {'/api/lifecycle','/api/remove-from-computer','/api/workspaces/open','/api/workspaces/create','/api/example','/api/workspaces/relocate','/api/workspaces/restore'} or route.startswith('/api/organization/')):
                         raise ValueError('Wait for task setup or stop it before changing workspaces or restarting AURA.')
                     if app.running_jobs(None if route in {'/api/lifecycle','/api/workspaces/relocate','/api/workspaces/restore'} else workspace_root()) and route not in {'/api/goals','/api/chat/answer','/api/archive','/api/attention','/api/permissions','/api/assistants','/api/agents','/api/native-agents','/api/delegation-settings','/api/preferences','/api/profile','/api/interface/reset','/api/chats/recover','/api/chats/archive','/api/chats/reconnect','/api/notifications','/api/chat','/api/chat/stop','/api/chats/new','/api/chats/open','/api/chats/rename','/api/chats/organize','/api/projects','/api/chats/model','/api/chats/personalization','/api/chats/context','/api/connect','/api/workspaces/open','/api/usage/settings','/api/context-settings','/api/updates','/api/schedules/action','/api/schedules/stop'}:
                         raise ValueError('Your agent is working. Wait for its reply before changing this workspace.')
@@ -859,6 +859,8 @@ def handler_for(app):
                     elif route == '/api/recovery/update':
                         self.send(200,workspace_organization.recover(data['id'],data['action'],app.settings_file.parent,
                             int(data['days']) if 'days' in data else None,app.organization_references()))
+                    elif route == '/api/remove-from-computer':
+                        self.send(200,app.remove_from_computer())
                     elif route == '/api/lifecycle':
                         if data.get('action') not in {'quit', 'restart'}:
                             raise ValueError('Choose Restart AURA or Quit AURA.')

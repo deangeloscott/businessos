@@ -144,7 +144,8 @@ def schedule_wake(product):
 
 def clear_wake():
     if sys.platform == 'win32':
-        _powershell(f"Unregister-ScheduledTask -TaskName '{TASK}' -Confirm:$false -ErrorAction SilentlyContinue")
+        # Already gone is fine; any other failure is reported.
+        _powershell(f"try{{Unregister-ScheduledTask -TaskName '{TASK}' -Confirm:$false -ErrorAction Stop}}catch{{if($_.CategoryInfo.Category -ne 'ObjectNotFound'){{throw}}}};exit 0")
     elif sys.platform == 'darwin':
         target = Path.home() / 'Library/LaunchAgents/com.viraltrac.aura.continue.plist'
         if target.exists():

@@ -122,7 +122,9 @@ def _win_status():
     if time.time()-_STATUS['at']<15:return _STATUS['rows']  # the list refreshes often; asking Windows each time starts PowerShell
     _STATUS.update(at=time.time(),rows=_win_status_now());return _STATUS['rows']
 def _win_status_now():
-    script=("Get-ScheduledTask -TaskPath '\\AURA\\' -ErrorAction SilentlyContinue | ForEach-Object { $i=$_|Get-ScheduledTaskInfo; "
+    # No AURA folder in Task Scheduler means no AURA tasks, not a scheduler that can't be read.
+    script=("$t=try{Get-ScheduledTask -TaskPath '\\AURA\\' -ErrorAction Stop}catch{if($_.CategoryInfo.Category -eq 'ObjectNotFound'){@()}else{throw}}; "
+            "$t | ForEach-Object { $i=$_|Get-ScheduledTaskInfo; "
             "[pscustomobject]@{id=$_.TaskName;state=[string]$_.State;next=if($i.NextRunTime){$i.NextRunTime.ToString('s')}else{''}} } | ConvertTo-Json -Compress")
     try:out=_call(['powershell','-NoProfile','-NonInteractive','-Command',script]).strip()
     except (ValueError,OSError,subprocess.SubprocessError):return None
@@ -314,6 +316,14 @@ def change(ident,action,values=None):
     return task
 
 
+def remove_all():
+    """Every AURA task on this computer's scheduler, gone: before deleting AURA. Names what was removed."""
+    removed=[change(t['id'],'remove')['name'] for t in definitions()]
+    for ident in _native_ids():  # entries this settings folder has no definition for (another one, or deleted)
+        _remove_native(ident);removed.append(f'{ident} (no saved details)')
+    return removed
+
+
 def runs(ident):
     try:return json.loads(definition_path(ident).with_suffix('.runs.json').read_text(encoding='utf-8'))
     except (OSError,ValueError):return []
@@ -393,10 +403,7 @@ def main():
     prompt=Path(a.prompt_file).read_text(encoding='utf-8') if a.prompt_file else None
     if a.action=='run':run(a.id);return
     if a.action=='list':result=listed()
-    elif a.action=='remove-all':
-        result=[change(t['id'],'remove')['name'] for t in definitions()]
-        for ident in _native_ids():  # entries this settings folder has no definition for (another one, or deleted)
-            _remove_native(ident);result.append(f'{ident} (no saved details)')
+    elif a.action=='remove-all':result=remove_all()
     elif a.action=='create':result=create(a.business_id,a.app,a.name,a.when,prompt,a.model,a.effort,a.permission)
     elif a.action=='edit':result=change(a.id,'edit',{k:v for k,v in {'when':a.when,'prompt':prompt,'name':a.name,'model':a.model,'effort':a.effort}.items() if v})
     else:result=change(a.id,a.action)

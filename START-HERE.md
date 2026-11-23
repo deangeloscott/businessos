@@ -104,7 +104,7 @@ More: [troubleshooting](docs/troubleshooting.md).
 
 ## Removing AURA
 
-There is no installer, so there is nothing to uninstall: delete the AURA folder. First, if you turned them on, switch off **Settings → Startup & updates → Start AURA when I sign in**, and delete AURA's scheduled tasks in **Schedules** (or run `python scripts/workspace_os_schedules.py remove-all`). Tasks on the computer's scheduler keep running until removed; `remove-all` clears every AURA task on this computer. Your workspace folder, with everything your businesses saved, is separate and stays where it is.
+There is no installer, so there is nothing to uninstall: delete the AURA folder. First open **Settings → Startup & updates → Removing AURA** and choose **Remove from this computer**: it removes AURA's tasks on the computer's scheduler, starting at sign-in and its wake-up, then offers Quit AURA. (Without AURA open, `python scripts/workspace_os_schedules.py remove-all` removes the tasks.) Tasks your AI apps keep in their own schedulers stay in those apps. Your workspace folder, with everything your businesses saved, is separate and stays where it is.
 
 ## Where to go next
 

@@ -1830,6 +1830,22 @@ class Workspace:
         finally:
             with self.lock:self.operation = None
 
+    def remove_from_computer(self):
+        """Before deleting AURA: what it set up on this computer outside its folder, removed. Its tasks on the computer's
+        scheduler, the start-at-sign-in entry and the wake-up that continues chats after a plan limit. The workspace, and
+        tasks the AI apps keep in their own schedulers, stay where they are. Says what it removed and what it couldn't."""
+        import workspace_os_schedules as computer,workspace_resume
+        result={'tasks':[],'startup':False,'problems':[]}
+        try:result['tasks']=computer.remove_all()
+        except (OSError,ValueError,subprocess.SubprocessError):result['problems'].append("Some scheduled tasks couldn't be removed. Try again, or remove them one at a time in Schedules.")
+        try:
+            result['startup']=workspace_startup.status().get('enabled',False)
+            workspace_startup.configure(False,PRODUCT_ROOT,workspace_root())
+        except (OSError,ValueError) as error:result['startup']=False;result['problems'].append(str(error))
+        try:workspace_resume.clear_wake()
+        except (OSError,ValueError,subprocess.SubprocessError):result['problems'].append("AURA's wake-up couldn't be removed from this computer's scheduler.")
+        return result
+
     def notify(self, bid, chat_id, title, kind='limit', task_id=None, goal_id=None, collection_id=None, item_title=None, item_id=None):
         """A bell notification for something that happened while the user may not be looking."""
         refs={k:v for k,v in {'task_id':task_id,'goal_id':goal_id,'collection_id':collection_id,'item_title':item_title,'item_id':item_id}.items() if v}

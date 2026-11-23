@@ -17,7 +17,10 @@ window.auraViews=(()=>{
   function saved(id){try{return localStorage.getItem('aura-view:'+id);}catch{return null;}}
   function choice(id,shape){try{if(shape===undefined)return localStorage.getItem('aura-view:'+id)||'list';localStorage.setItem('aura-view:'+id,shape);}catch{}return shape||'list';}
   function release(){ticket++;if(map){map.remove();map=null;}}
-  function fields(r,skip=[]){const shown=Object.entries(r.fields).filter(([k,v])=>!hiddenFields.has(k)&&k!=='address'&&!skip.includes(k)&&v!==null&&v!=='').slice(0,5);return shown.length?`<dl class="view-fields">${shown.map(([k,v])=>`<div><dt>${esc(human(k))}</dt><dd>${esc(value(v))}</dd></div>`).join('')}</dl>`:'';}
+  /* A number in the unit its collection gives it (USD as money); set for each collection shown. */
+  let units={};
+  const inUnit=(k,v)=>{const u=units[k];if(typeof v!=='number'||!u)return value(v);if(/^[A-Z]{3}$/.test(u)){try{return v.toLocaleString(undefined,{style:'currency',currency:u});}catch{}}return value(v)+' '+u;};
+  function fields(r,skip=[]){const shown=Object.entries(r.fields).filter(([k,v])=>!hiddenFields.has(k)&&k!=='address'&&!skip.includes(k)&&v!==null&&v!=='').slice(0,5);return shown.length?`<dl class="view-fields">${shown.map(([k,v])=>`<div><dt>${esc(human(k))}</dt><dd>${esc(inUnit(k,v))}</dd></div>`).join('')}</dl>`:'';}
   function card(r,skip=[]){return `<strong>${esc(r.title)}</strong>${fields(r,skip)}<button type="button" class="text-button" data-view-find="${esc(r.title)}">Show in list</button>`;}
 
   /* How a result's numbers moved between its last two checks. */
@@ -43,7 +46,7 @@ window.auraViews=(()=>{
 
   /* Collection views. `find` returns to the list filtered to one result. */
   async function show(host,d,shape,view,search,find,reload){
-    release();const mine=ticket,key=scope();host.innerHTML='<p class="small-note">Loading…</p>';
+    release();units=d.units||{};const mine=ticket,key=scope();host.innerHTML='<p class="small-note">Loading…</p>';
     host.onclick=e=>{const b=e.target.closest('[data-view-find]');if(b){release();find(b.dataset.viewFind);}};
     let data;
     try{data=await api(q('/api/collection-view',{id:d.id,view,q:search}));}

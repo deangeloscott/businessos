@@ -28,14 +28,14 @@ Commands accept `--workspace /path/to/workspace` and `--business-id BUSINESS_ID`
 python scripts/workspace_projects.py list --workspace /path/to/workspace --business-id example-studio
 python scripts/workspace_projects.py create --workspace /path/to/workspace --business-id example-studio --input '{"name":"Funding","folder":"work/funding"}'
 python scripts/workspace_projects.py show --workspace /path/to/workspace --business-id example-studio --id PROJECT_ID
-python scripts/workspace_collections.py create --workspace /path/to/workspace --business-id example-studio --input '{"key":"funding-shortlist","name":"Funding shortlist","purpose":"Find eligible grants and track deadlines","project_refs":["PROJECT_ID"],"source_refs":["agency-a","agency-b"]}'
+python scripts/workspace_collections.py create --workspace /path/to/workspace --business-id example-studio --input '{"key":"funding-shortlist","name":"Funding shortlist","purpose":"Find eligible grants and track deadlines","project_refs":["PROJECT_ID"],"source_refs":["agency-a","agency-b"],"units":{"amount":"USD"}}'
 python scripts/workspace_collections.py show --workspace /path/to/workspace --business-id example-studio --id COLLECTION_ID --search design --limit 5
 python scripts/workspace_collections.py show --workspace /path/to/workspace --business-id example-studio --id COLLECTION_ID --item ITEM_ID
 ```
 
 `show` prints a compact view (entries, findings with trimmed statements, latest check). Add `--full` for every field, including interface details.
 
-Use `configure` with the current `revision` to change a collection’s name, purpose, expected `source_refs`, `project_refs` or `source_copies`. The UI’s **Edit collection** changes its name, purpose and how sources are kept: `quotes` (default: a stable link plus the exact short passages that support a finding) or `full` (also a copy of the whole source). Fragile sources are copied either way. A run cannot silently shrink the configured source coverage; adjust the collection deliberately when its scope changes.
+Use `configure` with the current `revision` to change a collection’s name, purpose, expected `source_refs`, `project_refs`, `source_copies` or `units`. `units` says what a numeric field is in, so people see "$5,000" or "4.5 out of 5" rather than a bare number: a currency code (`USD`) or a few words (`reviews`, `out of 5`, `minutes`). The UI’s **Edit collection** changes its name, purpose and how sources are kept: `quotes` (default: a stable link plus the exact short passages that support a finding) or `full` (also a copy of the whole source). Fragile sources are copied either way. A run cannot silently shrink the configured source coverage; adjust the collection deliberately when its scope changes.
 
 The create result returns a stable collection ID and current revision. Repeating the same create key reuses its existing collection. Before writing, read the latest revision. An apply payload looks like:
 

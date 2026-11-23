@@ -10,6 +10,7 @@
    "key": "local-competitors",
    "name": "Local competitors",
    "purpose": "The four nearby bakeries and us: local search rank, rating, reviews and sourdough price.",
+   "units": {"rating": "out of 5", "reviews": "reviews", "sourdough_price": "USD"},
    "runs": [
     {
      "at": "{{now-6d@06:30}}",
@@ -255,6 +256,7 @@
    "key": "grants",
    "name": "Grants",
    "purpose": "Grants the bakery could win, with deadlines",
+   "units": {"amount": "USD"},
    "runs": [
     {
      "at": "{{now-6d@06:10}}",
@@ -375,6 +377,7 @@
    "key": "review-themes",
    "name": "Review themes",
    "purpose": "What customers mention in our Google reviews, and how they rate us when they do.",
+   "units": {"mentions": "reviews", "average_rating": "out of 5"},
    "runs": [
     {
      "at": "{{now-5d@07:00}}",

@@ -162,7 +162,7 @@ async function refresh(light=false,preserveDetails=light) {
     else if(previousChoice&&connection.choices.some(c=>c.id===previousChoice)) $('#agent-choice').value=previousChoice;
     else $('#agent-choice').value=connection.choices.find(c=>c.available)?.id||connection.choices[0]?.id||'';
     connectionChoice();
-    $('#request').disabled=!state.business || state.navigating;
+    $('#request').disabled=!state.business || state.navigating&&!state.openingNewChat;
     $('#send').disabled=!state.business || !state.hydrated || state.stopping;
     if(state.data.diagnostics.length) notice('Some saved records could not be read. Ask your agent to inspect them before relying on a complete overview.',true);
     else if(state.data.workspace_note)notice(state.data.workspace_note,true);
@@ -507,26 +507,29 @@ function openConnection(restart=false, step='welcome') {
 }
 function renderConnection() {
   const step=state.setupStep, ready=step==='ready', failed=step==='failed', checking=step==='checking';
-  const stages={welcome:[1,'Welcome to AURA'],connect:[2,'Connect your AI'],models:[3,'Models & favorites'],tour:[4,'A quick look around'],checking:[5,'Checking connections'],ready:[5,'You’re ready'],failed:[5,'Connection needs attention']};
+  const stages={welcome:[1,'Welcome to AURA'],connect:[2,'Connect your AI'],models:[3,'Models & favorites'],checking:[4,'Checking connections'],ready:[4,'You’re ready'],failed:[4,'Connection needs attention']};
   const [,title]=stages[step]||stages.welcome;
   $('#setup-step').textContent=state.data?.onboarding?.seen&&!state.tour?'AI CONNECTIONS':'QUICK SETUP';  // first run vs. from Settings
   $('#connect-title').textContent=title;
-  for(const section of ['welcome','connect','models','tour'])$('#setup-'+section).hidden=step!==section;
+  for(const section of ['welcome','connect','models'])$('#setup-'+section).hidden=step!==section;
   $('#setup-result').hidden=!['checking','ready','failed'].includes(step);
-  $('#setup-progress').textContent=checking?'Finishing setup…':ready?'Your workspace is ready. Continue whenever you like.':state.connectionChecks?.message||'Your AI connection needs attention. Go back to choose an app, or select Fix connection to try again.';
+  $('#setup-progress').textContent=checking?'Finishing setup…':ready?'':state.connectionChecks?.message||'Your AI connection needs attention. Go back to choose an app, or select Fix connection to try again.';
   const checks=state.connectionChecks?.items||state.data.connection.apps||[];
   $('#app-connection-status').innerHTML=connectionStatusRows(state.checkingConnections?checks.map(c=>({...c,status:'checking',detail:'Checking…',checked_at:null})):checks);
   $('#app-connection-status').classList.toggle('many-apps',checks.length>2);
   $('#app-status-panel').hidden=!checks.length&&!state.connectionChecks?.message;
   $('#app-connection-message').hidden=!!checks.length||!state.connectionChecks?.message;
   $('#app-connection-message').textContent=state.connectionChecks?.message||'';
-  $('#setup-welcome-message').hidden=!ready;
+  $('#setup-welcome-message').hidden=!ready;$('#setup-places').hidden=!ready;$('#welcome-model').hidden=!ready;$('#setup-progress').hidden=ready;
   $('#setup-progress').classList.toggle('setup-error',failed);
-  $('#setup-done').hidden=!ready; $('#setup-retry').hidden=!failed;
+  // The closing screen: the AI starts the conversation, or the person looks around on their own.
+  const starter=ready&&state.data.connection.connected;
+  $('#setup-done').hidden=!ready;$('#setup-done').className=starter?'secondary':'primary';$('#setup-done').textContent=starter?'Look around myself':'Continue →';
+  $('#setup-retry').hidden=!failed;
   $('#setup-result-back').disabled=state.busy||state.checkingConnections;
-  $('#first-task').hidden=!ready||!state.data.connection.connected;
+  $('#first-task').hidden=!starter;
   $('#first-task').disabled=state.busy;
-  $('#welcome-request').disabled=state.busy||state.checkingConnections; connectionChoice();
+  connectionChoice();
   {const c=state.data.connection;$('#welcome-model').textContent=`Your requests will use ${modelDisplay(c.model)||c.name} · ${human(c.effort||'App default')}`;}
 }
 function connectionStatusRows(items) {
@@ -537,7 +540,7 @@ async function checkConnections(showResult=true) {
   const business=state.business;state.checkingConnections=true;state.welcome=null;state.sendingWelcome=false;
   if(showResult)state.setupStep='checking';
   renderConnection();
-  $('#check-connections').disabled=true;$('#welcome-request').disabled=true;
+  $('#check-connections').disabled=true;
   try {
     const result=await api('/api/connection-check?business='+encodeURIComponent(business));
     if(state.business!==business)return;
@@ -944,7 +947,7 @@ async function pollJob(job) {
 function sameWorkspace(a,b){const key=value=>{const path=String(value||'').replaceAll('\\','/').replace(/\/+$/,'');return /^(?:[a-z]:|\/\/)/i.test(path)?path.toLowerCase():path;};return key(a)===key(b);}
 function chatControls() {
   const previousFolder=state.chatMeta?.workspace&&!sameWorkspace(state.chatMeta.workspace,state.data?.workspace);
-  $('#request').disabled=!state.business||state.navigating;
+  $('#request').disabled=!state.business||state.navigating&&!state.openingNewChat;  // a new chat has no draft to load, so typing can start at once
   $('#request').placeholder=state.busy?'Write your next message while this runs…':'Ask a question or describe what you need…';
   const chatApp=state.chatMeta?.agent,choices=state.data?.connection?.choices||[];
   const appGone=chatApp&&!['configured','handoff'].includes(chatApp)&&choices.length&&!choices.some(c=>c.id===chatApp&&c.available)?`${appName(chatApp)} isn't installed on this computer anymore. Reinstall it, or continue this chat in another app.`:'';
@@ -1606,6 +1609,25 @@ async function syncSchedules(force=false) {
 function startupSection(startup) {
   return `<section class="startup-section"><h3>Startup</h3><form id="startup-form"><label class="startup-choice"><input type="checkbox" name="enabled" ${startup.enabled?'checked':''} ${startup.supported?'':'disabled'}> Start AURA when I sign in</label><p class="small-note">${startup.supported?'Keeps AURA available in the background on this computer.':'Automatic startup is unavailable on this system.'}</p>${startup.product&&startup.product!==state.data.product?'<p class="small-note">Save to use this version at startup.</p>':startup.workspace&&startup.workspace!==state.data.workspace?'<p class="small-note">Save to use this workspace at startup.</p>':''}<div class="startup-actions"><button class="secondary" ${startup.supported?'':'disabled'}>Save startup</button><span id="startup-save-status" class="small-note" role="status"></span></div></form></section>`;
 }
+/* Removing AURA: there is no installer, so deleting its folder is the uninstall. This takes away first what AURA set up
+   on the computer outside that folder, so nothing is left running for a folder that's gone. */
+function removeSection(){
+  return `<section class="remove-section"><h3>Removing AURA</h3><p class="small-note">There's nothing to uninstall: you delete the AURA folder. First remove what AURA set up on this computer: its scheduled tasks on the computer's scheduler, starting at sign-in, and the wake-up that continues chats after a plan limit. Your workspace and everything your businesses saved stay where they are, and so do tasks your AI apps run with their own schedulers.</p><div id="remove-computer" class="inline-actions"><button type="button" class="secondary" data-remove-computer="ask">Remove from this computer</button></div></section>`;
+}
+document.addEventListener('click',event=>{
+  const button=event.target.closest('[data-remove-computer]');if(!button)return;
+  const host=$('#remove-computer'),step=button.dataset.removeComputer;
+  if(step==='ask'){host.innerHTML='<p>Remove AURA’s scheduled tasks, starting at sign-in and its wake-up from this computer? Scheduled tasks stop running and won’t come back.</p><button type="button" class="secondary" data-remove-computer="yes">Remove</button><button type="button" class="text-button" data-remove-computer="no">Cancel</button>';host.querySelector('[data-remove-computer="no"]').focus();return;}
+  if(step==='no'){host.innerHTML='<button type="button" class="secondary" data-remove-computer="ask">Remove from this computer</button>';host.querySelector('button').focus();return;}
+  if(step==='quit'){attempt(()=>closeAura('quit'));return;}
+  attempt(async()=>{
+    button.disabled=true;
+    let r;try{r=await api('/api/remove-from-computer',{});}finally{if(button.isConnected)button.disabled=false;}
+    const done=[r.tasks.length?`${r.tasks.length} scheduled task${r.tasks.length===1?'':'s'} removed`:'No scheduled tasks were on this computer',r.startup?'AURA no longer starts when you sign in':''].filter(Boolean).join('. ')+'.';
+    const box=$('#startup-form [name=enabled]');if(box)box.checked=false;
+    host.innerHTML=`<p role="status">${esc(done)}${r.problems.length?' '+r.problems.map(esc).join(' '):' You can now quit AURA and delete its folder.'}</p>${r.problems.length?'':'<button type="button" class="secondary" data-remove-computer="quit">Quit AURA</button>'}`;
+  });
+});
 async function syncUpdates(force=false) {
   if(state.closed||state.updateLoading)return;
   const editing=!state.allowUpdateRestart&&($('#request').value.trim()||Date.now()-(state.lastEdit||0)<30000);
@@ -1664,7 +1686,7 @@ async function openUpdates() {
   $('#more-dialog').close();$('#notification-dialog').close();
   await syncUpdates(true);
   const startup=await api('/api/startup');
-  details('Startup & updates',startupSection(startup)+`<section class="updates-section"><h3>Updates</h3><div id="update-panel"><div class="update-top"><span id="update-current" class="small-note"></span><button class="text-button" id="update-check">Check now</button></div><h4 id="update-heading"></h4><p id="update-message" role="status"></p><section id="update-release" hidden><ul id="update-highlights"></ul><details class="update-notes"><summary>Release notes</summary><pre id="update-notes"></pre><a id="update-release-link" target="_blank" rel="noopener noreferrer">View release ↗</a></details><p id="update-manual" class="small-note" hidden></p><div class="update-actions"><button class="primary" id="update-install" hidden>Update now</button><button class="secondary" id="update-later">Later</button><button class="text-button" id="update-skip">Skip this version</button></div></section><label class="update-policy">Updates<select id="update-policy"><option value="notify">Notify me</option><option value="auto">Update automatically when idle</option><option value="manual">Manual only</option></select></label><p class="small-note">Your workspace, connections, and custom views stay yours.</p><div class="update-bottom"><small id="update-checked"></small><button class="text-button" id="update-rollback" hidden>Use previous version</button><a href="https://github.com/deangeloscott/businessos/releases" target="_blank" rel="noopener noreferrer">Downloads ↗</a></div></div></section>`,'page');
+  details('Startup & updates',startupSection(startup)+`<section class="updates-section"><h3>Updates</h3><div id="update-panel"><div class="update-top"><span id="update-current" class="small-note"></span><button class="text-button" id="update-check">Check now</button></div><h4 id="update-heading"></h4><p id="update-message" role="status"></p><section id="update-release" hidden><ul id="update-highlights"></ul><details class="update-notes"><summary>Release notes</summary><pre id="update-notes"></pre><a id="update-release-link" target="_blank" rel="noopener noreferrer">View release ↗</a></details><p id="update-manual" class="small-note" hidden></p><div class="update-actions"><button class="primary" id="update-install" hidden>Update now</button><button class="secondary" id="update-later">Later</button><button class="text-button" id="update-skip">Skip this version</button></div></section><label class="update-policy">Updates<select id="update-policy"><option value="notify">Notify me</option><option value="auto">Update automatically when idle</option><option value="manual">Manual only</option></select></label><p class="small-note">Your workspace, connections, and custom views stay yours.</p><div class="update-bottom"><small id="update-checked"></small><button class="text-button" id="update-rollback" hidden>Use previous version</button><a href="https://github.com/deangeloscott/businessos/releases" target="_blank" rel="noopener noreferrer">Downloads ↗</a></div></div></section>`+removeSection(),'page');
   $('#detail').dataset.mode='page';$('#detail [data-close=detail]').hidden=true;state.updateSignature='';renderUpdates();
   state.updates=await api('/api/updates',{action:'read'});renderNotifications();
 }
@@ -1817,7 +1839,7 @@ $('#detail-expand').addEventListener('click',()=>{const d=$('#detail');if(d.data
 $('#detail').addEventListener('close',()=>{delete $('#detail').dataset.expanded;});
 /* Settings: one page, grouped by what people are trying to do, with search. Each row opens the existing panel. */
 const settingsGroups=[
-  ['General',[['account-settings','Profile','Your name, picture and how you like your AI to work','name avatar preferences'],['personalize-menu','Personalization','Style, appearance, accent colour, text size and density','theme dark light colour color font size compact retro style look'],['startup-settings','Startup & updates','Open AURA at sign-in and keep it up to date','update version launch']]],
+  ['General',[['account-settings','Profile','Your name, picture and how you like your AI to work','name avatar preferences'],['personalize-menu','Personalization','Style, appearance, accent colour, text size and density','theme dark light colour color font size compact retro style look'],['startup-settings','Startup & updates','Open AURA at sign-in and keep it up to date','update version launch remove uninstall delete removing']]],
   ['AI & accounts',[['connection','AI connections','Which AI apps AURA uses, and their default models','claude codex chatgpt gemini model app connect'],['accounts-settings','Accounts & backups','Several accounts per app, plan limits and switching','limit usage reset backup account'],['harness-permissions','AI permissions','What your AI may do without asking','approve permissions safety'],['api-connections','API connections','Keys for model providers and other services','api key provider llm'],['app-versions','AI app versions','Versions, updates, and anything that changed','update version upgrade new models commands'],['hermes-messages','Phone messages','Chat with Hermes from your phone, and get notices there','telegram discord whatsapp hermes gateway phone mobile notify text']]],
   ['Workspace',[['workspace-manager','Add or open a workspace','Switch between businesses or start a new one','business folder new'],['share-settings','Share or import','Copy information, files or projects between workspaces','export import package share copy'],['workspace-reading','Reading across workspaces','Let your other workspaces use what this one knows','share read other workspaces research knowledge findings'],['workspace-history','Version history','Earlier versions of your files','undo restore previous version'],['workspace-backups','Back up or restore','Keep a copy of your workspace somewhere safe','backup restore copy']]],
   ['Help',[['review-setup','Quick setup & tour','Connect an AI and see where things are','onboarding tour setup'],['support-report','Feedback & troubleshooting','Suggest a feature or get help with a problem','bug help report feature support']]],
@@ -2134,7 +2156,7 @@ function prompt(text) {
 }
 
 async function openStoredWorkspace(path) {
-  rememberChatDraft();detachChatView();state.navigating=true;chatControls();
+  rememberChatDraft();detachChatView();state.navigating=true;state.openingNewChat=false;chatControls();
   try{
     const opened=await api('/api/workspaces/open',{path,replace:state.repairWorkspace||''});state.repairWorkspace='';
     for(const dialog of document.querySelectorAll('dialog[open]'))dialog.close();
@@ -2973,10 +2995,9 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.dataset.action==='connect'||['connection','review-setup'].includes(button.id)) {state.tour=button.id==='review-setup';openConnection(true,state.tour?'welcome':button.id==='model-settings'?'models':'connect');}
   if(button.id==='setup-start'||button.id==='models-back'){if(button.id==='setup-start'){const p=await api('/api/profile',{display_name:$('#setup-display-name').value});state.data.profile=p;applyProfile(p);const described=$('#setup-business-description').value.trim();if(described!==(rows('Business')[0]?.data?.description||'')){await api('/api/save',{business:state.business,kind:'business',description:described});await refresh();}}state.setupStep='connect';renderConnection();}
   if(button.id==='connect-back'){state.setupStep='welcome';renderConnection();}
-  if(button.id==='quick-connect'){button.disabled=true;try{const kind=$('#agent-choice').value;await api('/api/connect',{kind,model:'',effort:'',workspace_write:true});if(kind!==state.data.connection.selected&&state.business){await api('/api/chats/new',{business:state.business});state.chat=[];state.chatMeta=null;showMessages();}const tour=state.tour||!state.data.onboarding.seen;state.connectionChecks=null;state.welcome=null;await refresh();await checkConnections(false);if(tour){state.setupStep='tour';renderConnection();}else if(state.connectionChecks?.ready)$('#connect-dialog').close();else finishSetup();}finally{if(button.isConnected)button.disabled=false;}}
-  if(button.id==='choose-agent'||button.id==='setup-back'){state.setupStep='models';renderConnection();await loadAgentOptions();}
-  if(button.id==='welcome-request')finishSetup();
-  if(button.id==='setup-result-back'){state.setupStep='tour';renderConnection();}
+  if(button.id==='quick-connect'){button.disabled=true;try{const kind=$('#agent-choice').value;await api('/api/connect',{kind,model:'',effort:'',workspace_write:true});if(kind!==state.data.connection.selected&&state.business){await api('/api/chats/new',{business:state.business});state.chat=[];state.chatMeta=null;showMessages();}const tour=state.tour||!state.data.onboarding.seen;state.connectionChecks=null;state.welcome=null;await refresh();await checkConnections(false);if(tour)finishSetup();else if(state.connectionChecks?.ready)$('#connect-dialog').close();else finishSetup();}finally{if(button.isConnected)button.disabled=false;}}
+  if(button.id==='choose-agent'){state.setupStep='models';renderConnection();await loadAgentOptions();}
+  if(button.id==='setup-result-back'){state.setupStep='connect';renderConnection();}
   if(button.id==='setup-retry'){state.setupStep='connect';renderConnection();await checkConnections(false);if(state.connectionChecks?.ready)finishSetup();}
   if(button.id==='check-connections')await checkConnections(false);
   if(button.id==='first-task'){
@@ -3136,7 +3157,7 @@ document.addEventListener('submit',event=>{
     if(form.getAttribute('id')==='support-form'){await sendSupport(form);return;}
     if(form.getAttribute('id')==='usage-settings-form'){await api('/api/usage/settings',{business:state.business,alerts:$('#usage-alerts').checked,budget_usd:$('#usage-budget').value});$('#usage-settings-status').textContent='Saved';$('#usage-alert-summary').textContent=usageBudgetSummary({alerts:$('#usage-alerts').checked,budget_usd:$('#usage-budget').value?Number($('#usage-budget').value):null});state.data.usage_alerts=$('#usage-alerts').checked;checkUsageAlerts();return;}
 
-    if(form.getAttribute('id')==='connect-form') { $('#connect-agent').disabled=true; try { await pickerSave;const route=selectedRoute(),kind=route?.agent||$('#agent-choice').value;await api('/api/connect',{kind,model:route?.model||'',effort:$('#effort-choice').value,workspace_write:true});if(kind!==state.data.connection.selected&&state.business){await api('/api/chats/new',{business:state.business});state.chat=[];state.chatMeta=null;showMessages();} const tour=state.tour||!state.data.onboarding.seen;state.connectionChecks=null;state.welcome=null;await refresh();await checkConnections(false);if(tour){state.setupStep='tour';renderConnection();}else if(state.connectionChecks?.ready)$('#connect-dialog').close();else finishSetup();notice(''); } catch(error){state.modelError=simpleSetupError(humanError(error));} finally {connectionChoice();} return; }
+    if(form.getAttribute('id')==='connect-form') { $('#connect-agent').disabled=true; try { await pickerSave;const route=selectedRoute(),kind=route?.agent||$('#agent-choice').value;await api('/api/connect',{kind,model:route?.model||'',effort:$('#effort-choice').value,workspace_write:true});if(kind!==state.data.connection.selected&&state.business){await api('/api/chats/new',{business:state.business});state.chat=[];state.chatMeta=null;showMessages();} const tour=state.tour||!state.data.onboarding.seen;state.connectionChecks=null;state.welcome=null;await refresh();await checkConnections(false);if(tour)finishSetup();else if(state.connectionChecks?.ready)$('#connect-dialog').close();else finishSetup();notice(''); } catch(error){state.modelError=simpleSetupError(humanError(error));} finally {connectionChoice();} return; }
     if(form.getAttribute('id')==='chat-form') { await submitRequest($('#request').value); return; }
     if(submit)submit.disabled=true;
     try {
@@ -3267,7 +3288,7 @@ function detachChatView(){
 }
 async function openShellChat(id){
   rememberChatDraft();detachChatView();const root=state.data.workspace,business=state.business,ticket=state.navigationTicket=(state.navigationTicket||0)+1;
-  state.navigating=true;chatControls();let result;try{result=await api('/api/chats/open',{business,id});}finally{if(ticket===state.navigationTicket){state.navigating=false;chatControls();}}if(ticket!==state.navigationTicket||root!==state.data.workspace||business!==state.business)return;
+  state.navigating=true;state.openingNewChat=false;chatControls();let result;try{result=await api('/api/chats/open',{business,id});}finally{if(ticket===state.navigationTicket){state.navigating=false;chatControls();}}if(ticket!==state.navigationTicket||root!==state.data.workspace||business!==state.business)return;
   state.view='home';state.home=false;$('#section-dialog').close();$('#detail').close();state.chat=result.messages;state.chatMeta=result.chat;state.liveJob=result.job;state.busy=result.job?.status==='working';state.activeJob=state.busy?result.job:null;
   state.needsCheck=result.chat?.status==='working'&&!state.busy;state.recovery=result.recovery||null;window.auraContinuity?.acceptRecovery(result);state.hydrated=true;restoreChatDraft();showMessages();await refresh();recordShellRoute();closeMobileSidebar();
   notice(result.history_note||'');
@@ -3287,11 +3308,11 @@ async function newShellChat(draft=null,home=false){
   if(!state.business)return;rememberChatDraft();detachChatView();state.home=home===true;
   state.pendingComposerDraft=draft;
   const ticket=state.navigationTicket=(state.navigationTicket||0)+1,root=state.data.workspace,business=state.business;
-  state.navigating=true;state.view='home';$('#section-dialog').close();$('#detail').close();state.chat=[];state.chatMeta=null;state.newAssistantId=null;state.newAssistantName='';state.newChatProject='';state.newChatConnection=null;state.newChatPermission=null;state.selectedFiles=[];state.contextReferences=[];state.draftGoalId='';$('#request').value='';state.hydrated=true;
+  state.navigating=true;state.openingNewChat=!draft;state.view='home';$('#section-dialog').close();$('#detail').close();state.chat=[];state.chatMeta=null;state.newAssistantId=null;state.newAssistantName='';state.newChatProject='';state.newChatConnection=null;state.newChatPermission=null;state.selectedFiles=[];state.contextReferences=[];state.draftGoalId='';$('#request').value='';state.hydrated=true;
   try{sessionStorage.removeItem(draftKey());}catch{}
-  showMessages();taskStatus('');notice('');chatControls();
+  showMessages();taskStatus('');notice('');chatControls();if(state.openingNewChat)$('#request').focus();
   try{await api('/api/chats/new',{business});if(ticket!==state.navigationTicket||root!==state.data.workspace||business!==state.business)return;await refresh();if(ticket!==state.navigationTicket||root!==state.data.workspace||business!==state.business)return;if(draft){$('#request').value=draft.text;state.selectedFiles=draft.files;state.newChatConnection=draft.connection;state.newChatPermission=draft.permission||null;state.newChatProject=draft.project||'';window.auraCompose?.restore(draft);rememberChatDraft();renderComposerFiles();renderComposerConnection();}recordShellRoute();closeMobileSidebar();}
-  finally{if(ticket===state.navigationTicket){state.navigating=false;chatControls();$('#request').focus();}}
+  finally{if(ticket===state.navigationTicket){state.navigating=false;state.openingNewChat=false;chatControls();$('#request').focus();}}
 }
 
 /* Continue in terminal: the same chat in its own app's full screen (every command, dialog and plugin the app has), in

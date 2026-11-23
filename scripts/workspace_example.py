@@ -84,7 +84,7 @@ def build(destination, name=DEFAULT, at=None):
         # Collections first, so findings can link to the watch they belong to.
         made = {}
         for c in seed.get('collections', []):
-            made[c['key']] = collections.create(bid, {k: c[k] for k in ('key', 'name', 'purpose', 'mode') if k in c})
+            made[c['key']] = collections.create(bid, {k: c[k] for k in ('key', 'name', 'purpose', 'mode', 'units') if k in c})
             names['collection:' + c['key']] = made[c['key']]['id']
         seed = _tokens(seed, names)
 
