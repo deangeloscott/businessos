@@ -286,8 +286,3 @@ def codex_login(command):
     codex_capture()
     return subprocess.Popen([*command, 'login'], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                             creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
-
-
-def usage_identity(account):
-    """The usage-account identity AURA's usage records use for this saved account."""
-    return account.get('account') or account.get('email') or account['id']

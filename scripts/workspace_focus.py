@@ -134,7 +134,8 @@ def context(bid, limit=1800):
 def public(focus):
     """What the interface and API show: no file paths beyond each area's own file."""
     slim = lambda a: {k: a[k] for k in ('id', 'name', 'summary', 'origin', 'views', 'path') if k in a} | ({'customized': True} if a.get('customized') else {})
-    return {'description': focus['description'], 'areas': [slim(a) for a in focus['areas']], 'available': [slim(a) for a in focus['available']],
+    return {'description': focus['description'], 'areas': [slim(a) | {'knowledge': list(dict.fromkeys(prefix(k) for k in a['knowledge']))} for a in focus['areas']],
+            'available': [slim(a) for a in focus['available']],
             'missing': focus['missing'], 'problems': focus['problems'], 'quick_starts': quick_starts(focus), 'goals': suggested_goals(focus),
             'views': list(dict.fromkeys(v for a in focus['areas'] for v in a['views'])),
             'suggested': suggest(focus['description']) if not focus['areas'] else [],

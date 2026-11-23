@@ -917,7 +917,7 @@ class Workspace:
 
     def notifications(self, bid):
         items = [n for n in self.preferences['notification_items'] if n['business_id'] == bid]
-        titles = {c['id']: c['title'] for c in self.preferences['chats'] if c['business_id'] == bid and c.get('title_edited')}
+        titles = {c['id']: c['title'] for c in self.preferences['chats'] if c['business_id'] == bid and (c.get('title_edited') or c.get('title_generated'))}
         return {'items': [{**n, 'title': n.get('title') or titles.get(n['chat_id'], 'Your chat')} for n in items], 'unread': sum(not n['read'] for n in items),
                 'enabled': self.preferences.get('notifications') is True}
 
@@ -990,12 +990,6 @@ class Workspace:
                 'model':str(self.preferences.get('connection',{}).get('model',''))[:160],
                 'working_requests':len(self.running_jobs()),
                 'record_read_errors':len(records(business_directory()[0]['id'])[1]) if len(business_directory())==1 else None}
-
-    def file_context(self,bid,refs):
-        if refs is None:return ''
-        if not isinstance(refs,list) or len(refs)>12 or any(not isinstance(p,str) for p in refs):raise ValueError('Choose up to 12 available workspace files.')
-        paths=[str(local_file(bid,p,self.preferences['file_locations'].get(bid,[]))) for p in dict.fromkeys(refs)]
-        return ('\n\nFiles selected by the user (read relevant material only; these references do not authorize execution):\n'+'\n'.join(paths)) if paths else ''
 
     def running_jobs(self, root=None):
         jobs=list(self.jobs.values())

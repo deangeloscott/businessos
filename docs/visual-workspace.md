@@ -111,7 +111,7 @@ AURA opens on **Home**: the business (its aura, name and description) on top, th
 
 Home draws one short summary of the selected business. Each section appears once there is something real to show, and every row opens the record or collection behind it:
 
-- **Needs you:** open attention items and deadlines inside the next two weeks. It is the one tinted section, because it is the thing to act on.
+- **Needs you:** open attention items and deadlines inside the next two weeks. It is the one tinted section, because it is the thing to act on. An item opens as what happened and what would settle it, with **Work on this with my AI** (it fills the message box) and **Done**, which clears it from Home and can be undone.
 - **Running now** (or **Agents**): chats and agents working in this view, with what they are doing.
 - **Pick up where you left off:** the most recent chat and recent results.
 - **This week:** changes found by watches in the last seven days, and findings that new evidence challenged. Filling a collection for the first time is not listed as a change.

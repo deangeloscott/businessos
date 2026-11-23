@@ -1071,13 +1071,6 @@ async function refreshLibrary(){
   finally{state.libraryRefreshing=false;if(button?.isConnected&&state.view==='work'){button.disabled=false;button.textContent='Refresh';renderWork();}}
 }
 function methodRow(method,{grouped=false}={}) {const favorite=libraryMarked(method),apps=method.apps||[],source=apps.length>1?'Shared · '+apps.length+' apps':apps.map(appName).join(', '),sources=method.sources||[],status=!sources.length?'':sources.every(s=>s.status==='Disabled')?'Disabled':sources.some(s=>s.connection_reported)?'Connection listed':sources.every(s=>s.status==='Found locally')?'Found locally':sources.some(s=>s.status==='Installed')?'Installed':sources.every(s=>s.status==='Configured')?'Configured':'',type=method.subtype==='Playbook'?'Playbook':method.kind;return `<div class="library-row"><button class="row compact" data-method="${esc(method.key)}"><span class="row-text"><span class="row-title">${esc(method.title)}</span>${state.view==='work'&&method.description?`<span class="library-description">${esc(method.description)}</span>`:''}<span class="row-meta">${esc([grouped?'':type,method.subtype==='Playbook'?(method.routes?.length?method.routes.length+' ways in':method.entry?'Starts with '+method.entry.title:''):''].filter(Boolean).join(' · '))}${method.members?.length?' · '+method.members.length+' actions':''}${source?' · '+esc(source):''}${status&&status!=='Found locally'?' · '+esc(status):''}${sources.some(s=>s.stale)?' · Needs refresh':''}</span></span><span class="arrow">→</span></button><button class="library-star ${favorite?'active':''}" data-library-favorite="${esc(method.key)}" aria-label="${favorite?'Remove':'Add'} ${esc(method.title)} ${favorite?'from':'to'} favorites" aria-pressed="${favorite}">${favorite?'★':'☆'}</button></div>`;}
-function librarySourceLabels(sources){
-  const rank={'Reported by app':6,'Enabled in app':5,'Installed':4,'Disabled':3,'Configured':2,'Found locally':1};
-  return Object.values(Object.groupBy(sources,s=>(s.app||'local')+':'+(s.service||s.connection||''))).map(rows=>{
-    const s=rows.reduce((a,b)=>(rank[b.status]||0)>(rank[a.status]||0)?b:a),versions=[...new Set(rows.map(r=>r.version).filter(Boolean))];
-    return `${appName(s.app)||'This computer'}${s.service||s.connection?' · '+(s.service||s.connection):''} · ${s.status}${versions.length===1?' · '+versions[0]:''}${rows.some(r=>r.stale)?' · Needs refresh':''}`;
-  });
-}
 
 async function openLibrary(key,option='',returning=false){
   const previous=state.libraryPage&&state.libraryPage.ticket===state.fileDetailTicket&&state.libraryPage.scope===JSON.stringify([state.data?.workspace,state.business])&&$('#detail').open?{...state.libraryPage,scroll:$('#detail-content').scrollTop}:null;
@@ -1136,6 +1129,7 @@ function quickMethods() {
   $('#quick-methods').innerHTML=groups.filter(g=>g.items.length).map(g=>`<h4>${libraryKinds[g.kind]}</h4>${g.items.slice(0,2).map(methodRow).join('')}<button class="text-button card-link" data-library-kind="${g.kind}">Open ${libraryKinds[g.kind].toLowerCase()} →</button>`).join('')||'<p class="muted">No match. You can still describe the job to your AI.</p>';
 }
 async function render() {
+  if(!state.data)return; // still loading: the first load draws the page chosen meanwhile
   // The aura takes the room: the sidebar tucks away while you are in it and comes back when you leave. Its own button still opens it.
   { const inAura=state.view==='aura'&&!!state.business;if(!inAura){state.auraSidebarOpen=false;window.auraView?.leave();}document.body.classList.toggle('in-aura',inAura);document.body.classList.toggle('sidebar-collapsed',inAura?!state.auraSidebarOpen:!!state.profile?.sidebar_collapsed); }
   // Every page explains itself in the same place: a quiet link beside its description.
@@ -1284,18 +1278,25 @@ function renderFiles() {
   state.fileObserver=observer;$('#file-list').querySelectorAll('.file-card').forEach(e=>observer.observe(e));
 }
 /* Suggested for this business: the methods its chosen focus areas point to, so the first thing in the
-   Library is what fits. Drawn from the focus areas' own guidance, never guessed. */
+   Library is what fits. Drawn from the focus areas' own guidance, never guessed. Each area takes its turn, so every
+   chosen area shows; within one, a workflow it names comes first (as the Playbook that starts there, when one does),
+   then the Playbooks of a whole area of work it names. */
 async function librarySuggestions(show){
   const host=$('#library-suggested');if(!host)return;
   if(!show||!state.business){host.hidden=true;return;}
   const scope=state.business;let focus;
   try{focus=state.focusCache?.business===scope?state.focusCache.data:await api('/api/focus?business='+encodeURIComponent(scope));state.focusCache={business:scope,data:focus};}catch{host.hidden=true;return;}
   if(scope!==state.business||!$('#library-suggested'))return;
-  const paths=focus.knowledge||[],systems=new Set(paths.map(k=>k.split('/')[1]).filter(Boolean)),picked=[];
-  const add=item=>{if(item&&!picked.includes(item))picked.push(item);};
-  for(const k of paths.filter(k=>k.includes('/workflows/')))add(state.library.find(i=>i.key==='workflow:'+k+'CONTEXT.md'));
-  for(const item of state.library)if(item.subtype==='Playbook'&&systems.has(item.area))add(item);
-  picked.sort((a,b)=>(b.subtype==='Playbook')-(a.subtype==='Playbook'));
+  const playbooks=state.library.filter(i=>i.subtype==='Playbook');
+  const turns=lists=>{const out=[];for(let i=0;lists.some(l=>i<l.length);i++)for(const l of lists)if(l[i]&&!out.includes(l[i]))out.push(l[i]);return out;};
+  const startsAt=(w,system)=>playbooks.find(p=>p.area===system&&(p.entry?.key===w.key||(p.routes||[]).some(r=>r.key===w.key)))||w;
+  const picked=turns((focus.areas||[]).map(area=>{
+    const named=[],whole=[];
+    for(const k of area.knowledge||[]){const system=k.startsWith('systems/')&&k.split('/')[1];if(!system)continue;
+      if(!k.includes('/workflows/')){whole.push(playbooks.filter(p=>p.area===system));continue;}
+      for(const w of state.library)if(w.subtype!=='Playbook'&&String(w.key).startsWith('workflow:'+k))named.push(startsAt(w,system));}
+    return [...named,...turns(whole)];
+  }));
   const name=rows('Business')[0]?.title||'this business';
   host.hidden=!picked.length;
   host.innerHTML=picked.length?`<div class="section-head"><h3>Suggested for ${esc(name)}</h3><small class="small-note">From your focus: ${esc((focus.areas||[]).map(a=>a.name).join(', ')||'your business')}</small></div>${picked.slice(0,5).map(item=>methodRow(item)).join('')}`:'';
@@ -1992,6 +1993,19 @@ document.addEventListener('click',e=>{
     .then(r=>{const o=r.origin;line.textContent=o?`Made in ${o.app}${o.title?' · “'+o.title+'”':''} · ${stamp(o.at)}`:'Not found in the AI apps’ own records on this computer, so where this was made is not recorded.';})
     .catch(()=>{line.textContent='The AI apps’ records could not be read just now.';});
 });
+/* Done on a "Needs you" item (see attentionDetails), with Undo putting back the status it had. */
+document.addEventListener('click',event=>{
+  const button=event.target.closest('[data-attention-done]');if(!button)return;
+  const business=state.business,id=button.dataset.attentionDone,title=state.data.records.find(r=>r.ref===id)?.title||'This';
+  attempt(async()=>{
+    button.disabled=true;
+    try{
+      const done=await api('/api/attention',{business,id,action:'done'});
+      $('#detail').close();await refresh();
+      toast(`Done: ${title}`,()=>attempt(async()=>{await api('/api/attention',{business,id,action:'undo',previous:done.previous});await refresh();}));
+    }finally{button.disabled=false;}
+  });
+});
 function recordDetails(ref) {
   const r=state.data.records.find(r=>r.ref===ref); if(!r) return;
   if(r.type==='Asset'&&r.data.location_reference&&!/^[a-z][a-z0-9+.-]*:\/\//i.test(r.data.location_reference)){attempt(()=>openFileWorkspace('asset/'+r.ref));return;}
@@ -2005,6 +2019,7 @@ function recordDetails(ref) {
     setDetailTitleActions(archiveControl('record',ref));return;
   }
   if(['Opportunity','DecisionRecord','Learning'].includes(r.type)){workedOutDetails(r,location);return;}
+  if(r.type==='AttentionItem'){attentionDetails(r,location);return;}
   const mechanical=new Set(['id','object_type','schema_version','business_id','lineage','created_at','updated_at','extensions']);
   const fields=Object.entries(r.data).filter(([k,v])=>!mechanical.has(k)&&!['name','title'].includes(k)&&v!==null&&!(Array.isArray(v)&&!v.length));
   const watches=(r.data.extensions?.businessos?.collection_refs||[]).map(id=>state.data.records.find(x=>x.type==='Asset'&&x.data.extensions?.businessos?.collection?.id===id)).filter(Boolean);
@@ -2031,6 +2046,17 @@ function workedOutDetails(r,location){
     body=(d.statement&&d.statement!==title?`<p>${esc(d.statement)}</p>`:'')+field('Works when',d.applies_when)+field('Not when',d.does_not_apply_when)+basis(d.evidence_refs);
   }
   details(title,`<p class="item-type">${esc(kind)}</p>${body}${madeIn(d)}<div class="inline-actions">${act}<button type="button" class="${act?'secondary':'primary'}" data-add-record="${esc(r.ref)}" data-label="${esc(title)}">Add to chat</button></div><details class="record-raw"><summary>Saved record</summary>${location}<pre>${esc(JSON.stringify(d,null,2))}</pre></details>`,'context');
+  setDetailTitleActions(archiveControl('record',r.ref));
+}
+/* Something that needs the person reads as what happened and what would settle it, with their AI one click away and
+   Done to clear it from Home once it's handled. The saved record stays one click away. */
+function attentionDetails(r,location){
+  const d=r.data,title=r.title,open=!['resolved','archived'].includes(d.status);
+  const field=(label,value)=>value?`<div class="field"><strong>${esc(label)}</strong><p>${esc(value)}</p></div>`:'';
+  const kind=open?'Needs you'+(d.severity==='high'||d.severity==='critical'?' · Important':''):'Done';
+  const since=d.first_seen||d.created_at;
+  const prompt=`Help me with this: "${title}". Read its saved record (${r.ref}) and anything related, check whether anything has changed, and help me settle it${d.recommended_action?` (suggested next step: ${d.recommended_action})`:''}. Ask before sending, saving or changing anything.`;
+  details(title,`<p class="item-type">${esc(kind)}</p>${d.reason&&d.reason!==title?`<p>${esc(d.reason)}</p>`:''}${field('What would settle it',d.recommended_action)}<p class="small-note">Noticed ${esc(stamp(since))}${d.occurrence_count>1?` · seen ${d.occurrence_count} times`:''}</p>${madeIn(d)}<div class="inline-actions">${open?`<button type="button" class="primary" data-prompt="${esc(prompt)}">Work on this with my AI</button><button type="button" class="secondary" data-attention-done="${esc(r.ref)}">Done</button>`:`<button type="button" class="primary" data-add-record="${esc(r.ref)}" data-label="${esc(title)}">Add to chat</button>`}</div><details class="record-raw"><summary>Saved record</summary>${location}<pre>${esc(JSON.stringify(d,null,2))}</pre></details>`,'context');
   setDetailTitleActions(archiveControl('record',r.ref));
 }
 /* Where something was made: the chat, task or AI app session AURA noted when it was saved. When nothing was noted, the
@@ -2122,7 +2148,16 @@ const sharingScope=()=>JSON.stringify([state.data?.workspace,state.business]);
 async function shareApi(action,data={}) {
   const current=sharing,scope=current?.scope;
   if(scope!==sharingScope())throw new Error('The workspace changed. Reopen sharing to continue.');
-  const result=await api('/api/sharing/'+action,{business:sharing.business,...data});
+  // Preparing, reading, copying in or saving a package can take a while with many files: say so beside the button pressed.
+  let host=null;
+  if(['prepare','prepare-public','package','apply','export'].includes(action)){
+    const pressed=document.activeElement?.closest('#detail .inline-actions,#detail form,#detail-footer>*');
+    host=Object.assign(document.createElement('div'),{className:'small-note'});host.setAttribute('role','status');
+    if(pressed)pressed.after(host);else $('#detail-content')?.append(host);
+  }
+  let result;
+  try{result=await (host?withOperation(host,()=>api('/api/sharing/'+action,{business:sharing.business,...data})):api('/api/sharing/'+action,{business:sharing.business,...data}));}
+  finally{host?.remove();}
   if(scope!==sharingScope()||sharing!==current)throw new Error('Sharing changed while this was running. Reopen it to see the result.');
   return result;
 }

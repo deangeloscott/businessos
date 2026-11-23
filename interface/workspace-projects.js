@@ -124,7 +124,14 @@ window.auraProjects=(()=>{
       el.querySelector('.result-full').innerHTML=resultDetails(r);
     });}));
   }
-  function resultDetails(r){return `${r.change_reason?`<p><strong>What changed</strong> · ${esc(r.change_reason)}</p>`:''}${r.source_refs?.length?'<dl>'+r.source_refs.map(s=>`<div><dt>${/^https?:\/\//i.test(s.reference)?`<a href="${esc(s.reference)}" target="_blank" rel="noopener noreferrer">${esc(s.reference)}</a>`:esc(s.reference)}</dt><dd>${s.published_at?'Published: '+esc(stamp(s.published_at))+' · ':''}${s.data_as_of?'Data as of: '+esc(stamp(s.data_as_of))+' · ':''}${s.last_checked_at?'Checked: '+esc(stamp(s.last_checked_at)):''}</dd></div>`).join('')+'</dl>':'<p class="small-note">No source reference supplied.</p>'}${r.summary?`<p>${esc(r.summary)}</p>`:''}${r.correction_note?`<p>${esc(r.correction_note)}</p>`:''}<pre>${esc(JSON.stringify(r.fields||{},null,2))}</pre>${r.corrected?`<details><summary>As reported by the source</summary><pre>${esc(JSON.stringify(r.reported,null,2))}</pre></details>`:''}`;}
+  /* A result's saved fields as labelled rows; the map already places its coordinates. */
+  function fieldRows(fields){
+    const skip=new Set(['latitude','longitude','lat','lng','lon','yours','radius_km','radius_miles']);
+    const shown=Object.entries(fields||{}).filter(([k,v])=>!skip.has(k)&&v!==null&&v!==''&&!(Array.isArray(v)&&!v.length));
+    const show=v=>typeof v==='string'&&/^https?:\/\//i.test(v)?`<a href="${esc(v)}" target="_blank" rel="noopener noreferrer">${esc(v)}</a>`:esc(typeof v==='number'?v.toLocaleString():pretty(v));
+    return shown.map(([k,v])=>`<div class="field"><strong>${esc(human(k))}</strong><p>${show(v)}</p></div>`).join('');
+  }
+  function resultDetails(r){return `${r.change_reason?`<p><strong>What changed</strong> · ${esc(r.change_reason)}</p>`:''}${r.source_refs?.length?'<dl>'+r.source_refs.map(s=>`<div><dt>${/^https?:\/\//i.test(s.reference)?`<a href="${esc(s.reference)}" target="_blank" rel="noopener noreferrer">${esc(s.reference)}</a>`:esc(s.reference)}</dt><dd>${s.published_at?'Published: '+esc(stamp(s.published_at))+' · ':''}${s.data_as_of?'Data as of: '+esc(stamp(s.data_as_of))+' · ':''}${s.last_checked_at?'Checked: '+esc(stamp(s.last_checked_at)):''}</dd></div>`).join('')+'</dl>':'<p class="small-note">No source</p>'}${r.summary?`<p>${esc(r.summary)}</p>`:''}${r.correction_note?`<p>${esc(r.correction_note)}</p>`:''}${fieldRows(r.fields)}${r.corrected?`<details><summary>As reported by the source</summary>${fieldRows(r.reported)}</details>`:''}`;}
   async function previewShare(id,item,q){
     const key=scope(),valid=panelRequest();
     const preview=await api(url('/api/collections',{id,item,q,preview:'share'}));
@@ -149,7 +156,7 @@ window.auraProjects=(()=>{
     const response=await api(url('/api/collections',{id,item}));
     if(key!==scope()||!valid())return;
     const r=response.item;
-    details(r.title,`${r.expires_at?`<p>Deadline: ${esc(new Date(r.expires_at).toLocaleString())}</p>`:''}${resultDetails(r)}${attachItem(id,r)}<button type="button" class="text-button" id="deadline-collection">Open collection</button>`,'context');
+    details(r.title,`${r.expires_at?`<p>Deadline: ${esc(new Date(r.expires_at).toLocaleString())}</p>`:''}${resultDetails(r)}<div class="inline-actions">${attachItem(id,r)}<button type="button" class="text-button" id="deadline-collection">Open collection</button></div>`,'context');
     $('#deadline-collection').onclick=()=>attempt(()=>openCollection(id));
   }
   async function feedback(choice,item,extra={}){

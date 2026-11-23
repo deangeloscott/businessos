@@ -87,31 +87,3 @@ def load_claim_surface(ref,artifact_path=None):
             if target!=actual:return None,'claim surface artifact_ref does not match the governed Asset location_reference'
         except Exception:return None,'claim surface artifact_ref cannot be resolved'
     return data,None
-
-
-def asset_claim_units(asset,artifact_path):
-    """Return mechanically available claim-review text without requiring a sidecar.
-
-    Text-native artifacts are read directly. For opaque media, an explicitly supplied
-    sidecar may provide text-oriented review units; without one there is simply no
-    deterministic text surface. That is not an error and does not imply the media is safe
-    or unsupported—the actual artifact still requires model/human inspection when needed.
-    """
-    path=Path(artifact_path); suffix=path.suffix.lower()
-    bos=(asset.get('extensions') or {}).get('businessos',{}) if isinstance(asset.get('extensions'),dict) else {}
-    statements=[]
-    if suffix in TEXT_NATIVE_EXTS:
-        statements.extend(units(native_text(path)))
-        ref=bos.get('claim_surface_ref')
-        if ref:
-            surface,error=load_claim_surface(ref,path)
-            if error:return [],error
-            statements.extend(units('\n'.join(_surface_values(surface))))
-        return list(dict.fromkeys(statements)),None
-
-    ref=bos.get('claim_surface_ref')
-    if not ref:return [],None
-    surface,error=load_claim_surface(ref,path)
-    if error:return [],error
-    statements.extend(units('\n'.join(_surface_values(surface))))
-    return list(dict.fromkeys(statements)),None

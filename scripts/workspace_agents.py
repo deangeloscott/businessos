@@ -178,10 +178,6 @@ def execution_command(command, kind, model, effort):
     return argv
 
 
-def hermes_options(command, cwd, env):
-    return acp_options(command,'hermes',cwd,env)
-
-
 def acp_options(command,kind,cwd,env,profile=None):
     host = Metadata(command,kind,cwd,env,**({'profile':profile} if profile else {}))
     try:

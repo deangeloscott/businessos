@@ -155,13 +155,6 @@ def clear_wake():
     return {'scheduled': False}
 
 
-def wake_status():
-    if sys.platform != 'win32':
-        return None
-    result = _powershell(f"(Get-ScheduledTask -TaskName '{TASK}' -ErrorAction SilentlyContinue | Get-ScheduledTaskInfo).NextRunTime", check=False)
-    return result.stdout.strip() or None
-
-
 def _powershell(command, check=True):
     encoded = base64.b64encode(command.encode('utf-16-le')).decode('ascii')
     powershell = Path(os.environ.get('SystemRoot', r'C:\Windows')) / 'System32/WindowsPowerShell/v1.0/powershell.exe'

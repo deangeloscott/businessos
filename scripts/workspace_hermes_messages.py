@@ -159,12 +159,15 @@ def answering(env, ident):
 
 def send(argv, env, platform, text):
     """One line to your own chat on `platform`, through Hermes's own send command (no AI, no running gateway needed
-    for bot-token platforms). Returns '' when sent, otherwise a short reason."""
+    for bot-token platforms). Returns '' when sent, otherwise a short reason. A send that started but never finished
+    may already have arrived, so it counts as sent: trying again could repeat the same line every few minutes."""
     text = re.sub(r'\s+', ' ', str(text)).strip()[:600]
     try:
         done = subprocess.run([*argv, 'send', '-t', platform, '-q', text], capture_output=True, text=True,
                               encoding='utf-8', errors='replace', timeout=45, env=env, stdin=subprocess.DEVNULL,
                               creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+    except subprocess.TimeoutExpired:
+        return ''
     except (OSError, subprocess.SubprocessError):
         return "Hermes didn't answer."
     return '' if done.returncode == 0 else "Hermes couldn't send it. Check Hermes messages."

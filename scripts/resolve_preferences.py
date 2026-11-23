@@ -136,27 +136,6 @@ def _run_context(business_id,run_id):
     return run,rp
 
 
-@organization_transaction
-def resolve_for_run(business_id,run_id,task_preferences=None,output_type=None,channel=None):
-    run,rp=_run_context(business_id,run_id)
-    snapref=run.get('preference_snapshot_ref');out=(ROOT/snapref) if snapref else (rp.parent/'artifacts'/'effective-preferences.json')
-    if out.exists():
-        if task_preferences is not None: raise ValueError('existing Run preference snapshot is immutable; task preferences must be supplied when creating the Run')
-        return json.loads(out.read_text(encoding='utf-8')),out
-    result=resolve_effective_preferences(
-        business_id,
-        operator_ref=run.get('operator_ref'),team_ref=run.get('team_ref'),role_ref=run.get('role_ref'),
-        system=(load_registry_workflow(run.get('workflow_id')) or {}).get('owner_system'),
-        workflow=run.get('workflow_id'),output_type=run.get('preference_output_type') if output_type is None else output_type,channel=run.get('preference_channel') if channel is None else channel,
-        task_preferences=task_preferences,
-    )
-    out.parent.mkdir(parents=True,exist_ok=True)
-    out.write_text(json.dumps(result,indent=2)+'\n', encoding='utf-8')
-    run['preference_snapshot_ref']=out.relative_to(ROOT).as_posix();run['updated_at']=now()
-    rp.write_text(json.dumps(run,indent=2)+'\n', encoding='utf-8')
-    return result,out
-
-
 def load_registry_workflow(workflow_id):
     if not workflow_id:return None
     return next((x for x in load_registry().get('workflows',[]) if x.get('id')==workflow_id),None)

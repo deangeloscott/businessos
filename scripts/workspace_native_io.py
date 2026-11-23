@@ -5,7 +5,7 @@ import subprocess
 import threading
 import time
 
-from workspace_interactions import answers_for,question
+from workspace_interactions import question
 
 
 def channel(process,execution,errors):
@@ -44,11 +44,6 @@ def channel(process,execution,errors):
             if event is None:return
             yield event
     return send,read_events(),closed.set
-
-
-def add_request(execution,ident,title,questions,send,convert,detail='',timeout=None):
-    def validate(answers):return convert(answers_for(questions,answers))
-    execution.requests.add(ident,title,questions,send,validate,detail,timeout)
 
 
 from workspace_native_requests import codex_request, notice, provider

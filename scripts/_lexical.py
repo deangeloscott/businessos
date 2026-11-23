@@ -39,10 +39,6 @@ def tokens(value):
     return [token for token in raw_tokens(value) if token not in STOPWORDS and len(token) >= 2]
 
 
-def token_set(value):
-    return set(tokens(value))
-
-
 def phrase_tokens(value):
     """Return phrase tokens without substring matching or punctuation surprises."""
     return raw_tokens(value)

@@ -21,6 +21,7 @@ def set_status(business_id,attention_id,status,resolution_refs=None,note=None,at
     timestamp=at or now();old=obj.get('status');resolution_refs=resolution_refs or []
     if status=='resolved' and not (resolution_refs or note):raise ValueError('resolved requires a resolution reference or note')
     obj['status']=status;obj['updated_at']=timestamp
+    if status!='resolved':(obj.get('extensions') or {}).get('businessos',{}).pop('resolution_note',None)  # no longer settled
     if status=='open':
         obj['acknowledged_at']=None;obj['resolved_at']=None;obj['next_review_at']=obj.get('next_review_at')
     elif status=='acknowledged':

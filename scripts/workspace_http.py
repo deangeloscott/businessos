@@ -624,6 +624,18 @@ def handler_for(app):
                         result=workspace_focus.public(workspace_focus.save(bid,data.get('areas')) if 'areas' in data else workspace_focus.get(bid))
                         if 'text' in data:result['suggested']=workspace_focus.suggest(data['text'])
                     app.read_cache.clear();self.send(200,result);return
+                if route == '/api/attention':
+                    # Done and its Undo on a "Needs you" item: the same status change the AI makes with set_attention_status.
+                    import set_attention_status
+                    status={'done':'resolved','undo':data.get('previous') if data.get('previous') in {'open','acknowledged'} else 'open'}.get(data.get('action'))
+                    if not status:raise ValueError('Choose Done or Undo.')
+                    with app.lock:root=app.workspace_path
+                    with workspace_scope(root):
+                        bid=selected(data.get('business'))
+                        if not set_attention_status.find_item(bid,str(data.get('id') or ''))[0]:
+                            raise ValueError('This was already cleared or moved. Refresh to see what still needs you.')
+                        result=set_attention_status.set_status(bid,str(data.get('id')),status,note='Marked done in AURA.' if status=='resolved' else None)
+                    app.read_cache.clear();self.send(200,{'status':status,'previous':result['from']});return
                 if route == '/api/collection-view':
                     if data.get('action')!='place':raise ValueError('Choose a map action.')
                     with app.lock:root=app.workspace_path

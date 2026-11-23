@@ -82,10 +82,6 @@ def _meta(parser,name):
         if (m.get('name') or '').lower()==name: return m.get('content')
     return None
 
-def _canonical(parser):
-    # HTMLParser link collection only stores href; inspect raw parser attrs is not retained, so canonical is parsed separately by regex in inspect_html.
-    return None
-
 def _resolve_local_target(root:Path,current_rel:str,href:str):
     href=href.split('#',1)[0].split('?',1)[0]
     if not href or href.startswith(('http://','https://','mailto:','tel:','javascript:')): return None,None
