@@ -27,7 +27,6 @@ def main():
                 'AURA does not define a tool allowlist or universal capability vocabulary.',
                 'AURA operating areas are bodies of operating knowledge, not limits on what the host may do.',
                 'A ProcessExtension is retrieval context, not semantic authority, a permission boundary, or an execution plan.',
-                'A Run is an **optional bounded work receipt** for continuity/provenance.',
             ]:req(phrase in context,f'{eid} lost current universal AURA invariant: {phrase}')
             req((pdir/'generated/workflow-registry.json').exists(),f'{eid} Workflow registry was not generated');req(not (pdir/'generated/contract-registry.json').exists(),f'{eid} packaged retired contract registry');req((pdir/'generated/workflow-candidate-index.json').exists(),f'{eid} Workflow discovery index missing');req((pdir/'PLAYBOOKS.md').exists(),f'{eid} high-level Playbook catalog missing');req((pdir/'WORKFLOW-INDEX.md').exists(),f'{eid} Workflow index missing');req((pdir/'skills/viraltrac-aura/SKILL.md').exists(),f'{eid} AURA awareness Skill missing');req(not (pdir/'core/capabilities/catalog.json').exists(),f'{eid} packaged retired capability ontology')
         print(f'AURA component distribution regressions passed: {len(targets)} named editions package Playbooks, Workflows, Skill attachment, and the universal AURA contract through relative output paths')

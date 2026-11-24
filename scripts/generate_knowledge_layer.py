@@ -236,6 +236,28 @@ def generate(business_id):
         shutil.rmtree(stage,ignore_errors=True)
         raise
 
+def set_aside_stale(business_id):
+    """Move an out-of-date generated page folder aside, once, with a note saying what it is.
+
+    Nothing regenerates these pages on its own any more, and an old page that still reads like current truth misled
+    models in testing. The person's own notes stay where they are; the pages are kept, renamed, rather than deleted.
+    Pages that still match the records are left alone. Returns the new folder, or None."""
+    generated=knowledge_root()/business_id/'_generated'
+    if not (generated/STATE_FILE).is_file():return None
+    report=knowledge_layer_freshness(business_id)
+    if report.get('current'):return None
+    day=str(report.get('generated_at') or '')[:10] or 'unknown-date'
+    target=generated.with_name(f'_old-snapshot-{day}-not-current');number=2
+    while target.exists():target=generated.with_name(f'_old-snapshot-{day}-not-current-{number}');number+=1
+    generated.rename(target)
+    (target/'README.md').write_text(
+        f"# Old snapshot ({day}), not current\n\nThese pages were generated from {business_id}'s records on {day} and have not been "
+        "updated since, so some may now be wrong. The current records are under `instances/` and in AURA's Knowledge page. "
+        "To make fresh pages, run `scripts/generate_knowledge_layer.py` with this business ID. You can delete this folder.\n",
+        encoding='utf-8')
+    return target
+
+
 def knowledge_layer_freshness(business_id,index=None,diagnostics=None):
     """Read-only freshness report for enter/remember; never mutates the workspace.
     Returns {'business_id','generated','current','generated_at','object_count','fingerprint',

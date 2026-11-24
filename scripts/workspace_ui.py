@@ -652,6 +652,10 @@ class Workspace:
                 workspace_guidance.refresh(PRODUCT_ROOT,workspace_root())
             except (OSError,ValueError):
                 self.workspace_note = 'Your saved work is available. Ask your AI to check its existing AURA guidance.'
+            from generate_knowledge_layer import set_aside_stale
+            for business in business_directory():
+                try:set_aside_stale(business['id'])
+                except (OSError,ValueError):pass  # old pages stay where they are; nothing else depends on them
             if not (workspace_root() / workspace_storage.VIEW_FILE).exists() and self.portable_view_ok:
                 workspace_storage.save_view(workspace_root(),self.preferences)
 
@@ -3280,7 +3284,10 @@ class Workspace:
         return (f"Work for the explicitly selected AURA business ID: {bid}. It is already selected, so there is no need to list organizations.\n"
                 +(focus_text+'\n' if focus_text else '')+
                 f"AURA product: {PRODUCT_ROOT}\nOrganization workspace: {workspace_root()}\n"
-                f"Read {PRODUCT_ROOT / 'CONTEXT.md'} once unless its current contents are already loaded.\n"
+                # The shared guidance comes with the first message: every model read it first anyway, and that read cost a
+                # whole turn (about 45k tokens in Claude Code). Later messages in the chat use the short form.
+                +f"AURA's shared guidance ({PRODUCT_ROOT / 'CONTEXT.md'}) follows, so there is no need to read that file:\n<aura-context>\n"
+                +(PRODUCT_ROOT/'CONTEXT.md').read_text(encoding='utf-8').strip()+"\n</aura-context>\n"+
                 f"For Python helpers, the running interpreter is {Path(sys.executable).as_posix()}. "
                 "Quote its full path for your shell; do not assume python3 is installed. The workspace is already set for helpers. Run each AURA helper as its own command (interpreter, the helper's full path, its arguments), not chained with other commands, pipes or redirects; AURA then runs its helpers without asking the person, apart from ones that remove records, set up or move a workspace, or share outside it. "
                 "A simple conversation does not need helper calls.\n"

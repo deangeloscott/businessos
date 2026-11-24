@@ -49,6 +49,9 @@ def references_in(value):
     def visit(item):
         if isinstance(item,dict):
             for key,child in item.items():
+                # A change record's before/after copies are history, not live relationships: a correction that removes
+                # a broken reference must not be refused for quoting it, nor block forgetting what it used to point to.
+                if key in {'before_state','after_state'}:continue
                 if key in {'lineage','ref','reference_assets'} or key.endswith(('_ref','_refs')):collect(child)
                 elif isinstance(child,(dict,list)):visit(child)
         elif isinstance(item,list):

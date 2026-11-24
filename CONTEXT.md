@@ -36,7 +36,7 @@ Before saving anything, ask:
 
 If no, do not persist it merely because a schema/helper exists.
 
-`scripts/remember.py <business-id> --input <json>` is the ordinary create/update primitive; `--input` takes a file, `-` for stdin, or inline JSON. No Run, Playbook, or Workflow is required. Update a record by `object_ref`; create one with `object_type` and its semantic fields (AURA adds IDs, timestamps and validation):
+`scripts/remember.py <business-id> --input <json>` is the ordinary create/update primitive; `--input` takes a file, `-` for stdin, or inline JSON. No Playbook or Workflow is required. Update a record by `object_ref`; create one with `object_type` and its semantic fields (AURA adds IDs, timestamps and validation):
 
 ```json
 {"provenance":{"method":"ad_hoc"},"objects":[{"object_ref":"biz_<business-id>","content":{"description":"What the organization does, in the user's words."}}]}
@@ -50,7 +50,7 @@ When the text has non-English characters, write the JSON to a file with your fil
 
 Preferences, attention items and platform changes have their own helpers that keep their meaning governed: `scripts/upsert_preference_profile.py`, `scripts/upsert_attention.py` (with `scripts/set_attention_status.py` to mark one settled) and `scripts/record_platform_change.py`. Use `remove_fields` when an obsolete top-level field should disappear, and `scripts/forget.py` when a whole unreferenced object no longer deserves memory.
 
-Keep useful deliverables somewhere durable and remember them as an `Asset` with the reference and status future work needs; prefer `attachments/<business-id>/work/` unless the user chooses another location, with a relative `location_reference` for workspace files. Do not ingest every temporary file.
+Keep useful deliverables somewhere durable and remember them as an `Asset` (`asset_type`, `business_role` saying what it is for, `location_reference`, `version`, `status`); prefer `attachments/<business-id>/work/` unless the user chooses another location, with a relative `location_reference` for workspace files. Do not ingest every temporary file.
 
 For prior work across AURA-connected apps, use `scripts/workspace_context.py recall --business-id <id> --workspace <folder> --search <specific query>`, then `result` with the chosen chat and variant. Retrieve matching answers, not whole histories. Saved replies are context, not canonical truth or proof of current native work. Keep native memory and skills in their owning app.
 
@@ -69,10 +69,6 @@ A Playbook is not an execution graph and Workflow composition is not orchestrati
 ## Organization-specific reusable methods
 
 When the organization intentionally defines a reusable local procedure, or evidence-supported Learning is genuinely reusable as procedure, it may be kept as a narrow `ProcessExtension`/local Workflow. A ProcessExtension is retrieval context, not semantic authority, a permission boundary, or an execution plan. Do not fabricate Learning to save an SOP, or turn organization-specific knowledge into a product-wide rule. Recipe libraries are optional craft references.
-
-## Optional work receipts
-
-A Run is an **optional bounded work receipt** for continuity/provenance. It is never a prerequisite for reasoning, persistence, Assets, publication or validation. When useful, record the method truthfully: `aura_playbook`, `aura_workflow`, `external_skill`, `model_created`, or `ad_hoc`. Completion does not prove quality, conformance or outcome.
 
 ## Organization truth and isolation
 
@@ -115,7 +111,6 @@ Explain what the user can use or do next in everyday language, and briefly say w
 - `scripts/enter.py "<request>" --business-id <id>` — bounded context plus Playbook/Workflow candidates, without semantic routing. Re-run with `--selected-playbook <id>` and/or `--selected-workflow <id>` only when actually chosen.
 - `scripts/workspace_summary.py --business-id <id> --text` — one short read-only picture: what is established about the business, what changed, what needs someone, goals and watches.
 - `scripts/find_playbooks.py "<request>"` / `scripts/find_workflows.py "<request>"` — browse candidate jobs and procedures.
-- `scripts/create_run.py ...` / `scripts/complete_run.py ...` — optional receipts only when useful.
 - `scripts/validate_business.py <business-id>` — check the whole organization after changes made by other helpers.
 
 The intended experience is:

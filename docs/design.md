@@ -145,3 +145,4 @@ Check a new component in Modern and at least one retro style, in both modes.
 - `python tests/run_all.py` still passes.
 - Before a release, `python tests/real_apps_check.py --model claude=haiku --model codex=gpt-5.6-luna --effort high` runs the journeys only real apps break (connect, save in one app and find in another, stop, continue) at AURA's model floor: the Haiku / GPT-5.6-Luna class at High effort.
 - Before a release, reread `CONTEXT.md` and drop what models at that floor do well unprompted. Keep what only AURA can tell them.
+- When `CONTEXT.md`, a prompt AURA sends, or a helper's reply text changes, run the same request once before and once after at the floor model on a sample workspace, and compare what the model did, not only what it said. One sentence can change it: a line naming a save helper once sent Haiku to re-save sources that were already saved.

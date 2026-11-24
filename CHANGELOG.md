@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- **Corrections save on upgraded workspaces.** A business saved by an older AURA could hold records that today's checks reject (Harbor Home had seven sources dated "2026-10-23" with no time). Every save checked the whole business and refused on any problem, so nothing could be saved or corrected, the owner's corrections included, and the error named unrelated files. Now a change is refused only for problems it adds; older ones are reported and shown once on Home as "N saved records need fixing", which settles itself once they are fixed. A plain date is accepted where a date and time is asked for, since it is an honest answer when only the day is known, and AURA's date labels show it as that day rather than the day before. Correcting a record whose link pointed at something deleted works: the change note's copy of the old value no longer counts as a live link.
+- **Chats start one step sooner.** AURA's guidance now comes with a chat's first message instead of the AI reading the file first. In a trial at the model floor, Claude Code on Haiku took one turn fewer per chat (17–32% fewer tokens on short chats) and Codex on GPT-5.6 Luna used 19% fewer tokens, with the same answers.
+- **Saving research and deliverables works the first time.** The guidance names the helper that saves new sources with how each was obtained, and the fields a saved deliverable needs; refusals say how to fix them in one step. `--input -` with nothing on stdin says so.
+- **Run receipts are retired from the AI's guidance.** Nothing read them back, and a closed receipt read like proof the work was done. Existing receipts are kept and still validated; closing one now says plainly it did not look at the work.
+- **Generated knowledge pages are made only on request.** They were never kept up to date, and an old page still showing a corrected price misled an AI. When AURA opens a workspace, out-of-date pages move to `_old-snapshot-<date>-not-current` with a note; your own notes stay put. Saves and lookups no longer report on the pages.
+- **Smaller fixes.** Codex's workspace Skill points straight to the guidance; the collections example includes the required business ID; lookups no longer repeat a title as its purpose.
+
 ## 0.7.0 Alpha — 2026-11-24
 
 - **Steadier and safer.** One AURA runs at a time, so two copies no longer overwrite each other's settings. Stop can't freeze AURA. Backups take seconds and no longer block the rest of AURA. Unreadable settings are kept instead of overwritten. A gap that let a hidden second command through AURA's helper pre-approval is closed.

@@ -29,6 +29,9 @@ def __getattr__(name):
 
 def _date_time(value):
     if not isinstance(value,str):return True
+    # A plain calendar date is an honest answer when only the day is known ("retrieved 2026-10-23"); requiring a
+    # time would make people or models invent one. Older AURA saved such dates, so they stay valid after upgrading.
+    if re.fullmatch(r'\d{4}-\d{2}-\d{2}',value):return _date(value)
     if not re.fullmatch(r'\d{4}-\d{2}-\d{2}[Tt]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:[Zz]|[+-]\d{2}:\d{2})',value):return False
     return datetime.datetime.fromisoformat(value.upper().replace('Z','+00:00')).tzinfo is not None
 

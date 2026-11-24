@@ -182,7 +182,33 @@ def validate_change(business_id,before,require_context=False):
     """Validate the business after a change to the files in `before`: (introduced, warnings, counts, existing)."""
     errors,warnings,counts=validate_business(business_id,require_context)
     introduced,existing=only_new_problems(errors,before,lambda:validate_business(business_id,require_context)[0])
+    if not introduced:
+        try:_note_older_problems(business_id,existing)
+        except (OSError,ValueError,KeyError,TypeError):pass  # a notice must never cost the person their save
     return introduced,warnings,counts,existing
+
+
+OLDER_PROBLEMS_KEY='aura-older-record-problems'
+
+
+def _note_older_problems(business_id,existing):
+    """Tell the person once, on Home, when saved records carry problems from before; settle it once a save finds none.
+    It is noticed only when a save already ran the check, so opening a business costs nothing extra."""
+    from upsert_attention import _id,_path,upsert
+    path=_path(business_id,_id(business_id,OLDER_PROBLEMS_KEY))
+    if not existing:
+        if path.is_file():
+            item=json.loads(path.read_text(encoding='utf-8'))
+            if item.get('status') in {'open','acknowledged'}:
+                from set_attention_status import set_status
+                set_status(business_id,item['id'],'resolved',note='A later save found no problems in the saved records.')
+        return
+    files=sorted({e.split(' ',1)[0] for e in existing if e.startswith('instances')})
+    title=('1 saved record needs fixing' if len(files)==1 else f'{len(files)} saved records need fixing') if files else 'Some saved records need fixing'
+    upsert(business_id,OLDER_PROBLEMS_KEY,'data_quality','low',title,
+           "These records don't pass AURA's checks, probably because an earlier version saved them. They don't block "
+           "new saves, but they may be incomplete or out of date. First problem: "+existing[0][:300],
+           recommended_action='Ask your AI to look at these records and fix or remove what is wrong.')
 
 
 def existing_problems(existing):

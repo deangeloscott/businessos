@@ -14,7 +14,6 @@ from _common import *
 from canonical_store import canonical_path,schema_entry,validate_canonical,write_canonical
 from validate_business import validate_change,existing_problems
 from correction_impacts import correction_event
-from generate_knowledge_layer import knowledge_layer_freshness
 
 MECHANICAL_FIELDS={'id','object_type','schema_version','business_id','created_at','updated_at','lineage'}
 SPECIALIZED_TYPES={
@@ -239,7 +238,6 @@ def remember(business_id,payload):
     return {
         'format_version':'1.0','status':'persisted','business_id':bid,'objects':rows,'receipt':_receipt(rows),
         'corrections':corrections,'memory_feedback':[r['id'] for r in feedback],
-        'knowledge_view':knowledge_layer_freshness(bid),
         'validation':{'status':'clean' if not existing else 'no new problems','warnings':warnings[:5],'canonical_object_counts':counts,
                       **({'existing_problems':existing_problems(existing)} if existing else {}),'scope':'Schema, reference/provenance integrity and organization isolation; not factual accuracy, artifact quality, deployment or measured effect.'},
         'semantic_boundary':'Only caller-authored organizational meaning was persisted; AURA supplied mechanical canonical wrapping, explicit field removal, storage, and integrity validation.',

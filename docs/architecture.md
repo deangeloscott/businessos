@@ -67,7 +67,7 @@ AURA is memory consolidation, not execution logging.
 
 Persist something when a capable future model working for this organization would materially benefit after the current session/runtime is gone. Do not persist hidden reasoning, full chats, routine tool calls, retries, subagent chatter, caches, or transient host capability state.
 
-A `Run` is an optional bounded work receipt for useful continuity/provenance. It is not required before reasoning or ordinary persistence.
+A `Run` is a work receipt from earlier versions, kept and validated in older workspaces. New work records provenance on the saved results themselves; nothing reads Runs back for continuity.
 
 A `WorkRequest` is appropriate only when a real handoff must survive the current actor/session/runtime. Harness-managed subagents, tool calls, retries, and internal domain-to-domain reasoning do not require WorkRequests.
 

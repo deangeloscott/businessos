@@ -19,7 +19,6 @@ from context_plan import build_plan
 from process_plan import build_process_plan
 from _lexical import tokens,document_frequency,weighted_overlap
 from correction_impacts import pending_corrections
-from generate_knowledge_layer import knowledge_layer_freshness
 from workspace_goals import discoverable
 from resolve_preferences import resolve_effective_preferences,_load_task_preferences
 
@@ -143,7 +142,6 @@ def _prepare_work(task,business_id=None,workspace=None,focus=None,operator_ref=N
             'read_diagnostics':read_diagnostics[:10],'read_diagnostic_count':len(read_diagnostics),
             'correction_review':pending_corrections(index,saved_work_limit),
             'preferences':preferences,
-            'knowledge_view':knowledge_layer_freshness(bid,index,read_diagnostics),
             'lookup_rule':'Candidates are lexical matches, not accepted conclusions. Read records and artifacts; status, assumptions and evidence limits matter. Recency is not authority. Missing optional context does not block useful work. Resolve missing refs/read failures before relying on completeness.',
             'baseline_context':baseline,'workflow_context':object_context,'context_files':context_files,'supporting_context_refs':supporting_context_refs,'context_reading_rule':context_reading_rule,
             'unresolved_selectors':(context or {}).get('unresolved_selectors',[]) if isinstance(context,dict) else [],
@@ -183,7 +181,6 @@ def compact(result):
         return value
     out=walk(result);retrieval=out.get('retrieval',{})
     if not retrieval.get('saved_work_candidates'):retrieval.pop('saved_work_search',None)
-    if not (retrieval.get('knowledge_view') or {}).get('generated'):retrieval.pop('knowledge_view',None)
     if result.get('status') in {'ready','needs_judgment'} and result.get('business_id'):out['note']=NOTE
     return out
 

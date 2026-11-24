@@ -10,7 +10,7 @@ window.auraView=(()=>{
   const records=type=>(state.data?.records||[]).filter(r=>r.type===type);
   const goals=()=>records('Objective').filter(r=>{const g=r.data.extensions?.businessos?.goal||{};return g.scope!=='chat'&&!g.deleted_at&&(r.data.status||'active')==='active';});
   const refOf=id=>(state.data?.records||[]).find(r=>r.data?.id===id)?.ref||'';
-  const when=d=>d?new Date(d).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}):'';
+  const when=d=>d?new Date(/^\d{4}-\d{2}-\d{2}$/.test(d)?d+'T00:00':d).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}):'';  // a plain date is that day, not UTC midnight
   const count=(n,word)=>`${n} ${word}${n===1?'':'s'}`;
   const hash=s=>{let h=2166136261;for(const c of String(s)){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;};
   let ctx=null,shiftTimer;

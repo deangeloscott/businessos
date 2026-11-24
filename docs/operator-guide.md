@@ -177,37 +177,9 @@ python scripts/forget.py <business-id> <object-ref>
 
 Unknown/not-found is not absence.
 
-## Optional work receipts
+## Run receipts (older workspaces)
 
-A Run is an optional bounded work receipt. Create one only when continuity or provenance for a piece of work will materially help later.
-
-If a high-level AURA Playbook materially framed the work:
-
-```bash
-python scripts/create_run.py <business-id> "<task>" --playbook-id <playbook-id>
-```
-
-If a detailed AURA Workflow materially framed the work:
-
-```bash
-python scripts/create_run.py <business-id> "<task>" --workflow-id <workflow-id>
-```
-
-For another method:
-
-```bash
-python scripts/create_run.py <business-id> "<task>" --method-type <external_skill|model_created|ad_hoc> [--method-ref <name>]
-```
-
-A method reference records truthful provenance. It does **not** create an execution graph, conformance regime, permission gate, or capability preflight.
-
-When the receipt itself is worth closing:
-
-```bash
-python scripts/complete_run.py <business-id> <run-id> --summary "<material result>" [--evidence <ref>] [--result <ref>] [--decision <ref>] [--unresolved <item>]
-```
-
-Completing a Run means only that the useful receipt was closed and its material continuity was preserved. It does not certify Playbook/Workflow conformance, QA, publication readiness, deployment, external authorization, or business outcomes.
+Earlier versions offered Runs: optional receipts made with `scripts/create_run.py` and closed with `scripts/complete_run.py`. Nothing reads them back, and a closed receipt was too easily reported as proof that work was done, so new work does not need them. Existing receipts are kept and still validated. Record what work produced and how through the saved results themselves (`remember.py` provenance, Assets, decisions), and describe work by what was actually done and checked.
 
 ## Organization-specific reusable Workflows
 
@@ -245,9 +217,9 @@ Refresh builds and verifies a replacement before swapping directories. A failed 
 
 Human-note registration preserves the exact UTF-8 text as a hashed capture, so later note edits do not change an earlier source. Re-registering unchanged notes also completes missing capture metadata from the older native writer, preserving the existing source ID. Onboarding and imported contribution sources preserve their actual captured text or file bytes too. This proves what was supplied/captured, not that its statements are independently true.
 
-When upgrading an existing workspace, retain a backup and validate a copy with the new product first. If older evidence is rejected, inspect its retained capture or acquisition receipt before correcting metadata through supported helpers. Do not bulk-relabel unknown acquisition as verified. If a referenced file has changed since its recorded hash, preserve the original SourceRecord and capture a new revision rather than replacing the old hash to hide the mismatch. Apply related record updates together with `remember.py` where validation requires a consistent batch. Update unreadable or outdated saved-artifact descriptions when their purpose/version is known, review reported impacts, and regenerate the knowledge layer. Older product versions may not understand the new optional evidence fields; use the upgraded product with the upgraded workspace.
+When upgrading an existing workspace, retain a backup and validate a copy with the new product first. If older evidence is rejected, inspect its retained capture or acquisition receipt before correcting metadata through supported helpers. Do not bulk-relabel unknown acquisition as verified. If a referenced file has changed since its recorded hash, preserve the original SourceRecord and capture a new revision rather than replacing the old hash to hide the mismatch. Apply related record updates together with `remember.py` where validation requires a consistent batch. Update unreadable or outdated saved-artifact descriptions when their purpose/version is known, and review reported impacts. Older product versions may not understand the new optional evidence fields; use the upgraded product with the upgraded workspace.
 
-Normal save and entry responses include `knowledge_view`: freshness checks canonical content plus the renderer, shared presentation helper and schema registry—not object counts alone. `python scripts/generate_knowledge_layer.py <business-id> --freshness` checks without writing. Older views without these fingerprints are not certified current; regenerate once. Missing/damaged pages or unreadable canonical records also prevent a current result. “Current” means the generated representation matches its inputs—not that authored deliverables have been reviewed or that their claims are true.
+These pages are made only when someone runs the helper; nothing keeps them up to date. When AURA opens a workspace, pages that no longer match the records are moved to `_old-snapshot-<date>-not-current` with a note, so they are not mistaken for current truth. Freshness checks canonical content plus the renderer, shared presentation helper and schema registry, not object counts alone. `python scripts/generate_knowledge_layer.py <business-id> --freshness` checks without writing. Older views without these fingerprints are not certified current; regenerate once. Missing/damaged pages or unreadable canonical records also prevent a current result. “Current” means the generated representation matches its inputs—not that authored deliverables have been reviewed or that their claims are true.
 
 Native type sections derive from the schema registry's system ownership; optional domain values still organize generic domain-tagged records. Generated pages use the same saved-work titles as retrieval and expose artifact version/location and recorded correction-review status.
 

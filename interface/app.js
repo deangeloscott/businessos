@@ -17,7 +17,8 @@ const esc = (value) => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;
 const human = (s) => String(s).replace(/([a-z])([A-Z])/g,'$1 $2').replaceAll('_',' ').replace(/\bqa\b/gi,'QA').replace(/^./, c=>c.toUpperCase());
 const pretty = (value) => typeof value === 'object' && value !== null ? (Array.isArray(value) ? value.map(pretty).join('\n') : Object.entries(value).map(([k,v])=>`${human(k)}: ${pretty(v)}`).join('\n')) : String(value ?? '');
 const rows = (...types) => (state.data?.records || []).filter(r=>types.includes(r.type));
-const stamp = value => value ? new Date(value).toLocaleDateString(undefined,{month:'short',day:'numeric'}) : 'Date not recorded';
+// A plain date (2026-10-23) is a calendar day, not UTC midnight, which would show as the day before west of UTC.
+const stamp = value => value ? new Date(/^\d{4}-\d{2}-\d{2}$/.test(value)?value+'T00:00':value).toLocaleDateString(undefined,{month:'short',day:'numeric'}) : 'Date not recorded';
 const size = bytes => bytes < 1024 ? `${bytes} B` : bytes < 1048576 ? `${(bytes/1024).toFixed(0)} KB` : `${(bytes/1048576).toFixed(1)} MB`;
 const clockTime = value => {if(!value)return '';const date=new Date(typeof value==='number'?value*1000:value);return Number.isNaN(date.getTime())?'':date.toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});};
 

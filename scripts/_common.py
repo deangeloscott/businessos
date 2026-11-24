@@ -56,7 +56,10 @@ def read_json_input(value):
     Tolerates a UTF-8 byte-order mark, which Windows PowerShell 5.1 writes by default.
     """
     text=str(value).strip()
-    if text=='-':raw=sys.stdin.buffer.read().decode('utf-8-sig')
+    if text=='-':
+        raw=sys.stdin.buffer.read().decode('utf-8-sig')
+        # Some AI apps run commands with nothing attached to stdin; say so instead of a bare JSON parse error.
+        if not raw.strip():raise ValueError('Nothing arrived on stdin for --input -. Pass a JSON file path or the JSON itself instead.')
     elif text[:1] in '{[' and not Path(text).is_file():raw=text
     else:raw=Path(text).read_text(encoding='utf-8-sig')
     return json.loads(raw)
