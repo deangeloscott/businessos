@@ -48,7 +48,7 @@ Where common things may go (add fields only when they help; `core/schemas/` has 
 
 When the text has non-English characters, write the JSON to a file with your file tool and pass the file: Windows PowerShell 5.1 replaces them with `?` when piping text to a program.
 
-Preferences, attention items and platform changes have their own helpers that keep their meaning governed: `scripts/upsert_preference_profile.py`, `scripts/upsert_attention.py` and `scripts/record_platform_change.py`. Use `remove_fields` when an obsolete top-level field should disappear, and `scripts/forget.py` when a whole unreferenced object no longer deserves memory.
+Preferences, attention items and platform changes have their own helpers that keep their meaning governed: `scripts/upsert_preference_profile.py`, `scripts/upsert_attention.py` (with `scripts/set_attention_status.py` to mark one settled) and `scripts/record_platform_change.py`. Use `remove_fields` when an obsolete top-level field should disappear, and `scripts/forget.py` when a whole unreferenced object no longer deserves memory.
 
 Keep useful deliverables somewhere durable and remember them as an `Asset` with the reference and status future work needs; prefer `attachments/<business-id>/work/` unless the user chooses another location, with a relative `location_reference` for workspace files. Do not ingest every temporary file.
 

@@ -210,6 +210,10 @@ def resolve(app,bid,references,goal_id=None,pointers=False,sources=None):
             row.update(label=item['title'],path=str(workspace_root()/item['path']),revision=digest(item['data']))
             text=f'{"Goal" if kind=="goal" else "Record"}: {item["title"]}\nRead {row["path"]} only when relevant.'
             if kind=='goal':text+='\n'+workspace_goals.guidance(item['data'])
+            elif item['type']=='AttentionItem' and item['data'].get('status') in {'open','acknowledged'}:
+                text+=(f'\nThis needs the person. Once it is actually settled, not just drafted, mark it done so it leaves Home: '
+                       f'{PRODUCT_ROOT/"scripts/set_attention_status.py"} {bid} {ident} resolved --note \'<how it was settled>\' '
+                       '(single quotes keep amounts like $6.75 intact in the shell).')
         elif kind=='library':
             if catalog is None:catalog=app.library_items()['items'];sources['library']=catalog
             item=workspace_library.find(catalog,ident)

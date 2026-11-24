@@ -2066,7 +2066,7 @@ function workedOutDetails(r,location){
     const goals=names(d.objective_refs).map(g=>g.title);
     kind='Worth doing · '+opportunityStatus(d.status);
     body=(d.statement&&d.statement!==title?`<p>${esc(d.statement)}</p>`:'')+field('Why',d.diagnosis)+field('For your goals',goals)+basis([...(d.origin_insight_refs||[]),...(d.evidence_links||[])]);
-    act=`<button type="button" class="primary" data-prompt="${esc(`Help me act on this opportunity: "${title}". Read its saved record (${r.ref}) and evidence, check whether anything has changed, and propose the smallest useful next step${goals.length?' toward '+goals.join(' and '):''}. Ask before saving or changing anything.`)}">Plan this with my AI</button>`;
+    act=`<button type="button" class="primary" data-prompt="${esc(`Help me act on this opportunity: "${title}". Read it and its evidence, check whether anything has changed, and propose the smallest useful next step${goals.length?' toward '+goals.join(' and '):''}. Ask before saving or changing anything.`)}" data-add-record="${esc(r.ref)}" data-label="${esc(title)}">Plan this with my AI</button>`;
   }else if(r.type==='DecisionRecord'){
     kind='Decision'+(d.status!=='current'?' · '+human(d.status):'');
     body=field('Decided by',[d.made_by,d.made_at?stamp(d.made_at):''].filter(Boolean).join(' · '))+field('Why',d.notes)+field('Applies to',d.applies_to)+basis(d.basis_refs);
@@ -2084,8 +2084,9 @@ function attentionDetails(r,location){
   const field=(label,value)=>value?`<div class="field"><strong>${esc(label)}</strong><p>${esc(value)}</p></div>`:'';
   const kind=open?'Needs you'+(d.severity==='high'||d.severity==='critical'?' · Important':''):'Done';
   const since=d.first_seen||d.created_at;
-  const prompt=`Help me with this: "${title}". Read its saved record (${r.ref}) and anything related, check whether anything has changed, and help me settle it${d.recommended_action?` (suggested next step: ${d.recommended_action.trim().replace(/[.!]+$/,'')})`:''}. Once it's actually settled, not just drafted, mark it resolved with AURA's scripts/set_attention_status.py and a short --note on how, so it leaves Home. Ask before sending, saving or changing anything.`;
-  details(title,`<p class="item-type">${esc(kind)}</p>${d.reason&&d.reason!==title?`<p>${esc(d.reason)}</p>`:''}${field('What would settle it',d.recommended_action)}<p class="small-note">Noticed ${esc(stamp(since))}${d.occurrence_count>1?` · seen ${d.occurrence_count} times`:''}</p>${madeIn(d)}<div class="inline-actions">${open?`<button type="button" class="primary" data-prompt="${esc(prompt)}">Work on this with my AI</button><button type="button" class="secondary" data-attention-done="${esc(r.ref)}">Done</button>`:`<button type="button" class="primary" data-add-record="${esc(r.ref)}" data-label="${esc(title)}">Add to chat</button>`}</div><details class="record-raw"><summary>Saved record</summary>${location}<pre>${esc(JSON.stringify(d,null,2))}</pre></details>`,'context');
+  // Plain words in the person's own message; the item itself goes along attached, and what it is attached as tells the AI how to mark it done.
+  const prompt=`Help me settle "${title}"${d.recommended_action?` (suggested next step: ${d.recommended_action.trim().replace(/[.!]+$/,'')})`:''}. Check whether anything has changed first, ask me before sending or changing anything, and once it's actually settled, not just drafted, mark it done so it leaves Home.`;
+  details(title,`<p class="item-type">${esc(kind)}</p>${d.reason&&d.reason!==title?`<p>${esc(d.reason)}</p>`:''}${field('What would settle it',d.recommended_action)}<p class="small-note">Noticed ${esc(stamp(since))}${d.occurrence_count>1?` · seen ${d.occurrence_count} times`:''}</p>${madeIn(d)}<div class="inline-actions">${open?`<button type="button" class="primary" data-prompt="${esc(prompt)}" data-add-record="${esc(r.ref)}" data-label="${esc(title)}">Work on this with my AI</button><button type="button" class="secondary" data-attention-done="${esc(r.ref)}">Done</button>`:`<button type="button" class="primary" data-add-record="${esc(r.ref)}" data-label="${esc(title)}">Add to chat</button>`}</div><details class="record-raw"><summary>Saved record</summary>${location}<pre>${esc(JSON.stringify(d,null,2))}</pre></details>`,'context');
   setDetailTitleActions(archiveControl('record',r.ref));
 }
 /* Where something was made: the chat, task or AI app session AURA noted when it was saved. When nothing was noted, the
@@ -2943,7 +2944,7 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.dataset.addLibrary||button.dataset.addRecord){
     const item=button.dataset.addLibrary?{kind:'library',id:button.dataset.addLibrary,label:button.dataset.label,...(button.dataset.variant?{variant:button.dataset.variant}:{})}:{kind:'record',id:button.dataset.addRecord,label:button.dataset.label};
     if(!window.auraCompose){notice('Chat controls are loading. Try again in a moment.',true);return;}
-    if(window.auraCompose.add(item)){returnToChat();notice('Context added. Tell your AI what you want to do.');}
+    if(window.auraCompose.add(item)){returnToChat();if(!button.dataset.prompt)notice('Context added. Tell your AI what you want to do.');}
   }
   if(button.dataset.copyRecordLocation){const item=state.data.records.find(r=>r.ref===button.dataset.copyRecordLocation);if(item){await navigator.clipboard.writeText(state.data.workspace.replace(/[\\/]$/,'')+'/'+item.path);button.setAttribute('aria-label','File location copied');notice('File location copied.');}}
   if(button.dataset.copyRecord){const item=state.data.records.find(r=>r.ref===button.dataset.copyRecord);if(item){await navigator.clipboard.writeText(JSON.stringify(item.data,null,2));button.textContent='Copied';}}
