@@ -189,7 +189,8 @@ def _swap_staged(stage,target):
     else:os.rename(str(stage),str(target))
 
 def _state_payload(business_id,generated_at,object_count,pages,fingerprint,render_fingerprint):
-    return {'format_version':STATE_FORMAT_VERSION,'business_id':business_id,'generated_at':generated_at,'object_count':object_count,'pages':pages,'fingerprint':fingerprint,'render_fingerprint':render_fingerprint,'generator':'scripts/generate_knowledge_layer.py'}
+    return {'format_version':STATE_FORMAT_VERSION,'business_id':business_id,'generated_at':generated_at,'object_count':object_count,'pages':pages,'fingerprint':fingerprint,'render_fingerprint':render_fingerprint,'generator':'scripts/generate_knowledge_layer.py',
+            'made_on_request':True}  # pages are only made when someone asks now; see set_aside_stale
 
 def generate(business_id):
     global _TYPE_SYSTEMS
@@ -237,13 +238,17 @@ def generate(business_id):
         raise
 
 def set_aside_stale(business_id):
-    """Move an out-of-date generated page folder aside, once, with a note saying what it is.
+    """Move an out-of-date page folder left by an earlier AURA aside, with a note saying what it is.
 
-    Nothing regenerates these pages on its own any more, and an old page that still reads like current truth misled
-    models in testing. The person's own notes stay where they are; the pages are kept, renamed, rather than deleted.
-    Pages that still match the records are left alone. Returns the new folder, or None."""
+    Earlier versions remade these pages on their own; nothing does now, so their old pages go stale and, still reading
+    like current truth, misled models in testing. Pages someone makes on request now (marked made_on_request) are theirs
+    and stay where they are, however old. The person's own notes stay too; old pages are kept, renamed, rather than
+    deleted, and pages that still match the records are left alone. Returns the new folder, or None."""
     generated=knowledge_root()/business_id/'_generated'
     if not (generated/STATE_FILE).is_file():return None
+    try:
+        if json.loads((generated/STATE_FILE).read_text(encoding='utf-8')).get('made_on_request'):return None
+    except (OSError,ValueError,AttributeError):pass  # an unreadable record is treated as an earlier AURA's
     report=knowledge_layer_freshness(business_id)
     if report.get('current'):return None
     day=str(report.get('generated_at') or '')[:10] or 'unknown-date'

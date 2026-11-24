@@ -6,7 +6,7 @@
 - **Chats start one step sooner.** AURA's guidance now comes with a chat's first message instead of the AI reading the file first. In a trial at the model floor, Claude Code on Haiku took one turn fewer per chat (17–32% fewer tokens on short chats) and Codex on GPT-5.6 Luna used 19% fewer tokens, with the same answers.
 - **Saving research and deliverables works the first time.** The guidance names the helper that saves new sources with how each was obtained, and the fields a saved deliverable needs; refusals say how to fix them in one step. `--input -` with nothing on stdin says so.
 - **Run receipts are retired from the AI's guidance.** Nothing read them back, and a closed receipt read like proof the work was done. Existing receipts are kept and still validated; closing one now says plainly it did not look at the work.
-- **Generated knowledge pages are made only on request.** They were never kept up to date, and an old page still showing a corrected price misled an AI. When AURA opens a workspace, out-of-date pages move to `_old-snapshot-<date>-not-current` with a note; your own notes stay put. Saves and lookups no longer report on the pages.
+- **Generated knowledge pages are made only on request.** They were never kept up to date, and an old page still showing a corrected price misled an AI. When AURA opens a workspace, out-of-date pages left by an earlier version move to `_old-snapshot-<date>-not-current` with a note, once; pages you make yourself and your own notes stay put. Saves and lookups no longer report on the pages.
 - **Smaller fixes.** Codex's workspace Skill points straight to the guidance; the collections example includes the required business ID; lookups no longer repeat a title as its purpose.
 
 ## 0.7.0 Alpha — 2026-11-24
