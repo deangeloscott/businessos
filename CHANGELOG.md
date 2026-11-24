@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.7.1 Alpha — 2026-11-24
 
 - **Corrections save on upgraded workspaces.** A business saved by an older AURA could hold records that today's checks reject (Harbor Home had seven sources dated "2026-10-23" with no time). Every save checked the whole business and refused on any problem, so nothing could be saved or corrected, the owner's corrections included, and the error named unrelated files. Now a change is refused only for problems it adds; older ones are reported and shown once on Home as "N saved records need fixing", which settles itself once they are fixed. A plain date is accepted where a date and time is asked for, since it is an honest answer when only the day is known, and AURA's date labels show it as that day rather than the day before. Correcting a record whose link pointed at something deleted works: the change note's copy of the old value no longer counts as a live link.
 - **Chats start one step sooner.** AURA's guidance now comes with a chat's first message instead of the AI reading the file first. In a trial at the model floor, Claude Code on Haiku took one turn fewer per chat (17–32% fewer tokens on short chats) and Codex on GPT-5.6 Luna used 19% fewer tokens, with the same answers.
