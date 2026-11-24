@@ -571,8 +571,10 @@ def describe_object(obj,path):
     result={'object_ref':obj['id'],'object_type':obj.get('object_type'),'path':storage_ref(path),'title':title[:240],'status':obj.get('status'),'updated_at':obj.get('updated_at')}
     if obj.get('location_reference'):result['artifact_reference']=obj['location_reference']
     if obj.get('version'):result['version']=obj['version']
-    if obj.get('business_role'):result['purpose']=obj['business_role']
-    elif isinstance(obj.get('description'),str) and obj['description'].strip():result['summary']=obj['description'].strip()[:240]
+    # Records without a title of their own take it from these fields; repeating the same words adds nothing.
+    if obj.get('business_role'):
+        if obj['business_role']!=title:result['purpose']=obj['business_role']
+    elif isinstance(obj.get('description'),str) and obj['description'].strip() and obj['description']!=title:result['summary']=obj['description'].strip()[:240]
     return result
 
 def resolve_focus(index,focus,diagnostics=None):

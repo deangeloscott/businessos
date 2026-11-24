@@ -123,7 +123,8 @@ def attach(product, workspace):
     if skill.is_symlink() or not skill.resolve().is_relative_to(workspace):
         raise ValueError('The AURA Skill points outside this workspace. Ask your AI to check it.')
     header = '---\nname: viraltrac-aura\ndescription: Reuse saved AURA business context and operating knowledge for organizational work.\n---\n'
-    pointer = marker + f'\nRead the current full guidance at `{product / "skills/viraltrac-aura/SKILL.md"}`.\n' + f'AURA product: `{product}`. Organization workspace: `{workspace}`.\n'
+    # Straight to the shared guidance: a pointer to the product Skill only sends the model one more hop to the same file.
+    pointer = marker + f'\nRead `{product / "CONTEXT.md"}` once, unless its current contents are already loaded. It is AURA\'s shared guidance.\n' + f'AURA product: `{product}`. Organization workspace: `{workspace}`.\n'
     ending = '<!-- /AURA native Skill pointer -->'
     skill_text = header + pointer + ending + '\n'
     if skill.exists():

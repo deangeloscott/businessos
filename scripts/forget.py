@@ -9,7 +9,7 @@ having a deterministic helper rewrite meaning automatically.
 """
 import argparse,json
 from _common import *
-from validate_business import validate_business
+from validate_business import validate_change,existing_problems
 from validate_references import inbound_references
 
 
@@ -34,13 +34,15 @@ def forget(business_id,object_ref,recoverable=True):
     if retained.get('skipped'):raise ValueError('This record could not be preserved for recovery. Archive it instead.')
     path.unlink()
     try:
-        errors,warnings,counts=validate_business(bid,require_context=True)
+        errors,warnings,counts,existing=validate_change(bid,{path:snapshot},require_context=True)
         if errors:raise ValueError('Post-removal validation failed: '+'; '.join(errors[:12]))
     except Exception:
         path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(snapshot);raise
     return {
         'status':'forgotten','business_id':bid,'object_ref':object_ref,'object_type':typ,
-        'former_path':storage_ref(path),'recovery_id':retained.get('id'),'validation':{'status':'clean','warnings':warnings[:5],'canonical_object_counts':counts},
+        'former_path':storage_ref(path),'recovery_id':retained.get('id'),
+        'validation':{'status':'clean' if not existing else 'no new problems','warnings':warnings[:5],'canonical_object_counts':counts,
+                      **({'existing_problems':existing_problems(existing)} if existing else {})},
         'rule':'The object was removed because no canonical state depended on it. AURA did not fabricate historical replacement state.'
     }
 

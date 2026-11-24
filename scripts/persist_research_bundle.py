@@ -200,6 +200,8 @@ def _persist(bid,bundle,created_paths):
         if locator_error:raise ValueError(locator_error)
     for obj in all_objs:written.append((obj,_write(obj,created_paths)))
     errs,warns=evidence_errors(bid)
+    from validate_business import only_new_problems
+    errs,_=only_new_problems(errs,{path:None for path in created_paths},lambda:evidence_errors(bid)[0])
     if errs:raise ValueError('research evidence validation failed after write: '+'; '.join(errs))
     return written,warns
 

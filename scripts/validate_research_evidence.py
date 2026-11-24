@@ -52,6 +52,12 @@ def _subject_mismatch(left,left_label,right,right_label):
     return f'{left_label} subject_refs ({", ".join(sorted(a))}) do not overlap {right_label} subject_refs ({", ".join(sorted(b))}); evidence about one resolved subject cannot silently support another'
 
 
+# Said where it is needed, so a model that hits one of these checks can fix it in one step.
+EVIDENCE_FIX=(' To support a finding, a source needs how it was obtained and what was relied on: save it with '
+              'scripts/persist_research_bundle.py (acquisition_method such as uploaded_document or direct_page_read, plus '
+              'captured_text), or keep the finding as status candidate.')
+
+
 def _capture_quality(src):
     ev=_evidence_ext(src)
     status=ev.get('capture_status')
@@ -150,7 +156,7 @@ def evidence_errors(business_id):
             if mismatch: errors.append(mismatch)
             ok,mode=_capture_quality(src)
             if not ok:
-                errors.append(f'{oid} relies on source {ref} without directly acquired/reproducible evidence (evidence={mode}); search/snippet discovery or model-written text is not sufficient support')
+                errors.append(f'{oid} relies on source {ref} without directly acquired/reproducible evidence (evidence={mode}); search/snippet discovery or model-written text is not sufficient support'+EVIDENCE_FIX)
 
     for iid,ins in insights.items():
         if ins.get('status') not in {'supported','active'}: continue
@@ -168,12 +174,12 @@ def evidence_errors(business_id):
                 for source_ref in observations[ref].get('source_refs') or []:
                     if source_ref not in sources:continue
                     ok,mode=_capture_quality(sources[source_ref])
-                    if not ok:errors.append(f'{iid} relies on Observation {ref} with insufficient source {source_ref} (evidence={mode})')
+                    if not ok:errors.append(f'{iid} relies on Observation {ref} with insufficient source {source_ref} (evidence={mode})'+EVIDENCE_FIX)
             elif ref in sources:
                 mismatch=_subject_mismatch(ins,iid,sources[ref],ref)
                 if mismatch: errors.append(mismatch)
                 ok,mode=_capture_quality(sources[ref])
-                if not ok: errors.append(f'{iid} directly relies on source {ref} without directly acquired/reproducible evidence (evidence={mode})')
+                if not ok: errors.append(f'{iid} directly relies on source {ref} without directly acquired/reproducible evidence (evidence={mode})'+EVIDENCE_FIX)
             elif ref in insights:
                 warnings.append(f'{iid} is supported by another Insight {ref}; ensure the upstream support chain remains valid')
         if not supporting_obs and not any(link.get('ref') in sources for link in links):

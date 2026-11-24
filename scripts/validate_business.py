@@ -152,6 +152,46 @@ def _validate_business(business_id,require_context=False):
     return errors,warnings,dict(sorted(counts.items()))
 
 
+def _put_back(files):
+    for path,data in files.items():
+        if data is None:path.unlink(missing_ok=True)
+        else:path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(data)
+
+
+def only_new_problems(errors,before,recheck):
+    """Split `errors`, found after a change, into those the change introduced and those that were already there.
+
+    `before` maps each changed file to its earlier bytes (None if it did not exist); `recheck` returns the errors for the
+    current files. Only problems a change introduced should refuse it. Problems the business already had, such as records
+    an older AURA accepted before a check was tightened, would otherwise block every later save and correction. When the
+    change introduced a problem, its files are left as they were before it. The earlier state is checked only when
+    something fails, so a clean save costs no more than before."""
+    if not errors:return [],[]
+    before={Path(path):data for path,data in before.items()}
+    after={path:(path.read_bytes() if path.exists() else None) for path in before}
+    _put_back(before)
+    already=collections.Counter(recheck());introduced=[];existing=[]
+    for e in errors:
+        if already[e]:already[e]-=1;existing.append(e)
+        else:introduced.append(e)
+    if not introduced:_put_back(after)
+    return introduced,existing
+
+
+def validate_change(business_id,before,require_context=False):
+    """Validate the business after a change to the files in `before`: (introduced, warnings, counts, existing)."""
+    errors,warnings,counts=validate_business(business_id,require_context)
+    introduced,existing=only_new_problems(errors,before,lambda:validate_business(business_id,require_context)[0])
+    return introduced,warnings,counts,existing
+
+
+def existing_problems(existing):
+    """How a write helper reports problems that were already there, so the next step is clear without blocking this one."""
+    return {'count':len(existing),'first':existing[:3],
+            'note':'These were in the business before this change and did not block it. Fixing them is separate work; '
+                   'mention them to the person if they matter to what they asked.'}
+
+
 def main():
     ap=argparse.ArgumentParser(description='Validate one active AURA organization instance. This is not release/distribution validation.')
     ap.add_argument('business_id');ap.add_argument('--require-context',action='store_true');a=ap.parse_args()

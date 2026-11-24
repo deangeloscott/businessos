@@ -9,7 +9,7 @@ from _common import organization_transaction
 import argparse,json
 from jsonschema import Draft202012Validator
 from _common import *
-from validate_business import validate_business
+from validate_business import validate_change
 from operating_knowledge import get_playbook
 
 
@@ -80,11 +80,16 @@ def complete_run(business_id,run_id,evidence=None,result_refs=None,decision_refs
         run['continuity']={'format_version':'2.0','purpose':'organizational_work_receipt','state':'completed','method_type':method_type,'method_ref':method_ref,'summary':final_summary,'evidence_refs':final_evidence,'result_refs':final_results,'decision_refs':final_decisions,'unresolved':final_unresolved,'completed_at':ts}
         schema_errors=_validate_run(run)
         if schema_errors:raise ValueError('Run schema invalid: '+'; '.join(schema_errors[:8]))
-        rp.write_text(json.dumps(run,indent=2)+'\n', encoding='utf-8');errors,warnings,counts=validate_business(business_id)
+        rp.write_text(json.dumps(run,indent=2)+'\n', encoding='utf-8');errors,_,_,_=validate_change(business_id,{rp:snapshot})
         if errors:raise ValueError('active business validation is not clean:\n- '+'\n- '.join(errors[:12]))
     except Exception:
         rp.write_bytes(snapshot);raise
-    return {'run_id':run_id,'status':'completed','method_type':method_type,'method_ref':method_ref,'continuity':run['continuity'],'validation':{'errors':0,'warnings':warnings,'canonical_object_counts':counts},'rule':'This receipt references material continuity one-way. It does not mutate canonical results or certify Playbook/Workflow conformance, external execution, authorization, production readiness, or business outcomes.'}
+    # Floor models have reported a closed receipt and a clean records check as "verified" work, so say plainly what this
+    # shows and leave out counts that read like a score.
+    return {'run_id':run_id,'status':'completed','method_type':method_type,'method_ref':method_ref,'continuity':run['continuity'],
+            'what_this_shows':'The receipt is closed with the summary you gave, its references exist, and the business records '
+                              'are still valid. Nothing here looked at the work itself: describe the work by what was actually '
+                              'done and checked, not by this receipt.'}
 
 
 def main():

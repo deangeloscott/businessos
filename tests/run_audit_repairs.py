@@ -75,13 +75,13 @@ def main():
             assert current['version']==current['business_role']=='3','A successful concurrent update was lost'
 
             # A failed writer must finish rollback before another writer commits.
-            entered=threading.Event();release=threading.Event();real_validate=memory.validate_business
+            entered=threading.Event();release=threading.Event();real_validate=memory.validate_change
             def validation(*args,**kwargs):
                 if threading.current_thread().name.startswith('failed-writer'):
                     entered.set();assert release.wait(10)
-                    return ['injected audit failure'],[],{}
+                    return ['injected audit failure'],[],{},[]
                 return real_validate(*args,**kwargs)
-            with patch.object(memory,'validate_business',side_effect=validation),ThreadPoolExecutor(1,thread_name_prefix='failed-writer') as first,ThreadPoolExecutor(1) as second:
+            with patch.object(memory,'validate_change',side_effect=validation),ThreadPoolExecutor(1,thread_name_prefix='failed-writer') as first,ThreadPoolExecutor(1) as second:
                 failed=first.submit(save,bid,ref,version='rejected')
                 assert entered.wait(10)
                 successful=second.submit(save,bid,ref,business_role='kept after rollback')

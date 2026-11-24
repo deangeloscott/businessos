@@ -223,16 +223,16 @@ def restore(bid,ident,expected):
             if not current and saved.get('business_id')==bid:
                 from _common import object_index
                 from canonical_store import write_canonical
-                from validate_business import validate_business
+                from validate_business import validate_change
                 if saved.get('object_type')=='Business' or saved.get('id') in object_index(bid):raise ValueError('This record already exists or cannot be restored here.')
                 try:
                     write_canonical(saved,path)
-                    errors,warnings,counts=validate_business(bid)
+                    errors,warnings,counts,existing=validate_change(bid,{path:None})
                     if errors:raise ValueError('This record cannot be restored until its references are available. Restore its related records first.')
                 except Exception:
                     path.unlink(missing_ok=True)
                     raise
-                return {'path':row['path'],'revision':revision(path),'restored':True,'validation':{'status':'clean','warnings':warnings[:5]}}
+                return {'path':row['path'],'revision':revision(path),'restored':True,'validation':{'status':'clean' if not existing else 'no new problems','warnings':warnings[:5]}}
             if not current or saved.get('id')!=current.get('id') or saved.get('business_id')!=bid:
                 raise ValueError('Restore this business record through its business editor so its references can be reviewed.')
             content_fields={k:v for k,v in saved.items() if k not in MECHANICAL_FIELDS}

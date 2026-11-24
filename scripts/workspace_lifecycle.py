@@ -14,7 +14,7 @@ def archived(obj):
 def change(bid, ident, action):
     from _common import object_index, organization_transaction, now, write_json_atomic
     from canonical_store import validate_canonical, write_canonical
-    from validate_business import validate_business
+    from validate_business import validate_change
 
     @organization_transaction
     def apply(bid):
@@ -39,9 +39,10 @@ def change(bid, ident, action):
         validate_canonical(obj['object_type'],changed)
         from workspace_history import capture
         capture(row[1],bid,'Before '+action)
+        with open(row[1],'rb') as stream:previous=stream.read()
         try:
             write_canonical(changed,row[1],allow_update=True)
-            errors,_,_=validate_business(bid)
+            errors,_,_,_=validate_change(bid,{row[1]:previous})
             if errors:raise ValueError('This saved item needs correction before its archive state can change.')
         except Exception:
             write_json_atomic(row[1],obj)
