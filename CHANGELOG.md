@@ -1,6 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.7.0 Alpha — 2026-11-24
+
+- **Steadier and safer.** One AURA runs at a time, so two copies no longer overwrite each other's settings. Stop can't freeze AURA. Backups take seconds and no longer block the rest of AURA. Unreadable settings are kept instead of overwritten. A gap that let a hidden second command through AURA's helper pre-approval is closed.
+- **Scheduled tasks for every app.** Claude Code, Codex, OMP and Pi tasks run on the computer's own scheduler, checked for real on Windows and on Linux with systemd timers, and **Remove from this computer** takes them away in one step.
+- **Teaching AURA works the first time.** Correcting a fact you told AURA updates it in one step. "Needs you" items say what would settle them, with **Work on this with my AI** and **Done**.
+- **Usable by everyone.** Readable contrast in every style, accent and mode; touch targets of at least 44px; visible keyboard focus; motion that stops with reduced motion.
 
 - **Remove AURA from this computer, in one step.** There is no installer, so deleting the AURA folder is the uninstall; its tasks on the computer's scheduler, starting at sign-in and the wake-up stayed behind. Settings → Startup & updates → **Removing AURA** now takes them away after one confirmation, says what it removed, and offers Quit AURA. Your workspace, and tasks your AI apps keep in their own schedulers, stay. On Windows, an empty AURA folder in Task Scheduler was read as "couldn't read the scheduler", so `remove-all` failed right after removing the last task, and clearing a wake-up that was already gone reported a failure ("The system wake-up could not be scheduled").
 - **A shorter first run.** "A quick look around" and "You're ready" are now one closing screen: the welcome, then **Help me get started** or **Look around myself**, with the five places below for reading later.
