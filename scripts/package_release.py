@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 from _common import *
+import argparse
+import hashlib
 from pathlib import Path
 import json, os, subprocess, sys, tempfile, zipfile
 from package_edition import build_distribution
@@ -21,6 +23,10 @@ def run(root, rel, *args, env=None):
     )
 
 
+parser=argparse.ArgumentParser(description='Verify and package the platform-neutral release.')
+parser.add_argument('--output-dir',type=Path,default=ROOT.parent/'distributions')
+args=parser.parse_args()
+
 # Validate the committed source checkout before building the user artifact.
 run(ROOT,'scripts/generate_registry.py')
 run(ROOT,'scripts/validate_workspace.py')
@@ -33,7 +39,7 @@ run(ROOT,'qualification/self_test.py')
 # state, runtime state, and other non-user material before archiving it.
 result=build_distribution(
     edition_id='full',
-    output_dir=ROOT.parent/'distributions',
+    output_dir=args.output_dir,
     keep_folder=True,
 )
 zip_path=Path(result['zip']).resolve()
@@ -105,5 +111,8 @@ finally:
     subprocess.run([sys.executable,'-c',interface_probe,str(workspace)],cwd=product_root,env=consumer,check=True)
 
 print(json.dumps(result,indent=2))
+with zip_path.open('rb') as archive:
+    checksum=hashlib.file_digest(archive,'sha256').hexdigest()
+zip_path.with_name(zip_path.name+'.sha256').write_text(checksum+'  '+zip_path.name+'\n',encoding='utf-8')
 print('fresh release artifact validation passed')
 print('consumer external-workspace smoke test passed')

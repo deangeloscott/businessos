@@ -158,10 +158,11 @@ async function refresh(light=false,preserveDetails=light) {
     $('#new-chat').disabled=!state.business;
     $('#send').innerHTML=connection.connected?'Send <span>↑</span>':connection.mode==='copy'?'Copy request <span>↗</span>':'Connect AI <span>→</span>';
     const previousChoice=$('#agent-choice').value;
-    $('#agent-choice').innerHTML=connection.choices.length?connection.choices.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}${c.available?'':' — needs setup'}</option>`).join(''):'<option value="">No supported app found</option>';
+    const available=connection.choices.filter(c=>c.available);
+    $('#agent-choice').innerHTML=connection.choices.length?'<option value="">Choose an AI app</option>'+connection.choices.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}${c.available?'':' — needs setup'}</option>`).join(''):'<option value="">No supported app found</option>';
     if(connection.selected) $('#agent-choice').value=connection.selected;
     else if(previousChoice&&connection.choices.some(c=>c.id===previousChoice)) $('#agent-choice').value=previousChoice;
-    else $('#agent-choice').value=connection.choices.find(c=>c.available)?.id||connection.choices[0]?.id||'';
+    else $('#agent-choice').value=available.length===1?available[0].id:'';
     connectionChoice();
     $('#request').disabled=!state.business || state.navigating&&!state.openingNewChat;
     $('#send').disabled=!state.business || !state.hydrated || state.stopping;
@@ -396,16 +397,20 @@ function connectionChoice() {
   const choice=state.data.connection.choices.find(c=>c.id===$('#agent-choice').value), route=selectedRoute();
   const native=nativeConnection(choice?.id), models=catalogModels();
   $('#choose-agent').disabled=!choice?.available||state.busy||state.checkingConnections;
-  if($('#quick-connect'))$('#quick-connect').disabled=$('#choose-agent').disabled;
+  $('#quick-connect').hidden=$('#choose-agent').hidden=!choice?.available;
+  $('#quick-connect').disabled=$('#choose-agent').disabled;
+  $('#setup-default-note').hidden=!choice?.available;
+  $('#setup-app-help').hidden=!!choice;
+  $('#setup-app-help').className=state.data.connection.choices.some(c=>c.available)?'secondary':'primary';
   $('#connect-agent').disabled=state.busy||state.checkingConnections||state.catalogLoading||state.effortsLoading||!!state.modelError||(native?!route:!choice?.available);
   for(const id of ['model-fields','model-picker-controls','model-providers','favorite-model'])$('#'+id).hidden=!models.length;
   $('#favorite-model').hidden=!chosenModel();
   $('#refresh-models').hidden=!native;$('#refresh-models').disabled=state.catalogLoading||state.busy;
   $('#refresh-models').textContent=state.modelReload?'Reload page':state.modelError?'Try again':'Refresh';
   $('#model-app-name').textContent=choice?.name||'Your AI app';
-  $('#agent-help').textContent=!choice||!choice.available?'Let’s finish connecting '+(choice?.name||'your AI app')+'.':'';
+  $('#agent-help').textContent=choice&&!choice.available?'Set up '+choice.name+' to connect it here.':'';
   $('#connection-guide').hidden=!!choice?.available||!choice?.guide;
-  $('#connection-guide').innerHTML=choice?.guide?`<p>${esc(choice.guide[1])}</p><a class="text-button" href="${esc(choice.guide[0])}" target="_blank" rel="noopener noreferrer">Open ${esc(choice.name)} setup guide ↗</a><p class="small-note">When you’re signed in, click Check again below. If the app was just installed, reopen AURA so it can find the new command.</p>`:'';
+  $('#connection-guide').innerHTML=choice?.guide?`<p>${esc(choice.guide[1])}</p><a class="text-button" href="${esc(choice.guide[0])}" target="_blank" rel="noopener noreferrer">Open ${esc(choice.name)} setup guide ↗</a><p class="small-note">When you’re signed in, select Check again. Reopen AURA if the newly installed app is still missing.</p>`:'';
   $('#model-help').textContent=state.catalogLoading?'Finding your models…':state.effortsLoading?'Reading effort levels…':state.modelError||(!models.length&&native?(state.catalog?.unavailable[0]?`${choice.name}: ${state.catalog.unavailable[0].reason} Try again or go Back to choose another app.`:'No models found. Add a key, or go Back to choose an AI app.'):'');
   $('#model-help').hidden=!$('#model-help').textContent;
   $('#model-help').classList.toggle('error',!!state.modelError);$('#model-help').setAttribute('role',state.modelError?'alert':'status');
@@ -508,20 +513,28 @@ function openConnection(restart=false, step='welcome') {
 }
 function renderConnection() {
   const step=state.setupStep, ready=step==='ready', failed=step==='failed', checking=step==='checking';
-  const stages={welcome:[1,'Welcome to AURA'],connect:[2,'Connect your AI'],models:[3,'Models & favorites'],checking:[4,'Checking connections'],ready:[4,'You’re ready'],failed:[4,'Connection needs attention']};
+  const stages={welcome:[1,'Welcome to AURA'],connect:[2,'Connect your AI'],models:[3,'Models & favorites'],checking:[4,'Checking connections'],ready:[4,'Workspace ready'],failed:[4,'Connection needs attention']};
   const [,title]=stages[step]||stages.welcome;
   $('#setup-step').textContent=state.data?.onboarding?.seen&&!state.tour?'AI CONNECTIONS':'QUICK SETUP';  // first run vs. from Settings
   $('#connect-title').textContent=title;
   for(const section of ['welcome','connect','models'])$('#setup-'+section).hidden=step!==section;
   $('#setup-result').hidden=!['checking','ready','failed'].includes(step);
-  $('#setup-progress').textContent=checking?'Finishing setup…':ready?'':state.connectionChecks?.message||'Your AI connection needs attention. Go back to choose an app, or select Fix connection to try again.';
+  $('#setup-progress').textContent=checking?'Checking your AI connection…':state.connectionChecks?.message||'';
+  if(failed&&!$('#setup-progress').textContent)$('#setup-progress').textContent='Choose another app or check your connection again.';
   const checks=state.connectionChecks?.items||state.data.connection.apps||[];
   $('#app-connection-status').innerHTML=connectionStatusRows(state.checkingConnections?checks.map(c=>({...c,status:'checking',detail:'Checking…',checked_at:null})):checks);
   $('#app-connection-status').classList.toggle('many-apps',checks.length>2);
   $('#app-status-panel').hidden=!checks.length&&!state.connectionChecks?.message;
   $('#app-connection-message').hidden=!!checks.length||!state.connectionChecks?.message;
   $('#app-connection-message').textContent=state.connectionChecks?.message||'';
-  $('#setup-welcome-message').hidden=!ready;$('#setup-places').hidden=!ready;$('#welcome-model').hidden=!ready;$('#setup-progress').hidden=ready;
+  $('#setup-places').hidden=!ready;$('#welcome-model').hidden=!ready||!state.data.connection.connected;
+  $('#setup-progress').hidden=!$('#setup-progress').textContent;
+  $('#setup-workspace-location').textContent=state.data.workspace||'';
+  const signin=failed&&checks.find(c=>c.id===state.data.connection.selected&&c.signin_required);
+  const signInAction=$('#setup-signin');
+  signInAction.hidden=!signin||!signInCommand[signin.id];
+  signInAction.dataset.command=signin?signInCommand[signin.id]||'':'';
+  signInAction.textContent=signin?'Sign in to '+signin.name+' in terminal':'';
   $('#setup-progress').classList.toggle('setup-error',failed);
   // The closing screen: the AI starts the conversation, or the person looks around on their own.
   const starter=ready&&state.data.connection.connected;
@@ -531,7 +544,8 @@ function renderConnection() {
   $('#first-task').hidden=!starter;
   $('#first-task').disabled=state.busy;
   connectionChoice();
-  {const c=state.data.connection;$('#welcome-model').textContent=`Your requests will use ${modelDisplay(c.model)||c.name} · ${human(c.effort||'App default')}`;}
+  const connection=state.data.connection;
+  $('#welcome-model').textContent=connection.model?'Model for new requests · '+modelDisplay(connection.model):'New requests use your AI app’s default model.';
 }
 function connectionStatusRows(items) {
   return items.map(c=>`<div class="connection-status-row"><span class="connection-status-icon ${c.status==='ready'?'ready':c.status==='error'?'error':'unchecked'}" aria-label="${c.status==='ready'?'Ready to send':c.status==='error'?'Needs attention':'Not checked'}">${c.status==='ready'?'✓':c.status==='error'?'✕':'○'}</span><span><strong>${esc(c.name)}</strong><small>${esc(c.detail||'Not checked yet.')}${c.checked_at?' · '+clockTime(c.checked_at):''}</small></span></div>`).join('');
@@ -553,7 +567,7 @@ async function checkConnections(showResult=true) {
 function finishSetup() {
   const connection=state.data.connection;
   const current=(state.connectionChecks?.items||connection.apps||[]).find(c=>c.id===connection.selected);
-  const ready=state.connectionChecks?.files_ready!==false&&(current?.status==='ready'||connection.mode==='copy');
+  const ready=state.connectionChecks?.files_ready!==false&&(['ready','unchecked'].includes(current?.status)||connection.mode==='copy');
   state.connectionChecks={...state.connectionChecks,ready,message:state.connectionChecks?.files_ready===false?state.connectionChecks.message:current?.detail||state.connectionChecks?.message};
   state.setupStep=ready?'ready':'failed';
   renderConnection();
@@ -1152,7 +1166,7 @@ async function render() {
   const view=state.view==='home'?$('#view'):$('#section-content');
   if(!state.business) {
     if(state.data.businesses.length){view.innerHTML='<div class="setup-intro"><h1>Choose your business above</h1><p>This workspace contains more than one business.</p></div>';return;}
-    view.innerHTML=state.data.workspace_missing?`<div class="setup-intro"><h1>Let’s find your workspace</h1><p>Its folder may have moved or its drive may be disconnected. Your saved selection is still here.</p><button class="primary" data-find-workspace="${esc(state.data.workspace)}">Find workspace folder…</button><button class="text-button" id="open-existing-start">See other saved work →</button></div>`:`<div class="setup-intro"><h1>What would you like to call your workspace?</h1><p class="muted">Your business name is a good place to start. You can change it later.</p><form id="${state.data.workspace_default?'create-workspace-form':'setup-form'}" class="form-grid"><label>Workspace or business name<input name="name" required maxlength="160" autocomplete="organization"></label><button class="primary">Get started →</button></form><div id="first-found-work"></div><button class="text-button" id="open-existing-start">Add or open a workspace →</button></div>`;
+    view.innerHTML=state.data.workspace_missing?`<div class="setup-intro"><h1>Let’s find your workspace</h1><p>Its folder may have moved or its drive may be disconnected. Your saved selection is still here.</p><button class="primary" data-find-workspace="${esc(state.data.workspace)}">Find workspace folder…</button><button class="text-button" id="open-existing-start">See other saved work →</button></div>`:`<div class="setup-intro"><h1>What would you like to call your workspace?</h1><p class="muted">Your business name is a good place to start. You can change it later.</p><form id="${state.data.workspace_default?'create-workspace-form':'setup-form'}" class="form-grid"><label>Workspace or business name<input name="name" required maxlength="160" autocomplete="organization"></label>${state.data.workspace_default?workspaceLocation(state.data.default_workspace_home):''}<button class="primary">Get started →</button></form><div id="first-found-work"></div><button class="text-button" id="open-existing-start">Add or open a workspace →</button></div>`;
     if(!state.data.workspace_missing){const found=await api('/api/workspaces');const existing=found.items.filter(w=>w.kind==='workspace');if(existing.length&&$('#first-found-work')){
       const found=$('#first-found-work');found.innerHTML='<h3>Continue saved work</h3><div class="card workspace-candidates">'+workspaceRows(existing.slice(0,5))+'</div>';
       if(state.data.workspace_default){const intro=$('.setup-intro'),form=intro.querySelector('form');intro.querySelector('h1').textContent='Pick up your saved work';intro.querySelector('p').textContent='Choose a workspace to preview before opening it.';intro.insertBefore(found,form);const create=document.createElement('details');create.innerHTML='<summary>Start a new workspace</summary>';form.replaceWith(create);create.append(form);}
@@ -1472,8 +1486,9 @@ async function syncScheduleOperation() {
 const scheduleListNote=app=>(state.data.connection.schedules_on_computer||[]).includes(app)?"This runs on this computer's own scheduler, while the computer is on. You can pause, change or delete it here.":(state.data.connection.schedules_listed||[]).includes(app)?'':`${state.data.connection.choices.find(c=>c.id===app)?.name||human(app)} keeps its own schedules, so this task won't appear in this list. Open that app to see or change it.`;
 function scheduleForm() {
   const current=state.data.connection,apps=current.choices.filter(c=>c.available&&nativeConnection(c.id));
-  const draft=state.scheduleDraft??={name:'',description:'',when:'',app:apps.some(c=>c.id===current.selected)?current.selected:apps[0]?.id||'',model:current.model||'',effort:current.effort||''};
-  return `<details id="schedule-add" class="schedule-add" ${state.scheduleAdding?'open':''}><summary class="secondary compact add-button">Add scheduled task</summary><form class="form-grid" id="schedule-form">${draft.collection_id?`<input type="hidden" name="collection_id" value="${esc(draft.collection_id)}"><p class="small-note">Save results to ${esc(draft.collection_name)}</p>`:''}<div class="schedule-basics"><label>Task name<input name="name" required maxlength="200" value="${esc(draft.name)}" placeholder="Weekly competitor check"></label><label>When?<input name="when" required maxlength="300" value="${esc(draft.when)}" placeholder="Every Monday at 9am"></label></div><label>What should it do?<textarea name="description" required rows="2" maxlength="20000" placeholder="Check competitor pricing and summarize meaningful changes.">${esc(draft.description)}</textarea></label><label>Business goal<select name="goal_id"><option value="">No business goal</option>${workspaceGoalRecords().map(g=>`<option value="${esc(g.ref)}" ${g.ref===draft.goal_id?'selected':''}>${esc(g.title)}</option>`).join('')}</select></label><label>Assistant<select name="assistant_id" id="schedule-assistant"><option value="">Unassigned</option>${(state.assistantProfiles||[]).map(p=>`<option value="${esc(p.id)}" ${p.id===draft.assistant_id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label><div class="schedule-run-with"><label>AI app<select name="app" id="schedule-app" required>${apps.map(c=>`<option value="${esc(c.id)}" ${c.id===draft.app?'selected':''}>${esc(c.name)}</option>`).join('')||'<option value="">Connect an AI app first</option>'}</select></label><label>Model<select name="model" id="schedule-model" required disabled><option>Finding models…</option></select></label><label id="schedule-effort-label" hidden>Effort<select name="effort" id="schedule-effort"></select></label></div><p id="schedule-create-status" class="small-note" role="status"></p><div class="inline-actions"><button class="primary" id="create-schedule" disabled>Create task →</button><button type="button" class="text-button" id="schedule-retry-models" hidden>Try again</button></div></form></details>`;
+  const draft=state.scheduleDraft??={name:'',description:'',when:'',app:'',model:current.model||'',effort:current.effort||''};
+  if(!apps.some(c=>c.id===draft.app))draft.app=apps.find(c=>c.id===current.selected)?.id||apps[0]?.id||'';
+  return `<details id="schedule-add" class="schedule-add" ${state.scheduleAdding?'open':''}><summary class="secondary compact add-button">Add scheduled task</summary><form class="form-grid" id="schedule-form">${draft.collection_id?`<input type="hidden" name="collection_id" value="${esc(draft.collection_id)}"><p class="small-note">Save results to ${esc(draft.collection_name)}</p>`:''}<div class="schedule-basics"><label>Task name<input name="name" required maxlength="200" value="${esc(draft.name)}" placeholder="Weekly competitor check"></label><label>When?<input name="when" required maxlength="300" value="${esc(draft.when)}" placeholder="Every Monday at 9am"></label></div><label>What should it do?<textarea name="description" required rows="2" maxlength="20000" placeholder="Check competitor pricing and summarize meaningful changes.">${esc(draft.description)}</textarea></label><label>Business goal<select name="goal_id"><option value="">No business goal</option>${workspaceGoalRecords().map(g=>`<option value="${esc(g.ref)}" ${g.ref===draft.goal_id?'selected':''}>${esc(g.title)}</option>`).join('')}</select></label><label>Assistant<select name="assistant_id" id="schedule-assistant"><option value="">Unassigned</option>${(state.assistantProfiles||[]).map(p=>`<option value="${esc(p.id)}" ${p.id===draft.assistant_id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label>${!apps.length?'<p>Connect an AI app to run this task. <button type="button" class="text-button" data-action="connect">Connect AI</button></p>':''}<div class="schedule-run-with" ${apps.length?'':'hidden'}><label>AI app<select name="app" id="schedule-app" required>${apps.map(c=>`<option value="${esc(c.id)}" ${c.id===draft.app?'selected':''}>${esc(c.name)}</option>`).join('')||'<option value="">Connect an AI app first</option>'}</select></label><label>Model<select name="model" id="schedule-model" required disabled><option>Finding models…</option></select></label><label id="schedule-effort-label" hidden>Effort<select name="effort" id="schedule-effort"></select></label></div><p id="schedule-create-status" class="small-note" role="status"></p><div class="inline-actions"><button class="primary" id="create-schedule" disabled ${apps.length?'':'hidden'}>Create task →</button><button type="button" class="text-button" id="schedule-retry-models" hidden>Try again</button></div></form></details>`;
 }
 async function loadScheduleModels(refresh=false) {
   const app=$('#schedule-app')?.value;if(!app)return;
@@ -1632,7 +1647,7 @@ document.addEventListener('click',event=>{
 async function syncUpdates(force=false) {
   if(state.closed||state.updateLoading)return;
   const editing=!state.allowUpdateRestart&&($('#request').value.trim()||Date.now()-(state.lastEdit||0)<30000);
-  const active=state.updates?.pending||['checking','downloading','verifying','ready','restarting'].includes(state.updates?.status);
+  const active=state.updates?.pending||['checking','preparing','downloading','verifying','ready','restarting'].includes(state.updates?.status);
   if(!force&&document.hidden&&!editing&&!active)return;
   const interval=active?2000:editing?4000:15000;
   if(!force&&Date.now()-(state.updatePolledAt||0)<interval)return;
@@ -1647,7 +1662,7 @@ async function syncUpdates(force=false) {
     renderUpdates();
     if(state.updates.status==='restarting')await reconnectUpdate();
   } catch(error) {
-    if(error.status===403||state.updates?.pending||['downloading','verifying','ready','restarting'].includes(state.updates?.status))await reconnectUpdate();
+    if(error.status===403||state.updates?.pending||active)await reconnectUpdate(state.updates?.status==='restarting');
   } finally {state.updateLoading=false;}
 }
 function renderUpdates() {
@@ -1655,10 +1670,21 @@ function renderUpdates() {
   const data=state.updates, signature=JSON.stringify(data);
   if(state.updateSignature===signature)return;
   state.updateSignature=signature;
-  const release=data.release, busy=['checking','downloading','verifying','restarting'].includes(data.status);
+  const release=data.release, busy=['checking','preparing','downloading','verifying','restarting'].includes(data.status);
+  const last=data.last_update, complete=last?.outcome==='updated'&&last.version===data.current;
   $('#update-current').textContent='Installed · '+data.current;
   $('#update-heading').textContent=release?'AURA '+release.version+' is available':data.checked_at?'You’re up to date':'AURA updates';
-  $('#update-message').textContent=data.message||(!data.checked_at?'Check for the latest version.':!release?'You have the latest published version.':'');
+  $('#update-message').textContent=data.waiting_for||data.message||(!busy&&!data.pending&&complete?'Updated to AURA '+data.current+'.':!data.checked_at?'Check for the latest version.':!release?'You have the latest published version.':'');
+  const progress=$('#update-progress'), size=$('#update-download-size'), transfer=data.progress;
+  progress.hidden=size.hidden=!transfer;
+  if(transfer){
+    progress.max=transfer.total;progress.value=transfer.bytes;
+    const mb=bytes=>(bytes/1e6).toLocaleString(undefined,{maximumFractionDigits:1});
+    size.textContent=mb(transfer.bytes)+' of '+mb(transfer.total)+' MB';
+  }
+  const timing=$('#update-timing'), phases={preparing:'Prepare',downloading:'Download',verifying:'Verify and unpack',ready:'Wait to restart',restarting:'Restart'};
+  timing.hidden=busy||data.pending||!last?.seconds||!Object.keys(last.seconds).length;
+  if(!timing.hidden)$('#update-seconds').textContent=Object.entries(last.seconds).filter(([phase])=>phases[phase]).map(([phase,seconds])=>phases[phase]+' · '+seconds+' s').join('  /  ');
   $('#update-message').classList.toggle('error',data.status==='error');
   $('#update-policy').value=data.policy;
   $('#update-policy').disabled=busy;
@@ -1673,7 +1699,7 @@ function renderUpdates() {
   }
   $('#update-install').hidden=!data.can_install;
   $('#update-install').disabled=busy||data.pending;
-  $('#update-install').textContent=data.pending?'Waiting until idle…':'Update now';
+  $('#update-install').textContent=data.pending?'Waiting to restart…':busy?'Updating…':(data.status==='error'||['failed','restored'].includes(last?.outcome))?'Try again':'Update now';
   $('#update-manual').textContent=data.manual_reason;
   $('#update-manual').hidden=!data.manual_reason;
   $('#update-later').disabled=busy;
@@ -1687,15 +1713,15 @@ async function openUpdates() {
   $('#more-dialog').close();$('#notification-dialog').close();
   await syncUpdates(true);
   const startup=await api('/api/startup');
-  details('Startup & updates',startupSection(startup)+`<section class="updates-section"><h3>Updates</h3><div id="update-panel"><div class="update-top"><span id="update-current" class="small-note"></span><button class="text-button" id="update-check">Check now</button></div><h4 id="update-heading"></h4><p id="update-message" role="status"></p><section id="update-release" hidden><ul id="update-highlights"></ul><details class="update-notes"><summary>Release notes</summary><pre id="update-notes"></pre><a id="update-release-link" target="_blank" rel="noopener noreferrer">View release ↗</a></details><p id="update-manual" class="small-note" hidden></p><div class="update-actions"><button class="primary" id="update-install" hidden>Update now</button><button class="secondary" id="update-later">Later</button><button class="text-button" id="update-skip">Skip this version</button></div></section><label class="update-policy">Updates<select id="update-policy"><option value="notify">Notify me</option><option value="auto">Update automatically when idle</option><option value="manual">Manual only</option></select></label><p class="small-note">Your workspace, connections, and custom views stay yours.</p><div class="update-bottom"><small id="update-checked"></small><button class="text-button" id="update-rollback" hidden>Use previous version</button><a href="https://github.com/deangeloscott/businessos/releases" target="_blank" rel="noopener noreferrer">Downloads ↗</a></div></div></section>`+removeSection(),'page');
+  details('Startup & updates',startupSection(startup)+`<section class="updates-section"><h3>Updates</h3><div id="update-panel"><div class="update-top"><span id="update-current" class="small-note"></span><button class="text-button" id="update-check">Check now</button></div><h4 id="update-heading"></h4><p id="update-message" role="status"></p><progress id="update-progress" aria-label="Update download progress" hidden></progress><p id="update-download-size" class="small-note" hidden></p><details id="update-timing" hidden><summary>Last update timing</summary><p id="update-seconds" class="small-note"></p></details><section id="update-release" hidden><ul id="update-highlights"></ul><details class="update-notes"><summary>Release notes</summary><pre id="update-notes"></pre><a id="update-release-link" target="_blank" rel="noopener noreferrer">View release ↗</a></details><p id="update-manual" class="small-note" hidden></p><div class="update-actions"><button class="primary" id="update-install" hidden>Update now</button><button class="secondary" id="update-later">Later</button><button class="text-button" id="update-skip">Skip this version</button></div></section><label class="update-policy">Updates<select id="update-policy"><option value="notify">Notify me</option><option value="auto">Update automatically when idle</option><option value="manual">Manual only</option></select></label><p class="small-note">Your workspace, connections, and custom views stay yours.</p><div class="update-bottom"><small id="update-checked"></small><button class="text-button" id="update-rollback" hidden>Use previous version</button><a href="https://github.com/deangeloscott/businessos/releases" target="_blank" rel="noopener noreferrer">Downloads ↗</a></div></div></section>`+removeSection(),'page');
   $('#detail').dataset.mode='page';$('#detail [data-close=detail]').hidden=true;state.updateSignature='';renderUpdates();
-  state.updates=await api('/api/updates',{action:'read'});renderNotifications();
+  state.updates=await api('/api/updates',{action:'read'});renderUpdates();renderNotifications();
 }
-async function reconnectUpdate() {
+async function reconnectUpdate(restarting=true) {
   if(state.updateReconnecting)return;
   state.updateReconnecting=true;
-  notice('AURA is restarting. Your workspace will reopen here.');
-  for(let i=0;i<180;i++) {
+  if(restarting)notice('AURA is restarting. Your workspace will reopen here.');
+  for(let i=0;i<(restarting?180:1);i++) {
     try {
       const response=await fetch('/',{cache:'no-store'}),page=await response.text();
       const next=page.match(/name="aura-token" content="([^"]+)"/);
@@ -1704,7 +1730,7 @@ async function reconnectUpdate() {
     await new Promise(resolve=>setTimeout(resolve,500));
   }
   state.updateReconnecting=false;
-  notice('AURA hasn’t reopened yet. Open it using your usual launcher, or check Updates again.',true);
+  if(restarting)notice('AURA hasn’t reopened yet. Open it using your usual launcher, or check Updates again.',true);
 }
 async function closeAura(action) {
   if(state.busy){notice('Finish or stop your current request before closing AURA.',true);return;}
@@ -2522,12 +2548,15 @@ async function previewWorkspace(path) {
     details(missing?'Find your workspace':'Choose saved work',workspaces.length?`<div class="card">${workspaceRows(workspaces)}</div>`:`<p>${esc(missing?.note||'No saved business workspace was found here. Choose another folder, or link these files from Files.')}</p><button class="secondary" data-find-workspace="${esc(missing?.path||'')}">Choose folder…</button>`);
   }
 }
+function workspaceLocation(home) {
+  return `<input id="new-workspace-parent" name="parent" type="hidden" value="${esc(home)}"><p class="small-note storage-path">Save in <span id="new-workspace-location">${esc(home)}</span></p><button type="button" class="text-button" data-storage-browse="new-workspace-parent">Choose another location…</button>`;
+}
 async function addWorkspace() {
   $('#more-dialog').close();
   const r=await api('/api/workspaces'), found=r.items.filter(w=>w.kind==='workspace'&&w.path!==r.current), missing=r.items.filter(w=>w.kind==='missing');
   details('Add or open a workspace',`<div class="organization-actions"><button class="secondary" id="organize-work">Bring existing work together</button><button class="text-button" id="aura-recovery">AURA Recovery</button></div><section class="workspace-open"><h3>Found on your computer</h3>${found.length?`<div class="card workspace-candidates">${workspaceRows(found)}</div>`:'<p>No other saved workspaces found yet.</p>'}${r.items.filter(w=>w.kind==='attention').map(w=>`<div class="connection-guide"><strong>${esc(w.name)} · Needs attention</strong><p>${esc(w.note)}</p><button class="text-button" data-organization-help="${esc(w.path)}">Ask your AI to help →</button></div>`).join('')}${missing.map(w=>`<p>${esc(w.name)} · Folder missing <button class="text-button" data-find-workspace="${esc(w.path)}">Find folder…</button></p>`).join('')}${r.notes.length?'<p class="small-note">Some folders could not be checked. Choose a folder to look further.</p>':''}
     <form id="open-workspace-form" class="form-grid"><label>Look in another folder<input id="open-workspace-path" name="path" required placeholder="Or paste its location"></label><div class="workspace-open-actions"><button type="button" class="secondary" data-storage-browse="open-workspace-path">Browse…</button><button class="secondary">Preview →</button></div></form></section>
-    <details class="workspace-create"><summary>Create a new workspace</summary><form id="create-workspace-form" class="form-grid"><label>Workspace name<input name="name" required maxlength="160" autocomplete="organization"></label><input id="new-workspace-parent" name="parent" type="hidden" value="${esc(r.default_home)}"><p class="small-note storage-path" id="new-workspace-location">${esc(r.default_home)}</p><button type="button" class="text-button" data-storage-browse="new-workspace-parent">Choose another location…</button><button class="primary">Create workspace →</button></form></details>
+    <details class="workspace-create"><summary>Create a new workspace</summary><form id="create-workspace-form" class="form-grid"><label>Workspace name<input name="name" required maxlength="160" autocomplete="organization"></label>${workspaceLocation(r.default_home)}<button class="primary">Create workspace →</button></form></details>
     ${state.business?`<details class="workspace-open"><summary>Change where this workspace is saved</summary><p>Copy and verify your saved work, then use the new folder. The original stays in place.</p><form id="relocate-workspace-form" class="form-grid"><label>New workspace folder<input id="relocate-workspace-path" name="path" required value="${esc(r.default_home+'/'+(state.data.businesses.find(b=>b.id===state.business)?.id||'my-workspace'))}"></label><button type="button" class="text-button" data-storage-browse="relocate-workspace-path">Choose folder…</button><button class="secondary">Copy & use this folder →</button></form><div id="relocate-progress" role="status"></div></details>`:''}`);
 }
 
@@ -2997,10 +3026,33 @@ document.addEventListener('click',event=>attempt(async()=>{
   if(button.dataset.action==='connect'||['connection','review-setup'].includes(button.id)) {state.tour=button.id==='review-setup';openConnection(true,state.tour?'welcome':button.id==='model-settings'?'models':'connect');}
   if(button.id==='setup-start'||button.id==='models-back'){if(button.id==='setup-start'){const p=await api('/api/profile',{display_name:$('#setup-display-name').value});state.data.profile=p;applyProfile(p);const described=$('#setup-business-description').value.trim();if(described!==(rows('Business')[0]?.data?.description||'')){await api('/api/save',{business:state.business,kind:'business',description:described});await refresh();}}state.setupStep='connect';renderConnection();}
   if(button.id==='connect-back'){state.setupStep='welcome';renderConnection();}
-  if(button.id==='quick-connect'){button.disabled=true;try{const kind=$('#agent-choice').value;await api('/api/connect',{kind,model:'',effort:'',workspace_write:true});if(kind!==state.data.connection.selected&&state.business){await api('/api/chats/new',{business:state.business});state.chat=[];state.chatMeta=null;showMessages();}const tour=state.tour||!state.data.onboarding.seen;state.connectionChecks=null;state.welcome=null;await refresh();await checkConnections(false);if(tour)finishSetup();else if(state.connectionChecks?.ready)$('#connect-dialog').close();else finishSetup();}finally{if(button.isConnected)button.disabled=false;}}
+  if(button.id==='quick-connect'){
+    const kind=$('#agent-choice').value,feedback=$('#setup-connect-feedback');
+    button.disabled=true;button.textContent='Connecting…';feedback.textContent='';
+    try{
+      await api('/api/connect',{kind,model:'',effort:'',workspace_write:true});
+      if(kind!==state.data.connection.selected&&state.business){await api('/api/chats/new',{business:state.business});state.chat=[];state.chatMeta=null;showMessages();}
+      const tour=state.tour||!state.data.onboarding.seen;
+      state.connectionChecks=null;state.welcome=null;
+      await refresh();await checkConnections(false);
+      if(tour||!state.connectionChecks?.ready)finishSetup();else $('#connect-dialog').close();
+    }catch(error){
+      feedback.textContent=humanError(error);
+    }finally{
+      button.textContent='Continue →';connectionChoice();
+    }
+  }
   if(button.id==='choose-agent'){state.setupStep='models';renderConnection();await loadAgentOptions();}
   if(button.id==='setup-result-back'){state.setupStep='connect';renderConnection();}
-  if(button.id==='setup-retry'){state.setupStep='connect';renderConnection();await checkConnections(false);if(state.connectionChecks?.ready)finishSetup();}
+  if(button.id==='setup-app-help')$('#setup-app-options a')?.focus();
+  if(button.id==='setup-for-now'){rememberSetupClosed();$('#connect-dialog').close();$('#request').focus();}
+  if(button.id==='setup-signin'&&button.dataset.command){
+    $('#connect-dialog').close();
+    try{await window.auraTerminal.open({command:button.dataset.command});}
+    catch(error){openConnection(false);throw error;}
+    notice('After signing in, reopen AI connections to check again or try your request.');
+  }
+  if(button.id==='setup-retry')await checkConnections(true);
   if(button.id==='check-connections')await checkConnections(false);
   if(button.id==='first-task'){
     await dismissSetup();
@@ -3134,7 +3186,7 @@ document.addEventListener('submit',event=>{
         await api('/api/workspaces/create',Object.fromEntries(data));
         for(const dialog of document.querySelectorAll('dialog[open]'))dialog.close();
         state.business='';state.hydrated=false;state.chat=[];state.chatMeta=null;state.newAssistantId=null;state.newAssistantName='';state.catalog=null;state.library=[];state.setupPrompted=new Set();
-        await refresh();notice('Your new workspace is ready.');return;
+        await refresh();notice('Workspace saved in '+state.data.workspace);return;
       }
       if(form.getAttribute('id')==='relocate-workspace-form') {
         rememberChatDraft();

@@ -891,6 +891,7 @@ class Workspace:
                 if not command or not shutil.which(command[0]):
                     row.update(status='error', detail='This AI app could not be found. Open or reconnect it, then try again.')
                     return row
+                verified = False
                 if kind in NATIVE_AGENTS:
                     model = settings.get('model', '')
                     if kind == 'hermes':
@@ -899,13 +900,16 @@ class Workspace:
                         options = self.agent_options(kind, refresh=True)
                         if not any(m['id'] == model for m in options['models']):
                             raise ValueError('The selected model is unavailable. Refresh the model choices and choose another one.')
-                    workspace_agents.check_signin(command, kind, model, workspace_root(), self.agent_environment(choice))
-                    row['detail'] = 'App responded. Ready to send a request.'
-                else:
-                    row['detail'] = 'Command found. Its response is checked when you send a request.'
-                row['status'] = 'ready'
+                        if options.get('signed_in') is False:
+                            row.update(status='error', signin_required=True, detail=f'Sign in to {row["name"]} to send requests.')
+                            return row
+                        verified = options.get('signed_in') is True
+                    verified = workspace_agents.check_signin(command, kind, model, workspace_root(), self.agent_environment(choice)) is True or verified
+                row.update(status='ready' if verified else 'unchecked',
+                           detail='Sign-in confirmed.' if verified else 'App found. Try a request to confirm access.')
             except (OSError, ValueError, subprocess.SubprocessError) as exc:
-                row.update(status='error', detail=setup_error(str(exc)))
+                reason = setup_error(str(exc))
+                row.update(status='error', detail=reason, signin_required=reason==SETUP_ERRORS['signin'])
             return row
         with ThreadPoolExecutor(max_workers=4) as pool:
             checks = list(pool.map(check, configured.items()))
@@ -916,7 +920,7 @@ class Workspace:
                     saved['check'] = row
             self.save_preferences()
         current = next((r for r in checks if r['id'] == self.connection_kind), None)
-        ready = not context_error and (bool(current and current['status'] == 'ready') or self.handoff)
+        ready = not context_error and (bool(current and current['status'] in {'ready', 'unchecked'}) or self.handoff)
         return {'items':checks, 'ready':ready, 'files_ready':not context_error,
                 'message':context_error or (current or {}).get('detail') or 'Choose an AI app to connect.',
                 'checked_at':time.time()}
@@ -1014,14 +1018,20 @@ class Workspace:
         return max(found,key=lambda j:j.get('created',0),default=None)
 
     def update_idle(self):
-        return not (time.time() < getattr(self, 'update_editing_until', 0) or
-                    bool(self.running_jobs()) or
-                    self.native_sessions.busy() or
-                    (self.schedule_job and self.schedule_job['status'] == 'working') or
-                    (self.organization_job and self.organization_job['status'] == 'working') or
-                    self.operation is not None or
-                    # Built-in terminals end with AURA (a running Hermes gateway, an app's own update): wait for them too.
-                    any(t['alive'] for t in __import__('workspace_terminal').TERMINALS.list()))
+        return not self.update_wait_reason()
+
+    def update_wait_reason(self):
+        if self.running_jobs() or self.native_sessions.busy():
+            return 'Waiting for your AI request to finish.'
+        if any(t['alive'] for t in __import__('workspace_terminal').TERMINALS.list()):
+            return 'Waiting for your open terminal to close.'
+        if (self.operation is not None or
+                (self.schedule_job and self.schedule_job['status'] == 'working') or
+                (self.organization_job and self.organization_job['status'] == 'working')):
+            return 'Waiting for workspace work to finish.'
+        if time.time() < getattr(self, 'update_editing_until', 0):
+            return 'Waiting while you write your draft.'
+        return ''
 
     def record_notification(self, job, chat):
         # One receipt per finished request; no transcript or credential content.
@@ -4055,12 +4065,15 @@ def main():
                               saved.get('failed_version') != updater.state()['release']['version']):
                             updater.start(updater.prepare)
                     with app.lock:
-                        if updater.apply_when_idle and updater.prepared and app.update_idle():
+                        if not running and updater.apply_when_idle and updater.prepared:
+                            updater.waiting_for = app.update_wait_reason()
+                            if updater.waiting_for:
+                                continue
                             if workspace_root().resolve().is_relative_to(PRODUCT_ROOT.resolve()):
                                 updater.cancel_pending()
                                 updater.status, updater.message = 'error', 'Move your workspace outside the app folder before updating. Use Add or open a workspace.'
                                 continue
-                            updater.status, updater.message = 'restarting', 'Restarting AURA…'
+                            updater.phase('restarting', 'Restarting AURA…')
                             app.update_restart = True
                             app.restart_business = getattr(app, 'update_business', args.business_id or '')
                             update_stop.set()

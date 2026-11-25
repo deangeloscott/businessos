@@ -372,7 +372,7 @@ time.sleep(30)
                 choices = [{'id':'pi','name':'Pi','argv':[sys.executable,'--print']},
                            {'id':'codex','name':'Codex','argv':None}]
                 import workspace_ui as check_view
-                with patch.object(check_view,'installed_agents',return_value=choices), patch.object(app,'agent_options',return_value={'models':[{'id':'openai/example'}]}), patch.object(workspace_agents,'check_signin',return_value=None):
+                with patch.object(check_view,'installed_agents',return_value=choices), patch.object(app,'agent_options',return_value={'models':[{'id':'openai/example'}]}), patch.object(workspace_agents,'check_signin',return_value=True):
                     checked = call('/api/connection-check?business=' + bid)
                     statuses = {r['id']:r['status'] for r in checked['items']}
                     assert statuses['pi']=='ready' and statuses['codex']=='error'

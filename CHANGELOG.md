@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **Clearer, smaller updates.** Settings shows download progress, what is holding up a restart, the outcome, and the time spent in each phase. A matching installed Python runtime can be reused for a smaller download.
+- **Smoother setup.** Choose where a new workspace goes, see when the selected AI app needs sign-in, and get to the AI connection directly from a scheduled task draft.
+
 ## 0.7.3 Alpha — 2026-11-25
 
 - **A clear message when your AI app isn't signed in.** Claude Code's "Not logged in" showed as "could not complete this request" plus "This chat was interrupted · Continue chat". It now says to sign in, with **Sign in in terminal**, and a request that ended with an explained problem is no longer called interrupted.

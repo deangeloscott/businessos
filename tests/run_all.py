@@ -6,7 +6,7 @@ the complete failure set. Qualification-harness self-tests run separately under
 `qualification/self_test.py` and are not counted as AURA product tests.
 """
 from pathlib import Path
-import os,subprocess,sys
+import os,subprocess,sys,time
 ROOT=Path(__file__).resolve().parents[1]
 env=dict(os.environ);env['PYTHONDONTWRITEBYTECODE']='1';env['PYTHONUTF8']='1'
 # Tests are the same from inside an AI app as outside one: drop session ids the app gives its commands.
@@ -98,7 +98,9 @@ failures=[]
 try:
     for rel in TESTS:
         print(f'== {rel} ==',flush=True)
+        started=time.monotonic()
         completed=subprocess.run([sys.executable,str(ROOT/rel)],cwd=ROOT,env=env)
+        print(f'   {time.monotonic()-started:.1f}s',flush=True)
         if completed.returncode!=0:failures.append((rel,completed.returncode))
 finally:shutil.rmtree(state,ignore_errors=True)
 if failures:

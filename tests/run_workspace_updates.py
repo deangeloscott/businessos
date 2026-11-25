@@ -70,6 +70,8 @@ with tempfile.TemporaryDirectory(prefix='AURA update boundary ') as directory:
     assert choice['version'] == '0.2.2' and choice['asset']
     assert updates.release_choice([published], '0.2.2', updates.native_platform()) is None
     assert not updates.release_choice([dict(published, assets=[])], '0.2.1', updates.native_platform())['asset']
+    assert updates.release_choice([published, dict(published, tag_name='v0.2.3', assets=[])],
+                                  '0.2.1', updates.native_platform())['version'] == '0.2.2'
     u = updates.Updater(current, base / 'state')
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=4) as pool:
@@ -108,6 +110,36 @@ with tempfile.TemporaryDirectory(prefix='AURA update boundary ') as directory:
     u.action('later')
     assert not u.apply_when_idle
     another.acquire_install(); another.cancel_pending()
+    # The release's optional app archive reconstructs the exact verified bundle.
+    app = base / 'app without runtime'
+    shutil.copytree(newer, app, ignore=shutil.ignore_patterns(updates.RUNTIME))
+    small = Path(shutil.make_archive(str(base / 'small'), 'zip', base, app.name))
+    fingerprint = updates.runtime_fingerprint(current)
+    full_name = choice['asset']['name']
+    suffix = '.zip' if os.name == 'nt' else '.tar.gz'
+    small_name = full_name[:-len(suffix)] + '-app-' + fingerprint + suffix
+    small_asset = {'name':small_name, 'digest':'sha256:' + updates.sha(small), 'size':small.stat().st_size,
+                   'browser_download_url':updates.DOWNLOADS + 'v0.2.2/' + small_name}
+    compact = updates.release_choice([dict(published, assets=[choice['asset'], small_asset])], '0.2.1', updates.native_platform())
+    assert compact['app_asset'] == small_asset
+    attempts = []
+    def bundle(request, **kwargs):
+        attempts.append(request.full_url)
+        return Download(small.read_bytes() if request.full_url.endswith(small_name) else raw)
+    u.save(release=compact)
+    with patch.object(updates, 'urlopen', side_effect=bundle), patch.object(updates.subprocess, 'run'):
+        u.prepare()
+    assert attempts == [small_asset['browser_download_url']], attempts
+    assert u.status == 'ready' and not updates.modified(u.prepared) and u.progress == {'bytes':small.stat().st_size,'total':small.stat().st_size}
+    assert set(u.timings) >= {'preparing','downloading','verifying'}
+    u.action('later')
+    attempts.clear()
+    u.save(release=dict(compact, app_asset=dict(small_asset, digest='sha256:'+'0'*64)))
+    with patch.object(updates, 'urlopen', side_effect=bundle), patch.object(updates.subprocess, 'run'):
+        u.prepare()
+    assert attempts == [small_asset['browser_download_url'], choice['asset']['browser_download_url']], attempts
+    assert u.status == 'ready' and not updates.modified(u.prepared)
+    u.action('later')
     # Corrupt bytes, edited defaults and incompatible schema never reach execution.
     bad = updates.Updater(current, base / 'bad'); bad.save(release=choice)
     tampered = dict(choice, asset=dict(choice['asset'], browser_download_url='https://github.com/other/repo/releases/download/payload'))

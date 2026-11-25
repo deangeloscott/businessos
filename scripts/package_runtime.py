@@ -164,8 +164,8 @@ def build(target, output, cache):
         readme.write_text('# Open AURA\n\nThis download includes Python and AURA’s required libraries. '
                           'Keep the folder together; no separate Python installation is needed.\n\n'
                           '**Open `'+launcher+'` to start.** On Linux, choose Run as Program, or run `./"'+launcher+'"`. '
-                          'The launcher opens your browser. Keep its terminal open while using the workspace; '
-                          'close it to stop the local view.\n\nConnect an existing AI app, or use the short setup guide to download one and sign in. '
+                          'The launcher opens your browser and AURA runs in the background. '
+                          'Use Settings → Quit AURA to stop it.\n\nConnect an existing AI app, or use the short setup guide to download one and sign in. '
                           'AI accounts, local models, and optional tools such as FFmpeg are not included.\n\n'
                           'macOS may require approving the downloaded launcher in Privacy & Security. '
                           'This release is not notarized; AURA does not disable OS protections.\n\n'
@@ -174,7 +174,7 @@ def build(target, output, cache):
                           'Back up or restore includes a file preview and an option to include linked files. '
                           'Keep your existing business data when upgrading; application files and account sign-ins remain separate.\n\n---\n\n'
                           +readme.read_text(encoding='utf-8'),encoding='utf-8')
-        from workspace_updates import schema_hash, write_integrity
+        from workspace_updates import RUNTIME, runtime_fingerprint, schema_hash, write_integrity
         metadata.update(update_protocol=1, workspace_schema_sha256=schema_hash(root))
         (root/'BUNDLED-RUNTIME.json').write_text(json.dumps(metadata,indent=2)+'\n',encoding='utf-8')
         write_integrity(root)
@@ -183,15 +183,30 @@ def build(target, output, cache):
         else:
             with tarfile.open(archive,'w:gz') as bundle:
                 bundle.add(root,arcname=name)
+        app_archive = output / (name + '-app-' + runtime_fingerprint(root) + suffix)
+        if suffix == '.zip':
+            with zipfile.ZipFile(app_archive, 'w', zipfile.ZIP_DEFLATED) as bundle:
+                for entry in sorted(root.iterdir()):
+                    if entry.name == RUNTIME:
+                        continue
+                    for file in [entry, *sorted(entry.rglob('*'))] if entry.is_dir() else [entry]:
+                        bundle.write(file, file.relative_to(temporary))
+        else:
+            with tarfile.open(app_archive, 'w:gz') as bundle:
+                bundle.add(root, arcname=name, filter=lambda member: None if member.name.split('/')[1:2] == [RUNTIME] else member)
     checksum = digest(archive)
     archive.with_name(archive.name+'.sha256').write_text(checksum+'  '+archive.name+'\n',encoding='utf-8')
+    app_checksum = digest(app_archive)
+    app_archive.with_name(app_archive.name+'.sha256').write_text(app_checksum+'  '+app_archive.name+'\n',encoding='utf-8')
     # Verify the final archive after extracting to another path with spaces,
     # not the build tree. The check deliberately removes Python from PATH.
-    report = subprocess.check_output([sys.executable,str(ROOT/'scripts/validate_runtime_bundle.py'),str(archive)],text=True)
+    report = subprocess.check_output([sys.executable,str(ROOT/'scripts/validate_runtime_bundle.py'),str(archive),
+                                      '--app-archive',str(app_archive)],text=True)
     verification = json.loads(report)
     verification['sha256'] = checksum
     (output/('bundle-report-'+target+'.json')).write_text(json.dumps(verification,indent=2)+'\n',encoding='utf-8')
-    return {'archive':str(archive),'sha256':checksum,'verification':verification}
+    return {'archive':str(archive),'sha256':checksum,'app_archive':str(app_archive),
+            'app_sha256':app_checksum,'verification':verification}
 
 
 if __name__ == '__main__':

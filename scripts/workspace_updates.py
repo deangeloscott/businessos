@@ -27,6 +27,8 @@ PAGE = 'https://github.com/' + REPOSITORY + '/releases'
 DAY = 86400
 MAX_DOWNLOAD = 800 * 1024 * 1024
 MAX_UNPACKED = 3 * 1024 * 1024 * 1024
+BUSY = {'preparing', 'downloading', 'verifying', 'restarting'}
+RUNTIME = '.aura-runtime'
 
 
 def read(path, default=None):
@@ -96,6 +98,18 @@ def modified(root):
     return False
 
 
+def runtime_fingerprint(root):
+    """Identify an installed runtime by its expected files and link targets."""
+    integrity = read(Path(root) / 'UPDATE-INTEGRITY.json')
+    entries = {}
+    for kind in ('files', 'links'):
+        records = integrity.get(kind, {})
+        if not isinstance(records, dict):
+            return ''
+        entries[kind] = {name: value for name, value in records.items() if name.startswith(RUNTIME + '/')}
+    return hashlib.sha256(json.dumps(entries, sort_keys=True).encode()).hexdigest() if entries['files'] else ''
+
+
 def safe_name(name):
     if ('\\' in name or ':' in name or PurePosixPath(name).is_absolute() or
             PureWindowsPath(name).is_absolute() or '..' in PurePosixPath(name).parts):
@@ -150,17 +164,23 @@ def release_choice(rows, current, target):
         name = 'viraltrac-aura-' + tag + '-' + target + suffix
         asset = next((a for a in row.get('assets', []) if a.get('name') == name), {})
         valid = verified_asset(asset, tag, target)
+        app = next((a for a in row.get('assets', []) if verified_asset(a, tag, target, app_only=True)), None)
         candidates.append({'version': tag[1:], 'tag': tag, 'notes': str(row.get('body') or '')[:18000],
                            'url': PAGE + '/tag/' + tag, 'asset': asset if valid else None,
-                           'published': row.get('published_at', '')})
-    return max(candidates, key=lambda r: version(r['version']), default=None)
+                           'app_asset': app, 'published': row.get('published_at', '')})
+    ready = [candidate for candidate in candidates if candidate['asset']]
+    return max(ready or candidates, key=lambda r: version(r['version']), default=None)
 
 
-def verified_asset(asset, tag, target):
+def verified_asset(asset, tag, target, app_only=False):
     if not re.fullmatch(r'v\d+\.\d+\.\d+', str(tag)):
         return False
-    name = 'viraltrac-aura-' + tag + '-' + target + ('.zip' if target.startswith('windows') else '.tar.gz')
-    return (asset.get('name') == name and re.fullmatch(r'sha256:[a-f0-9]{64}', asset.get('digest') or '') and
+    stem = 'viraltrac-aura-' + tag + '-' + target
+    suffix = '.zip' if target.startswith('windows') else '.tar.gz'
+    name = asset.get('name') or ''
+    matches = (re.fullmatch(re.escape(stem) + r'-app-[a-f0-9]{64}' + re.escape(suffix), name)
+               if app_only else name == stem + suffix)
+    return (bool(matches) and re.fullmatch(r'sha256:[a-f0-9]{64}', asset.get('digest') or '') and
             asset.get('browser_download_url') == DOWNLOADS + tag + '/' + name and
             isinstance(asset.get('size'), int) and 0 < asset['size'] <= MAX_DOWNLOAD)
 
@@ -211,6 +231,25 @@ class Updater:
         self.prepared = None
         self.apply_when_idle = False
         self.install_lock = None
+        self.progress = None
+        self.timings = {}
+        self.phase_started = None
+        self.waiting_for = ''
+
+    def phase(self, status, message=''):
+        with self.lock:
+            now = time.monotonic()
+            if self.phase_started is not None:
+                self.timings[self.status] = round(self.timings.get(self.status, 0) + now - self.phase_started, 1)
+            self.status, self.message = status, message
+            self.phase_started = now
+
+    def result(self, outcome, target):
+        seconds = dict(self.timings)
+        if self.phase_started is not None and self.status in BUSY | {'ready'}:
+            seconds[self.status] = round(seconds.get(self.status, 0) + time.monotonic() - self.phase_started, 1)
+        return {'outcome': outcome, 'version': target, 'seconds': seconds,
+                'download': self.progress, 'at': time.time()}
 
     def state(self):
         with self.lock:
@@ -227,6 +266,9 @@ class Updater:
             return {'current': current, 'policy': policy, 'checked_at': saved.get('checked_at'),
                     'release': release if available else None, 'status': self.status,
                     'message': self.message or saved.get('error', ''), 'prepared': bool(self.prepared),
+                    'progress': self.progress if self.status == 'downloading' else None,
+                    'waiting_for': self.waiting_for if self.status == 'ready' else '',
+                    'last_update': saved.get('last_update'),
                     'pending': self.apply_when_idle, 'notice': bool(visible),
                     'unread': bool(visible and saved.get('read_version') != release['version']),
                     'can_install': bool(not source and available and release.get('asset')),
@@ -261,14 +303,15 @@ class Updater:
             saved = read(self.path)
             if not force and (saved.get('policy') == 'manual' or time.time() - saved.get('attempted_at', saved.get('checked_at', 0)) < DAY):
                 return
-            if self.status in {'downloading', 'verifying', 'restarting'}:
+            if self.status in BUSY:
                 return
             self.status, self.message = 'checking', 'Checking for updates…'
         try:
             # Cache the latest published bundle for every installed copy on this
             # computer; each view compares it with its own running version.
             result = release_choice(fetch_json(RELEASES), '0.0.0', native_platform())
-            self.save(checked_at=time.time(), attempted_at=time.time(), release=result, error='')
+            changes = {'error': ''} if not saved.get('last_update') else {}
+            self.save(checked_at=time.time(), attempted_at=time.time(), release=result, **changes)
             self.message = ''
         except Exception:
             # Keep the last good result and back off rather than retrying on every poll.
@@ -289,7 +332,7 @@ class Updater:
 
     def action(self, action, policy=None):
         with self.lock:
-            if self.status in {'downloading', 'verifying', 'restarting'} and action != 'read':
+            if self.status in BUSY and action != 'read':
                 raise ValueError('Wait for the update to finish preparing before changing update settings.')
             state = self.state()
             release = state.get('release') or {}
@@ -311,7 +354,7 @@ class Updater:
                 if not state['can_install']:
                     raise ValueError(state['manual_reason'] or 'No newer update is available.')
                 self.start(self.prepare)
-                self.status, self.message = 'downloading', 'Downloading the update…'
+                self.status, self.message = 'preparing', 'Preparing the update…'
             elif action == 'rollback':
                 if not state['rollback']:
                     raise ValueError(state['manual_reason'] or 'The previous version is only available from your current updated app.')
@@ -326,10 +369,10 @@ class Updater:
                     raise ValueError('The previous app files have changed. Open that copy separately to review your changes.')
                 bundled_python(Path(previous))
                 self.acquire_install()
+                self.timings, self.progress, self.phase_started = {}, None, None
                 self.prepared = Path(previous)
                 self.apply_when_idle = True
-                self.status = 'ready'
-                self.message = 'The previous version will open when AURA is idle.'
+                self.phase('ready', 'The previous version will open when AURA is idle.')
             else:
                 raise ValueError('Choose an update action.')
             return self.state()
@@ -347,6 +390,7 @@ class Updater:
     def cancel_pending(self):
         self.apply_when_idle = False
         self.prepared = None
+        self.waiting_for = ''
         if self.status == 'ready':
             self.status, self.message = 'idle', ''
         if self.install_lock:
@@ -355,76 +399,117 @@ class Updater:
 
     def prepare(self):
         temporary = None
+        release = {}
+        with self.lock:
+            self.timings, self.progress, self.phase_started = {}, None, None
+            self.phase('preparing', 'Preparing the update…')
         try:
-            # One installer across independent windows/processes. OS releases locks on crash.
             self.acquire_install()
+        except (OSError, ValueError) as exc:
+            self.phase('error', str(exc) if isinstance(exc, ValueError) else 'AURA couldn’t open its update folder. Try again.')
+            return
+        try:
             state = self.state()
+            release = state['release'] or {}
             if not state['can_install']:
                 raise ValueError(state['manual_reason'] or 'There is no update to install.')
             if modified(self.product):
                 raise ValueError('Your app files have been customized. Download the new version separately to keep your changes.')
-            self.status, self.message = 'downloading', 'Downloading the update…'
-            release = state['release']
             asset = release['asset']
-            if release.get('tag') != 'v' + release['version'] or not verified_asset(asset, release.get('tag'), native_platform()):
+            tag, platform = release.get('tag'), native_platform()
+            if tag != 'v' + release['version'] or not verified_asset(asset, tag, platform):
                 raise ValueError('The saved release details are incomplete. Check for updates again.')
             self.store.mkdir(parents=True, exist_ok=True)
             if shutil.disk_usage(self.store).free < asset['size'] + MAX_UNPACKED:
                 raise ValueError('There isn’t enough free space. Free up 4 GB and try again.')
             temporary = Path(tempfile.mkdtemp(prefix='preparing-', dir=self.store))
-            archive = temporary / asset['name']
-            with urlopen(Request(asset['browser_download_url'], headers={'User-Agent': 'ViralTrac-AURA'}), timeout=60) as response, archive.open('wb') as output:
-                final = urlsplit(response.geturl())
-                if final.scheme != 'https' or final.hostname not in {'github.com', 'release-assets.githubusercontent.com', 'objects.githubusercontent.com'}:
-                    raise ValueError('The download did not come from GitHub’s release service.')
-                total = 0
-                while block := response.read(1024 * 1024):
-                    total += len(block)
-                    if total > asset['size'] or total > MAX_DOWNLOAD:
-                        raise ValueError('The download size does not match the release.')
-                    output.write(block)
-            self.status, self.message = 'verifying', 'Checking the download…'
-            if archive.stat().st_size != asset['size'] or 'sha256:' + sha(archive) != asset['digest']:
-                raise ValueError('The download could not be verified. Try downloading it again.')
-            unpacked = temporary / 'unpacked'
-            unpacked.mkdir()
-            target = extract(archive, unpacked)
-            metadata = read(target / 'BUNDLED-RUNTIME.json')
-            if (metadata.get('platform') != native_platform() or metadata.get('aura_version') != release['version'] or
-                    (target / 'VERSION').read_text(encoding='utf-8').strip() != release['version'] or modified(target)):
-                raise ValueError('The update does not match this computer or its release.')
-            if metadata.get('update_protocol') != 1 or metadata.get('workspace_schema_sha256') != schema_hash(target) or schema_hash(target) != schema_hash(self.product):
-                raise ValueError('This version needs a workspace upgrade. Back up your workspace and follow the release notes.')
-            interpreter = bundled_python(target)
-            probe = "import sys;from pathlib import Path;sys.path.insert(0,sys.argv[1]);import yaml,jsonschema,workspace_ui"
-            subprocess.run([str(interpreter), '-I', '-B', '-c', probe, str(target / 'scripts')],
-                           check=True, capture_output=True, timeout=45, **hidden_process())
+            app = release.get('app_asset') or {}
+            fingerprint = runtime_fingerprint(self.product) if app else ''
+            target = None
+            if (fingerprint and verified_asset(app, tag, platform, app_only=True) and
+                    '-app-' + fingerprint + '.' in app['name'] and app['size'] < asset['size']):
+                try:
+                    target = self.download(app, temporary / 'app')
+                    reuse_runtime(self.product, target, fingerprint)
+                    self.validate_target(target, release['version'], platform)
+                    asset = app
+                except (OSError, ValueError, subprocess.SubprocessError, tarfile.TarError, zipfile.BadZipFile):
+                    target = None
+            if target is None:
+                target = self.download(asset, temporary / 'full', fallback=self.progress is not None)
+                self.validate_target(target, release['version'], platform)
             versions = self.store / 'versions'
             versions.mkdir(exist_ok=True)
             if versions.is_symlink() or versions.resolve().parent != self.store.resolve():
                 raise ValueError('The update folder points somewhere else. Use Downloads to install this version separately.')
             destination = versions / (release['tag'] + '-' + native_platform() + '-' + asset['digest'][7:19] + '-' + str(time.time_ns()))
             target.rename(destination)
-            self.prepared = destination
-            self.apply_when_idle = True
             self.save(error='', failed_version=None)
-            self.status, self.message = 'ready', 'Update ready. AURA will restart when idle.'
+            with self.lock:
+                self.prepared = destination
+                self.phase('ready', 'Update ready. AURA will restart when idle.')
+                self.apply_when_idle = True
         except Exception as exc:
-            self.status = 'error'
             self.apply_when_idle = False
-            self.message = (str(exc) if isinstance(exc, ValueError) else
+            message = (str(exc) if isinstance(exc, ValueError) else
                 'The download was interrupted. Check your internet connection and try again.' if isinstance(exc, (URLError, TimeoutError)) else
                 'AURA couldn’t save the update. Check access to your local app folder and try again.' if isinstance(exc, PermissionError) else
                 'The downloaded app couldn’t start. Your current version is unchanged. Try again or use Downloads.' if isinstance(exc, subprocess.SubprocessError) else
                 'The update could not be prepared. Your current version is unchanged. Try again.')
+            self.phase('error', message)
             try:
-                self.save(error=self.message, failed_version=(self.state().get('release') or {}).get('version'))
-            except OSError:
+                self.save(error=message, failed_version=release.get('version'),
+                          last_update=self.result('failed', release.get('version')))
+            except (OSError, ValueError):
                 pass
             self.cancel_pending()
         finally:
             if temporary and not temporary.is_symlink() and temporary.resolve().parent == self.store.resolve():
                 shutil.rmtree(temporary, ignore_errors=True)
+
+    def download(self, asset, directory, fallback=False):
+        directory.mkdir()
+        archive = directory / asset['name']
+        with self.lock:
+            self.progress = {'bytes': 0, 'total': asset['size']}
+            self.phase('downloading', 'Downloading the full update…' if fallback else 'Downloading the update…')
+        with urlopen(Request(asset['browser_download_url'], headers={'User-Agent': 'ViralTrac-AURA'}), timeout=60) as response, archive.open('wb') as output:
+            final = urlsplit(response.geturl())
+            if final.scheme != 'https' or final.hostname not in {'github.com', 'release-assets.githubusercontent.com', 'objects.githubusercontent.com'}:
+                raise ValueError('The download did not come from GitHub’s release service.')
+            read_block = getattr(response, 'read1', response.read)
+            total = 0
+            while block := read_block(64 * 1024):
+                total += len(block)
+                if total > asset['size'] or total > MAX_DOWNLOAD:
+                    raise ValueError('The download size does not match the release.')
+                output.write(block)
+                with self.lock:
+                    self.progress = {'bytes': total, 'total': asset['size']}
+        self.phase('verifying', 'Verifying and preparing the update…')
+        if total != asset['size'] or 'sha256:' + sha(archive) != asset['digest']:
+            raise ValueError('The download could not be verified. Try downloading it again.')
+        unpacked = directory / 'unpacked'
+        unpacked.mkdir()
+        return extract(archive, unpacked)
+
+    def validate_target(self, target, release_version, platform):
+        metadata = read(target / 'BUNDLED-RUNTIME.json')
+        if (metadata.get('platform') != platform or metadata.get('aura_version') != release_version or
+                (target / 'VERSION').read_text(encoding='utf-8').strip() != release_version or modified(target)):
+            raise ValueError('The update does not match this computer or its release.')
+        if metadata.get('update_protocol') != 1 or metadata.get('workspace_schema_sha256') != schema_hash(target) or schema_hash(target) != schema_hash(self.product):
+            raise ValueError('This version needs a workspace upgrade. Back up your workspace and follow the release notes.')
+        interpreter = bundled_python(target)
+        probe = "import sys;from pathlib import Path;sys.path.insert(0,sys.argv[1]);import yaml,jsonschema,workspace_ui"
+        subprocess.run([str(interpreter), '-I', '-B', '-c', probe, str(target / 'scripts')],
+                       check=True, capture_output=True, timeout=45, **hidden_process())
+
+
+def reuse_runtime(current, target, fingerprint):
+    if (target / RUNTIME).exists() or (target / RUNTIME).is_symlink() or runtime_fingerprint(target) != fingerprint:
+        raise ValueError('The smaller update needs a different runtime.')
+    shutil.copytree(current / RUNTIME, target / RUNTIME, symlinks=True)
 
 
 def hidden_process():
@@ -460,6 +545,10 @@ def handoff(updater, workspace, business, port, extra):
     """Listener is closed first. Commit the launch pointer only after a healthy start."""
     import workspace_startup
     target, previous = Path(updater.prepared).resolve(), updater.product
+    target_version = (target / 'VERSION').read_text(encoding='utf-8').strip()
+    previous_version = (previous / 'VERSION').read_text(encoding='utf-8').strip()
+    if updater.status != 'restarting':
+        updater.phase('restarting', 'Restarting AURA…')
     startup = workspace_startup.status()
     def launch(root):
         interpreter = bundled_python(root)
@@ -499,19 +588,20 @@ def handoff(updater, workspace, business, port, extra):
         try:
             launch(previous)
             updater.save(error='The update could not open. Your previous version has been restored.',
-                         failed_version=(read(updater.path).get('release') or {}).get('version'))
+                         failed_version=(read(updater.path).get('release') or {}).get('version'),
+                         last_update=updater.result('restored', target_version))
         except Exception:
-            updater.save(error='AURA couldn’t reopen. Open your original download. Your workspace files are unchanged.')
+            updater.save(error='AURA couldn’t reopen. Open your original download. Your workspace files are unchanged.',
+                         last_update=updater.result('failed', target_version))
             raise
         finally:
             updater.cancel_pending()
         return
     saved = read(updater.path)
     roots = list(dict.fromkeys([*saved.get('launch_roots', []), str(previous), str(target)]))
-    target_version = (target / 'VERSION').read_text(encoding='utf-8').strip()
-    previous_version = (previous / 'VERSION').read_text(encoding='utf-8').strip()
     skipped_version = previous_version if version(target_version) < version(previous_version) else target_version
     updater.save(active=str(target), previous=str(previous), launch_roots=roots, error='',
+                 last_update=updater.result('rolled_back' if target_version != skipped_version else 'updated', target_version),
                  skipped=skipped_version)
     if startup.get('enabled'):
         try:

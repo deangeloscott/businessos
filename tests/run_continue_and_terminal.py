@@ -65,16 +65,22 @@ def main():
         pool.remove(held.id)
     # One waiting connection serves every terminal: it returns as soon as any of them has output.
     first=pool.start([sys.executable,'-c','import sys;print("one",flush=True);sys.stdin.readline();print("later",flush=True)'],str(ROOT))
-    second=pool.start([sys.executable,'-c','import time;time.sleep(30)'],str(ROOT))
+    second=pool.start([sys.executable,'-c','import time;print("second ready",flush=True);time.sleep(30)'],str(ROOT))
     assert terminals.wait_for(first,r'one',20)
-    quiet=pool.output_many({first.id:first.offset,second.id:second.offset},0)
-    assert quiet['items']==[],quiet
+    assert terminals.wait_for(second,r'second ready',20)
+    offsets={first.id:first.offset,second.id:second.offset}
     threading.Timer(.8,lambda:first.write('go'+chr(13))).start()
     began=time.monotonic();woke=pool.output_many({first.id:first.offset,second.id:second.offset,'gone-id':0},10)
     by={i['id']:i for i in woke['items']}
     assert by['gone-id']=={'id':'gone-id','gone':True},woke
-    woke=pool.output_many({first.id:first.offset,second.id:second.offset},10)
-    assert first.id in {i['id'] for i in woke['items']} and second.id not in {i['id'] for i in woke['items']},woke
+    first_text=''
+    while time.monotonic()-began<10 and 'later' not in terminals.plain(first_text):
+        woke=pool.output_many(offsets,max(0,10-(time.monotonic()-began)))
+        for item in woke['items']:
+            offsets[item['id']]=item['offset']
+            if item['id']==first.id:
+                first_text+=item['data']
+    assert 'later' in terminals.plain(first_text),first_text
     assert time.monotonic()-began<10,'a change in one terminal must wake the shared wait'
     pool.stop_all()
 

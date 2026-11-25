@@ -78,10 +78,17 @@ def rpc(command, calls, cwd, env=None, experimental=False):
 def options(command, cwd, env=None):
     models, settings = rpc(command, [('model/list', {'limit': 100}), ('config/read', {'includeLayers': False})], cwd, env)
     config = settings.get('config', {})
+    signin = None
     try:
         # Retain only the access type, never account identifiers or credentials.
-        account = rpc(command, [('account/read', {'refreshToken': False})], cwd, env)[0].get('account') or {}
+        identity = rpc(command, [('account/read', {'refreshToken': False})], cwd, env)[0]
+        account = identity.get('account') or {}
         access = {'chatgpt': 'signin', 'chatgptAuthTokens': 'signin', 'apiKey': 'api'}.get(account.get('type'), 'codex')
+        if (config.get('model_provider') or 'openai') == 'openai':
+            if access in {'signin', 'api'}:
+                signin = True
+            elif identity.get('requiresOpenaiAuth') is True and not (env if env is not None else os.environ).get('OPENAI_API_KEY'):
+                signin = False
     except (ValueError, OSError, subprocess.SubprocessError):
         access = 'codex'
     if (config.get('model_provider') or 'openai') != 'openai':
@@ -99,7 +106,7 @@ def options(command, cwd, env=None):
     default = config.get('model') or next((m['model'] for m in models.get('data', []) if m.get('isDefault')), '')
     return {'models': rows, 'model': default,
             'effort': config.get('model_reasoning_effort') or next((m['default_effort'] for m in rows if m['id'] == default), ''),
-            'sessions': True}
+            'sessions': True, 'signed_in': signin}
 
 
 def attach(product, workspace):

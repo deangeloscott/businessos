@@ -17,7 +17,7 @@ import zipfile
 from workspace_execution import Execution
 
 
-def validate(archive):
+def validate(archive, app_archive=None):
     archive = Path(archive).resolve()
     with tempfile.TemporaryDirectory(prefix='AURA relocated bundle ') as directory:
         base = Path(directory)
@@ -34,9 +34,21 @@ def validate(archive):
             raise ValueError('The bundle must contain one product folder.')
         root = roots[0]
         metadata = json.loads((root/'BUNDLED-RUNTIME.json').read_text(encoding='utf-8'))
-        from workspace_updates import modified, schema_hash
+        from workspace_updates import extract, modified, reuse_runtime, runtime_fingerprint, schema_hash, sha
         assert metadata['update_protocol'] == 1 and metadata['workspace_schema_sha256'] == schema_hash(root)
         assert not modified(root), 'The final bundled files must match their update integrity manifest'
+        app_verification = None
+        if app_archive:
+            app_archive = Path(app_archive).resolve()
+            fingerprint = runtime_fingerprint(root)
+            assert fingerprint and '-app-' + fingerprint + '.' in app_archive.name
+            destination = base / 'app-only'
+            destination.mkdir()
+            app = extract(app_archive, destination)
+            assert (app/'UPDATE-INTEGRITY.json').read_bytes() == (root/'UPDATE-INTEGRITY.json').read_bytes()
+            reuse_runtime(root, app, fingerprint)
+            assert not modified(app), 'The smaller bundle and installed runtime must reconstruct the complete app'
+            app_verification = {'name':app_archive.name,'sha256':sha(app_archive),'runtime':fingerprint}
         interpreter = root/metadata['interpreter']
         env = dict(os.environ)
         env.pop('SSL_CERT_FILE', None)
@@ -135,7 +147,7 @@ print(json.dumps({'python':sys.version.split()[0], 'tcl':tkinter.Tcl().eval('inf
                                    text=True, encoding='utf-8', timeout=120)
             if proof.returncode:
                 raise ValueError('Native updater checks failed:\n' + (proof.stdout + proof.stderr)[-8000:])
-        return {'platform':metadata['platform'],'aura_version':metadata['aura_version'],
+        return {'platform':metadata['platform'],'aura_version':metadata['aura_version'],'app_update':app_verification,
                 'python_version':native['python'],'tcl_version':native['tcl'],
                 'relocated_path_with_spaces':True,'system_python_removed_from_path':True,
                 'isolated_libraries':True,'first_use_setup':'passed','local_interface':'passed',
@@ -149,5 +161,6 @@ print(json.dumps({'python':sys.version.split()[0], 'tcl':tkinter.Tcl().eval('inf
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('archive')
+    parser.add_argument('--app-archive')
     args = parser.parse_args()
-    print(json.dumps(validate(args.archive)))
+    print(json.dumps(validate(args.archive,args.app_archive)))

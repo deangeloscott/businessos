@@ -157,6 +157,7 @@ def check_signin(command, kind, model, cwd, env):
         status = None
     if result.returncode or status != 'ready':
         raise ValueError('Your AI app needs you to sign in. Open it, sign in, and try again.')
+    return True
 
 
 def check_transport(command, kind, cwd, env):

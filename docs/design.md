@@ -141,8 +141,11 @@ Check a new component in Modern and at least one retro style, in both modes.
 ## Checking the work
 
 - `node tools/ui-snapshots.mjs --business <id> --out <folder>` captures the main screens in every style, light and dark, at phone, tablet and desktop widths, with a gallery (`index.html`). Look through it before calling interface work done.
-- Walk through the six jobs in the running interface and fix whatever makes one slower or less clear.
-- `python tests/run_all.py` still passes.
-- Before a release, `python tests/real_apps_check.py --model claude=haiku --model codex=gpt-5.6-luna --effort high` runs the journeys only real apps break (connect, save in one app and find in another, stop, continue) at AURA's model floor: the Haiku / GPT-5.6-Luna class at High effort.
-- Before a release, reread `CONTEXT.md` and drop what models at that floor do well unprompted. Keep what only AURA can tell them.
+- During development, run the regressions for the changed behavior and walk through the affected job in the running interface.
+- When connection, chat, or cross-app behavior changes, use `python tests/real_apps_check.py --model claude=haiku --model codex=gpt-5.6-luna --effort high` for the affected journeys. Run the full product suite once in the release workflow.
+- When changing guidance, keep what only AURA can tell the AI. Drop instructions the model handles well on its own.
 - When `CONTEXT.md`, a prompt AURA sends, or a helper's reply text changes, run the same request once before and once after at the floor model on a sample workspace, and compare what the model did, not only what it said. One sentence can change it: a line naming a save helper once sent Haiku to re-save sources that were already saved.
+
+## Releasing AURA
+
+Prepare the version and its changelog entry, then push the matching `vX.Y.Z` tag. **Build and release AURA** runs the product gate and native builds in parallel, checks the complete asset set and publishes the verified prerelease from a draft. Run the same workflow manually for a build-only check. The Windows bundle job upgrades the previous public release and rolls back using a disposable workspace. Test reports and artifacts are available on the Actions run.
