@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.7.4 Alpha — 2026-11-25
 
 - **Clearer, smaller updates.** Settings shows download progress, what is holding up a restart, the outcome, and the time spent in each phase. A matching installed Python runtime can be reused for a smaller download.
 - **Smoother setup.** Choose where a new workspace goes, see when the selected AI app needs sign-in, and get to the AI connection directly from a scheduled task draft.
