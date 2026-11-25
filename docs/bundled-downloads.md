@@ -11,7 +11,7 @@ Choose the bundled download for your operating system and processor from the off
 | Linux x64: Intel/AMD Linux desktops using glibc | Open AURA.sh |
 | Linux ARM64: ARM Linux desktops using glibc | Open AURA.sh |
 
-The launcher opens the local workspace in your browser. Keep its terminal open while using this view; close the terminal to stop it. On Linux, choose **Run as Program**, or run `./"Open AURA.sh"`. These Linux builds target glibc systems, not Alpine/musl.
+The launcher starts AURA in the background and opens it in your browser; its window closes on its own once AURA answers, and shows what went wrong if AURA can't start. AURA keeps running after you close the browser tab. To stop it, choose **Quit AURA** in Settings. (`scripts/open_aura.py --foreground` keeps it attached to a terminal instead.) On Linux, choose **Run as Program**, or run `./"Open AURA.sh"`. These Linux builds target glibc systems, not Alpine/musl.
 
 Follow the short workspace/AI connection setup. If you do not have an AI app yet, use the download/sign-in links there. The interface can open before an AI is connected. An AI account, API access, or a separately configured local model is still needed to do AI work. Optional tools such as FFmpeg are obtained when a task needs them, rather than installed for everyone.
 

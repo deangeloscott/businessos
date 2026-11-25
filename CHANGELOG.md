@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **No window to keep open.** Opening AURA left a command window that had to stay open the whole time; closing it closed AURA without warning. **Open AURA** now starts AURA in the background, as starting at sign-in already did, opens it in your browser, and its window closes on its own. If AURA can't start, the window stays and shows why. Quit AURA in Settings stops it.
+
 ## 0.7.2 Alpha — 2026-11-24
 
 - **A shortcut to open AURA.** Settings → Startup & updates now offers **Show AURA in the Start menu** (Windows), **Add AURA to Applications** (Mac) or **Add AURA to the app menu** (Linux), beside "Start AURA when I sign in" and saved with it, so AURA opens without finding its folder. It keeps working after AURA updates itself, follows AURA to a new folder, and **Remove from this computer** removes it.

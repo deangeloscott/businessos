@@ -6,6 +6,43 @@ import runpy
 import sys
 
 
+def alive(pid):
+    """Whether the background AURA is still running (so a quick failure is reported at once, not after the wait)."""
+    if os.name == 'nt':
+        import ctypes
+        kernel = ctypes.windll.kernel32
+        handle = kernel.OpenProcess(0x1000, False, pid)  # query-only access
+        if not handle:return False
+        code = ctypes.c_ulong()
+        try:kernel.GetExitCodeProcess(handle, ctypes.byref(code))
+        finally:kernel.CloseHandle(handle)
+        return code.value == 259  # still running
+    try:return os.waitpid(pid, os.WNOHANG)[0] == 0
+    except ChildProcessError:return False
+
+
+def opened(workspace_startup, pid, wait=90):
+    """Wait for the AURA started in the background to answer (it opens the browser itself), then say so. If it
+    doesn't, show what it reported, so the person isn't left with nothing."""
+    import time
+    running, until, found = workspace_startup.RunningAura(Path(__file__).resolve().parents[1]), time.monotonic() + wait, None
+    while not found and time.monotonic() < until:
+        found = running.running(wait=1)
+        # A background AURA that has finished without answering failed, unless it handed over to one already open.
+        if not found and not alive(pid):found = running.running(wait=2);break
+    if found:
+        print('AURA is open in your browser (' + found['url'] + '). It keeps running when this window closes; '
+              'to stop it, choose Quit AURA in its Settings.', flush=True)
+        return 0
+    print("AURA didn't open. What it reported:", flush=True)
+    try:
+        lines = (workspace_startup.state_dir() / 'interface.log').read_text(encoding='utf-8', errors='replace').splitlines()
+        print('\n'.join(lines[-12:]) or '(nothing yet)', flush=True)
+    except OSError:
+        print('(nothing yet)', flush=True)
+    return 1
+
+
 def main():
     root = Path(__file__).resolve().parents[1]
     sys.path.insert(0, str(root / 'scripts'))
@@ -52,6 +89,17 @@ def main():
     if not any(a == '--workspace' or a.startswith('--workspace=') for a in sys.argv) and not os.environ.get('BUSINESSOS_WORKSPACE') and not os.environ.get('BUSINESSOS_WORKSPACE_CONFIG'):
         import workspace_catalog
         sys.argv += ['--workspace', str(workspace_catalog.launch_workspace(root))]
+    # A person double-clicking Open AURA gets a window that runs this. AURA itself runs in the background, as it does
+    # when it starts at sign-in, so closing that window doesn't close AURA; the window closes once AURA answers.
+    # Starts that are already in the background (sign-in, updates, restarts) pass --no-open and have no console.
+    # --foreground keeps the old behaviour, for running AURA from a terminal.
+    person = False
+    if '--foreground' in sys.argv:
+        sys.argv.remove('--foreground')
+    elif ('--no-open' not in sys.argv and '--background' not in sys.argv and
+          sys.stdout is not None and sys.stdout.isatty() and sys.stdin is not None and sys.stdin.isatty()):
+        person = True
+        sys.argv.append('--background')
     if '--background' in sys.argv:
         import workspace_startup
         import hashlib
@@ -64,10 +112,13 @@ def main():
                 # Resolve the existing file, not a merged virtual directory.
                 os.environ['AURA_STATE_DIR'] = str(preferences.resolve().parent)
         arguments = [a for a in sys.argv[1:] if a != '--background']
+        if person:print('Opening AURA…', flush=True)
         pid = workspace_startup.launch_background(
             [sys.executable, '-X', 'utf8', '-E', '-s', '-B', str(root / 'scripts/open_aura.py'), *arguments], root)
-        print('AURA is opening in the background (process ' + str(pid) + ').', flush=True)
-        return 0
+        if not person:
+            print('AURA is opening in the background (process ' + str(pid) + ').', flush=True)
+            return 0
+        return opened(workspace_startup, pid)
     # Clicking the launcher again opens the running view instead of starting
     # another copy. Explicit workspace_ui.py servers remain independent.
     if '--reuse' not in sys.argv:
