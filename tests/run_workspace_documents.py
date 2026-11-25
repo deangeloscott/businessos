@@ -6,7 +6,7 @@ from urllib.request import Request,urlopen
 from urllib.parse import urlencode
 from urllib.error import HTTPError
 from unittest.mock import patch
-import hashlib,json,os,subprocess,sys,tempfile,threading
+import base64,hashlib,json,os,subprocess,sys,tempfile,threading
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
 import workspace_documents as docs
@@ -27,6 +27,17 @@ def main():
             folder=root/'attachments/alpha/work';folder.mkdir(parents=True)
             source=folder/'Guide.md';original=b'\xef\xbb\xbf# First\r\n\r\nNotes.\r\n';source.write_bytes(original)
             app=Workspace(settings_file=base/'ui.json')
+            import workspace_chat_organization
+            project=workspace_chat_organization.change_project(app,'alpha',{'action':'create','name':'Paper reviews'})['project']
+            payload={'name':'Survey.csv','content':base64.b64encode(b'Name,Score\nA,1\n').decode(),'project':project['id']}
+            added=app.import_file('alpha',payload)
+            assert Path(added['path'])==folder.parent/'projects'/project['id']/'outputs'/'Survey.csv'
+            assert app.import_file('alpha',payload)==added
+            sibling=app.import_file('alpha',{**payload,'content':base64.b64encode(b'Name,Score\nB,2\n').decode()})
+            assert sibling['name']=='Survey (2).csv'
+            assert any(f['path']==added['ref'] for f in app.file_inventory('alpha',{'project':project['id']})['items'])
+            rejected(lambda:app.import_file('alpha',{**payload,'name':'../escape.csv'}))
+            rejected(lambda:app.import_file('beta',payload))
             # A restore may preserve both the length and timestamp of a replacement.
             record=root/'instances/alpha/context/business.json'
             previous_revision,_=app.record_snapshot('alpha')
@@ -148,6 +159,15 @@ def main():
                 payload={'business':'alpha','workspace':str(root),'path':ref,'expected_revision':docs.revision(source),'content':'HTTP save'}
                 request('/api/documents/save',{'Cookie':cookie},payload,expect=403)
                 auth={'X-Aura-Token':app.token,'Content-Type':'application/json'}
+                incoming={'business':'alpha','workspace':str(root),'name':'Browser export.txt','content':'c2F2ZWQ=','project':project['id']}
+                request('/api/files/import',{**auth,'Origin':'https://foreign.example'},incoming,expect=403)
+                request('/api/files/import',auth,{**incoming,'workspace':str(base/'other')},expect=400)
+                _,body=request('/api/files/import',auth,incoming)
+                imported=json.loads(body)
+                assert Path(imported['path']).read_bytes()==b'saved'
+                with patch.object(docs,'open_folder',return_value={'opened':True}) as reveal:
+                    request('/api/files/reveal',auth,{'business':'alpha','workspace':str(root),'path':imported['ref']})
+                    assert reveal.call_args.args[0]==Path(imported['folder'])
                 request('/api/documents/save',auth,{**payload,'workspace':str(base/'other')},expect=400)
                 request('/api/documents/save',{**auth,'Origin':'https://foreign.example'},payload,expect=403)
                 request('/api/documents/save',auth,payload)

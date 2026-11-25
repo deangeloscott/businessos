@@ -1744,6 +1744,9 @@ class Workspace:
             shown[-1]['status']=job['status']
             if job.get('trace_id'):shown[-1]['trace_id']=job['trace_id']
             if job.get('native_media'):shown[-1]['native_media']=job['native_media']
+            if job.get('saved_outputs'):
+                shown[-1]['saved_outputs']=job['saved_outputs']
+                shown[-1]['output_destination']=job['output_destination']
             if job['status']=='complete' and chat.get('source_file'):
                 chat['source_marker']=workspace_native_chats.marker(chat['source_file'])
             if job['status']=='complete' and not job.get('keep_warm'):
@@ -3122,9 +3125,35 @@ class Workspace:
 
     def document_save(self,bid,ref,data):
         path,writable,asset,managed=self.document_source(bid,ref,data.get('option',''))
-        result=workspace_documents.save(path,bid,data,writable,asset,track_source=not managed)
+        project=self.save_project(bid,data.get('project','')) if data.get('mode')=='copy' else None
+        result=workspace_documents.save(path,bid,data,writable,asset,track_source=not managed,project=project)
         self.read_cache.clear()
         return {**result,'workspace':self.workspace_path}
+
+    def save_project(self,bid,project_id):
+        if not project_id:return None
+        project=next((p for p in workspace_chat_organization.projects(self,bid) if p['id']==project_id),None)
+        if project is None:raise ValueError('That project is unavailable. Select it again.')
+        return project
+
+    def import_file(self,bid,data):
+        import base64
+        project=self.save_project(bid,data.get('project',''))
+        try:payload=base64.b64decode(data.get('content',''),validate=True)
+        except (ValueError,TypeError):raise ValueError('The file could not be read.') from None
+        result=workspace_documents.import_bytes(bid,data.get('name'),payload,project)
+        self.read_cache.clear()
+        return result
+
+    def saved_outputs(self,bid,chat_id,started_at):
+        found=[]
+        for ref,asset in asset_records(bid).items():
+            work=asset.get('extensions',{}).get('businessos',{}).get('work',{})
+            if work.get('last_saved_chat')!=chat_id or (workspace_usage.timestamp(asset.get('updated_at')) or 0)<started_at:continue
+            path=asset_path(bid,asset.get('location_reference'))
+            if path and path.is_file():
+                found.append({'ref':'asset/'+ref+'/'+path.name,'name':path.name,'path':str(path)})
+        return found
 
     def record_snapshot(self,bid):
         base=str(workspace_root()/'instances'/bid)
@@ -3766,7 +3795,7 @@ class Workspace:
             from workspace_native_requests import attachments
             native_images=attachments(selected_context['references'],protocol_kind)
             output_project=next((p for p in workspace_chat_organization.projects(self,bid) if p['name']==((chat or {}).get('project') or getattr(self,'_request_project',''))),None)
-            self._output_root=(Path(output_project['folder'])/'outputs' if output_project and output_project.get('folder') else workspace_root()/'attachments'/bid/'projects'/output_project['id']/'outputs' if output_project else workspace_root()/'attachments'/bid/'work')
+            self._output_root=workspace_documents.output_folder(bid,output_project)
             prompt = text if keep_warm_id is not None else self.request_text(bid, text, None if native else history, schedule_id, organization_id)
             assistant=getattr(self,'_assistant',None)
             if assistant:
@@ -3781,11 +3810,11 @@ class Workspace:
                     name=assistant['native_name'];prior=(chat or {}).get('native_profile') or (native_options.get('session') or {}).get('profile','default')
                     if (chat or {}).get('native_id') and prior!=name:raise ValueError('Start a new chat to use a different Hermes profile. This chat keeps its original profile and history.')
                     native_options['session']={**native_options.get('session',{}),'profile':name}
-            context_key=workspace_context.digest({'business':bid,'workspace':str(workspace_root().resolve()),'assistant':assistant,'working_preferences':self.profile().get('working_preferences',''),'focus':__import__('workspace_focus').context(bid),
+            context_key=workspace_context.digest({'business':bid,'workspace':str(workspace_root().resolve()),'output_folder':str(self._output_root),'assistant':assistant,'working_preferences':self.profile().get('working_preferences',''),'focus':__import__('workspace_focus').context(bid),
                 'guidance':[(str(p),p.stat().st_mtime_ns,p.stat().st_size) for p in (PRODUCT_ROOT/'AGENTS.md',PRODUCT_ROOT/'CONTEXT.md')]})
             reuse_context=native and chat and chat.get('native_id') and chat.get('aura_context')==context_key and not any((welcome,keep_warm_id is not None,schedule_id,organization_id)) and not text.lstrip().startswith('/')
             if reuse_context:
-                prompt=f'Selected AURA business: {bid}.\n\nUser request:\n'+text.strip()
+                prompt=f'Selected AURA business: {bid}. Save new outputs under {self._output_root} unless the person chooses another place.\n\nUser request:\n'+text.strip()
             context_checked_at=time.time()
             recent_context=workspace_context.recent_changes(self,bid,(chat or {}).get('context_checked_at',0)) if reuse_context else []
             if recent_context:
@@ -3804,6 +3833,9 @@ class Workspace:
             # is marked working, so a refusal leaves it ready to try again.
             command = list(self.agent['argv'])
             kind = protocol_kind
+            temporary_chat=native and os.environ.get('AURA_TRANSIENT_NATIVE_TEST')=='1'
+            if temporary_chat and kind not in {'codex','claude','pi','omp'}:
+                raise ValueError('Use a separate test profile for this AI app to keep its chat history isolated.')
             env = self.agent_environment()
             account = (chat or {}).get('account_id') if chat else getattr(self,'_request_account',None)
             if kind=='claude' and account:
@@ -3811,6 +3843,7 @@ class Workspace:
                 env.pop('ANTHROPIC_API_KEY',None);env.update(workspace_accounts.claude_env(account))
             job = {'id': new_id(12), 'business_id': bid, 'status': 'working', 'reply': '', 'activity': [],
                    'created': time.time(), 'updated': time.time(), 'progress': 'Starting your AI'}
+            job['output_destination']=output_project['name'] if output_project else 'Workspace files'
             if getattr(self,'_catch_up_from',None):job['catch_up_from']=self._catch_up_from
             job.update(references=selected_context['references'],inherited_references=inherited_context['references'],files=files or [],goal_id=goal_id or '')
             if context_notes:job['context_note']=' '.join(dict.fromkeys(context_notes))
@@ -3875,6 +3908,12 @@ class Workspace:
                 self.jobs.pop(old['id'],None);self.executions.pop(old['id'],None)
             self.jobs[job['id']]=job
             execution = self.execution = Execution()
+            execution.output_project=output_project
+            if native:
+                separate=not chat.get('native_id') and not native_spec and kind in {'codex','claude'}
+                prompt,execution.aura_instructions=workspace_chats.native_request(prompt,text,separate)
+                execution.aura_title=workspace_chats.short(self.connections.redact(chat['title']),80)
+                execution.temporary_chat=temporary_chat
             if not welcome and keep_warm_id is None:
                 import workspace_trace
                 execution.trace=workspace_trace.Recorder(job['id'],bid,self.connections.redact)

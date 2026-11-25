@@ -5,6 +5,7 @@ import subprocess
 import threading
 import time
 import os
+from functools import lru_cache
 from pathlib import Path
 import re
 from _process_errors import ErrorTail
@@ -20,6 +21,16 @@ def base_command(command):
         if flag in command:
             return command[:command.index(flag)]
     return list(command)
+
+
+@lru_cache(maxsize=16)
+def claude_can_name(command):
+    try:
+        result=subprocess.run([*command,'--help'],stdin=subprocess.DEVNULL,capture_output=True,
+                              text=True,encoding='utf-8',errors='replace',timeout=5,
+                              **({'creationflags':subprocess.CREATE_NO_WINDOW} if os.name=='nt' else {}))
+    except (OSError,subprocess.TimeoutExpired):return False
+    return result.returncode==0 and bool(re.search(r'(?m)^\s*(?:-n,\s*)?--name\s+<',result.stdout))
 
 
 class Metadata:
@@ -212,8 +223,7 @@ def message_text(value):
 
 def display_text(value):
     value=message_text(value)
-    if '\nUser request:\n' in value:
-        value=value.split('\nUser request:\n',1)[1]
+    value=workspace_chats.request_parts(value)[0]
     if value.startswith('Welcome me to my AURA workspace'):
         value='Set up my AURA workspace and suggest a useful next step.'
     return workspace_chats.clean(re.sub(r'(?m)^\s*AURA_SETUP[^\n]*','',value)).strip()
@@ -437,6 +447,7 @@ def _run(command, kind, cwd, env, prompt, native_id, model, effort, update, exec
     interactive=bool(execution and execution.interactive and kind in {'pi','omp','claude'})
     if kind in {'pi','omp'}:
         argv += ['--mode','rpc'] if interactive else ['--print','--mode','json']
+        if not native_id and getattr(execution,'temporary_chat',False):argv+=['--no-session']
         if native_id:argv += ['--session' if kind=='pi' else '--resume',session_reference(kind,native_id,env)]
         if kind=='omp':argv+=['--cwd',str(cwd)]
         argv=execution_command(argv,kind,model,effort)
@@ -445,6 +456,11 @@ def _run(command, kind, cwd, env, prompt, native_id, model, effort, update, exec
         if getattr(execution,'native_agent',''):argv+=['--agent',execution.native_agent]
         if interactive:argv += ['--input-format','stream-json','--permission-prompt-tool','stdio']
         if native_id:argv += ['--resume',native_id]
+        elif getattr(execution,'temporary_chat',False):argv+=['--no-session-persistence']
+        elif getattr(execution,'aura_title','') and claude_can_name(tuple(base_command(command))):
+            argv+=['--name',execution.aura_title]
+        if getattr(execution,'aura_instructions','') and not native_id and not extra:
+            argv+=['--append-system-prompt',execution.aura_instructions]
         # AURA's guidance and helpers live in the product folder. Claude Code otherwise asks to read
         # them at the start of every chat; its own option makes that folder reachable. Commands and
         # edits still follow Claude Code's permission mode.

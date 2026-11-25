@@ -3,7 +3,7 @@ from _common import *
 import json,shutil
 from generate_registry import main as generate_registry
 from validate_workspace import main as validate_workspace
-from process_plan import build_process_plan
+from process_plan import process_maps
 from find_playbooks import find_candidates as find_playbook_candidates
 from find_workflows import find_candidates as find_workflow_candidates
 from operating_knowledge import installed_playbooks,get_playbook
@@ -30,14 +30,11 @@ def _validate_distribution_product_local():
     for wid,workflow in reg.items():
         if workflow.get('type')!='workflow':errors.append(f'{wid} is not typed as Workflow')
 
-    map_paths=[]
-    if (ROOT/'core/process-map.json').exists():map_paths.append(ROOT/'core/process-map.json')
-    map_paths+=sorted((ROOT/'systems').glob('*/process-map.json'))
-    for mp in map_paths:
-        d=json.loads(mp.read_text(encoding='utf-8'))
-        for a in d.get('activities',[]):
-            try:build_process_plan(d['system'],a['id'])
-            except Exception as e:errors.append(f"Workflow knowledge {d['system']}/{a['id']}: {e}")
+    for system, activities in process_maps().items():
+        for activity, entry in activities.items():
+            workflow=reg.get(entry.get('entry_workflow'))
+            if not workflow or not (ROOT/workflow['path']).is_file():
+                errors.append(f"Workflow knowledge {system}/{activity}: missing entry Workflow {entry.get('entry_workflow')}")
 
     # Discovery is a bounded navigation aid, not semantic method selection.
     playbook_ids={p['id'] for p in installed_playbooks()}

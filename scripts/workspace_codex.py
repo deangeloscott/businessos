@@ -230,7 +230,7 @@ def history_turns(thread, native_id):
                 at=turn.get('startedAt')
                 if text.lstrip().startswith('<environment_context>') or (text.startswith('# AGENTS.md instructions for ') and '<environment_context>' in text):continue
                 reference=message_ref(text);observation={'request_id':reference,'state':'unfinished'}
-                if '\nUser request:\n' in text:text=text.split('\nUser request:\n',1)[1]
+                text=workspace_chats.request_parts(text)[0]
                 if text.startswith('Welcome me to my AURA workspace'):text='Set up my AURA workspace and suggest a useful next step.'
             elif item.get('type')=='agentMessage' and item.get('phase') in {None,'final_answer'}:
                 role='assistant';text=item.get('text','');at=turn.get('completedAt');reference=''
@@ -302,8 +302,8 @@ def history(command, cwd, native_id, env=None):
             aura_ref=message_ref(text) if role=='user' else ''
             if role=='user':observation={'request_id':aura_ref,'state':'unfinished'}
             elif role=='assistant' and observation['request_id'] and payload.get('phase')=='final_answer':observation['state']='complete'
-            if role == 'user' and '\nUser request:\n' in text:
-                text = text.split('\nUser request:\n', 1)[1]
+            if role == 'user':
+                text = workspace_chats.request_parts(text)[0]
                 if text.startswith('Welcome me to my AURA workspace'):
                     text = 'Set up my AURA workspace and suggest a useful next step.'
             candidate=workspace_chats.brief(text) if role=='assistant' else None

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.5 Alpha — 2026-11-25
+
+- **One place to find work.** Drop or add files in Files to save them in the current project or workspace. Finished chats show saved artifacts with **Open file** and **Show folder**.
+- **Readable native chats.** The first message leads with your request. Supported native naming and instruction options keep titles useful while retaining the original session for resume.
+- **Faster releases.** GitHub builds and checks the shared app once, then adds and verifies each platform's runtime in parallel.
+
 ## 0.7.4 Alpha — 2026-11-25
 
 - **Clearer, smaller updates.** Settings shows download progress, what is holding up a restart, the outcome, and the time spent in each phase. A matching installed Python runtime can be reused for a smaller download.

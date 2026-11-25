@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'scripts'))
 
 FIXTURE=r'''
 import json,sys,os
-kind=sys.argv[1];turn=0;approved=False;initializations=0
+kind=sys.argv[1];turn=0;approved=False;initializations=0;named=False
 def emit(v):print(json.dumps(v),flush=True)
 def finish():
  text=f'Turn {turn}, native PID {os.getpid()}, permission {approved}'
@@ -21,9 +21,15 @@ for line in sys.stdin:
  if kind=='codex':
   if op=='initialize':
    initializations+=1;assert initializations==1;emit({'id':i,'result':{}})
-  elif op=='thread/start':emit({'id':i,'result':{'thread':{'id':'native'}}})
+  elif op=='thread/start':
+   assert m['params']['developerInstructions']=='Fixture guidance'
+   emit({'id':i,'result':{'thread':{'id':'native'}}})
+  elif op=='thread/name/set':
+   assert m['params']=={'threadId':'native','name':'Message 1'}
+   named=True;emit({'id':i,'result':{}})
   elif op=='thread/resume':raise AssertionError('A live native thread must not be reloaded between messages')
   elif op=='turn/start':
+   assert named
    turn+=1;emit({'id':i,'result':{'turn':{'id':str(turn)}}})
    if approved:finish()
    else:emit({'id':'approval','method':'item/commandExecution/requestApproval','params':{'threadId':'native','availableDecisions':['acceptForSession','decline']}})
@@ -68,6 +74,7 @@ def main():
             def request(number,native_id=None,text=None):
                 text=text or 'Message '+str(number)
                 execution=Execution();execution.interactive=True;execution.connection={};result={}
+                execution.aura_title=text;execution.aura_instructions='Fixture guidance'
                 argv=[sys.executable,'-u',str(fixture),kind,'exec' if kind=='codex' else '--print']
                 def update(**v):updates.append(v)
                 def launch():

@@ -69,7 +69,7 @@ async function render(view){
     <div id="file-savebar" class="file-savebar" ${editing?'':'hidden'}>
       <label>Save to<select id="file-save-mode">
         ${info.writable&&!view.imported?'<option value="save">Original file</option>':`<option value="save" disabled>Original file (${view.imported?'keep original':'read-only'})</option>`}
-        <option value="version">New version</option><option value="copy">Workspace copy</option>
+        <option value="version">New version</option><option value="copy">${view.ctx.project?'Project copy':'Workspace copy'}</option>
       </select></label>
       <label id="file-name-field">File name<input id="file-save-name" maxlength="120" value="${esc(view.name)}"></label>
     </div>
@@ -218,7 +218,7 @@ async function save(view,imported=null){
   if(imported){view.imported=imported;view.dirty=true;imports.set(key(view),imported);}
   imported=imported||view.imported;
   try{
-    let data={business:view.ctx.business,workspace:view.ctx.workspace,path:view.ctx.ref,option:view.ctx.option||'',expected_revision:view.info.revision,mode:view.mode,...(view.mode!=='save'?{name:view.name}:{})};
+    let data={business:view.ctx.business,workspace:view.ctx.workspace,path:view.ctx.ref,option:view.ctx.option||'',expected_revision:view.info.revision,mode:view.mode,project:view.ctx.project||'',...(view.mode!=='save'?{name:view.name}:{})};
     data={...data,...await editedPayload(view,imported)};
     if(!live(view))return;
     const saved=await api(view,'/api/documents/save',data);if(!live(view))return;

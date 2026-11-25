@@ -6,6 +6,32 @@ import time
 
 
 PREFIX = 'AURA_CHAT_BRIEF_'
+REQUEST_CONTEXT = '\n\n<aura-request-context>\n'
+REQUEST_END = '\n</aura-request-context>'
+
+
+def native_request(prompt, user, separate=False):
+    """Keep the actual request first in hosts that preview the first message."""
+    suffix = '\nUser request:\n' + user.strip()
+    if not prompt.endswith(suffix) or not user.strip():
+        return prompt, ''
+    context = prompt[:-len(suffix)]
+    shared = ''
+    if separate:
+        # Editable preferences, evidence and project scope stay user context.
+        match = re.search(r"\nAURA's shared guidance[^\n]*\n<aura-context>\n(.*?)\n</aura-context>\n", context, re.S)
+        if match:
+            shared = match[1]
+            context = context[:match.start()] + '\n' + context[match.end():]
+    return user.strip() + REQUEST_CONTEXT + context.strip() + REQUEST_END, shared
+
+
+def request_parts(raw):
+    user, marker, context = raw.rpartition(REQUEST_CONTEXT)
+    if marker and context.endswith(REQUEST_END):
+        return user, context[:-len(REQUEST_END)]
+    context, marker, user = raw.partition('\nUser request:\n')
+    return (user, context) if marker else (raw, '')
 
 
 

@@ -79,6 +79,9 @@ def main():
             recovery.prepare(restored,bid,gateway['id'],unknown['recovery']['revision'],True)
             for kind in ('pi','omp','claude'):
                 prompt='AURA message reference: aaaaaaaaaaaaaaaa\nUser request:\nResearch'
+                import workspace_chats
+                prompt,_=workspace_chats.native_request(prompt,'Research')
+                assert prompt.startswith('Research\n') and workspace_chats.request_parts(prompt)[0]=='Research'
                 rows=[{'role':'user','content':prompt},{'role':'assistant','content':[{'type':'text','text':'Before a tool'}],'stopReason':'toolUse'}]
                 assert recovery.native_observation(rows,kind)['state']=='unfinished'
                 rows.append({'role':'assistant','content':[{'type':'text','text':'Final'}],'stop_reason':'end_turn'})

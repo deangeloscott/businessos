@@ -46,7 +46,7 @@ class ChatRun:
             if 'native_output' in values:
                 from workspace_native_requests import save_image
                 try:
-                    media=save_image(values.pop('native_output'),bid)
+                    media=save_image(values.pop('native_output'),bid,project=getattr(execution,'output_project',None))
                     values['native_media']=list({r['path']:r for r in [*job.get('native_media',[]),media]}.values())
                 except (OSError,ValueError) as error:
                     values.pop('native_output',None)
@@ -252,6 +252,13 @@ class ChatRun:
                 except Exception:pass
                 if chat:
                     if job['status']=='complete':
+                        try:
+                            job['saved_outputs']=app.saved_outputs(bid,chat['id'],job['created'])[:30]
+                            known={item['ref'] for item in job['saved_outputs']}
+                            for item in job.get('native_media',[]):
+                                if item['path'] not in known:
+                                    job['saved_outputs'].append({'ref':item['path'],'name':item['name']})
+                        except (OSError,ValueError):job['context_note']='Saved files could not be listed here. Check Files for this workspace.'
                         chat.pop('model_choice_pending',None)
                         if job.get('aura_context'):chat['aura_context']=job['aura_context']
                     uncertain=kind=='hermes' and job['status']=='stopped'

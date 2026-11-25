@@ -81,11 +81,14 @@ def inspect(path, writable=False, asset=None):
     return result
 
 
-def _asset(path, bid, source, version, lineage=None, existing=None):
+def _asset(path, bid, source, version, lineage=None, existing=None, project_id=''):
     root=workspace_root().resolve();location=path.relative_to(root).as_posix() if path.is_relative_to(root) else str(path)
     content={'asset_type':(existing or source or {}).get('asset_type','document' if path.suffix.lower() in TEXT|OFFICE|{'.pdf'} else 'image' if path.suffix.lower() in RASTER else 'file'),
              'business_role':(existing or source or {}).get('business_role',path.name),'location_reference':location,
              'version':str(version),'status':(existing or source or {}).get('status','draft')}
+    if project_id:
+        refs=((existing or {}).get('extensions') or {}).get('businessos',{}).get('work',{}).get('project_refs',[])
+        content['extensions']={'businessos':{'work':{'project_refs':list(dict.fromkeys([*refs,project_id]))}}}
     item={'content':content}
     if existing:item['object_ref']=existing['id']
     else:item['object_type']='Asset'
@@ -94,12 +97,67 @@ def _asset(path, bid, source, version, lineage=None, existing=None):
     return {**content,'id':saved['id']}
 
 
-def save(path,bid,data,writable=False,asset=None,track_source=True):
+def output_folder(bid, project=None):
+    workspace=workspace_root().resolve()
+    if project and project.get('folder'):
+        folder=Path(project['folder'])
+        if not folder.is_dir():
+            raise ValueError('The project folder is unavailable. Reconnect it before saving.')
+        return folder/'outputs'
+    base=workspace/'attachments'/bid
+    return base/'projects'/project['id']/'outputs' if project else base/'work'
+
+
+def import_bytes(bid, name, payload, project=None):
     from _common import business_transaction
-    with business_transaction(bid):return _save(path,bid,data,writable,asset,track_source)
+    from workspace_ui import asset_path, asset_records, private_path
+    relative=safe(name)
+    if len(relative.parts)!=1 or len(name)>200 or private_path(relative) or name.startswith('.'):
+        raise ValueError('Choose a regular file name for this workspace.')
+    if len(payload)>MAX_FILE:
+        raise ValueError('Choose a file up to 32 MB, or link it from Files.')
+    folder=unlinked(output_folder(bid,project))
+    with business_transaction(bid):
+        folder.mkdir(parents=True,exist_ok=True)
+        with destination_lock(folder/'aura-file-import'):
+            for number in range(1,1000):
+                name=relative.name if number==1 else f'{relative.stem} ({number}){relative.suffix}'
+                target=unlinked(folder/name)
+                try:
+                    output=target.open('xb')
+                except FileExistsError:
+                    if target.is_file() and target.stat().st_size==len(payload) and target.read_bytes()==payload:
+                        created=False
+                        break
+                else:
+                    try:
+                        with output:output.write(payload);output.flush();os.fsync(output.fileno())
+                    except BaseException:
+                        target.unlink(missing_ok=True)
+                        raise
+                    created=True
+                    break
+            else:raise ValueError('Choose a different file name.')
+            try:
+                existing=next((asset for asset in asset_records(bid).values() if asset_path(bid,asset.get('location_reference'))==target),None)
+                project_id=(project or {}).get('id','')
+                if existing and (not project_id or project_id in existing.get('extensions',{}).get('businessos',{}).get('work',{}).get('project_refs',[])):
+                    saved=existing
+                else:
+                    saved=_asset(target,bid,existing,(existing or {}).get('version','1'),existing=existing,project_id=project_id)
+            except Exception:
+                if created and target.is_file() and target.read_bytes()==payload:target.unlink()
+                raise
+    return {'ref':'asset/'+saved['id']+'/'+target.name,'name':target.name,'path':str(target),'folder':str(folder),
+            'destination':project['name'] if project else 'Workspace files'}
 
 
-def _save(path,bid,data,writable=False,asset=None,track_source=True):
+def save(path,bid,data,writable=False,asset=None,track_source=True,project=None):
+    from _common import business_transaction
+    with business_transaction(bid):return _save(path,bid,data,writable,asset,track_source,project)
+
+
+def _save(path,bid,data,writable=False,asset=None,track_source=True,project=None):
     path=Path(path);mode=data.get('mode','save')
     if not isinstance(mode,str) or mode not in {'save','version','copy'}:raise ValueError('Choose Save, Save new version, or Save a copy.')
     if not isinstance(data.get('expected_revision'),str) or not data['expected_revision']:raise ValueError('Reopen this file before saving.')
@@ -136,7 +194,7 @@ def _save(path,bid,data,writable=False,asset=None,track_source=True):
     if not payload and suffix not in TEXT:raise ValueError('The edited file is empty.')
     if len(payload)>MAX_FILE:raise ValueError('The edited file is larger than 32 MB.')
     root=workspace_root().resolve();owned=root/'attachments'/bid
-    parent=path.parent if path.is_relative_to(owned) else owned/'work'/'Edited files'
+    parent=output_folder(bid,project) if mode=='copy' and project else path.parent if path.is_relative_to(owned) else owned/'work'/'Edited files'
     if mode=='save':target=unlinked(path)
     else:
         label=data.get('name')
@@ -171,7 +229,7 @@ def _save(path,bid,data,writable=False,asset=None,track_source=True):
             else:
                 if not asset and track_source:asset=_asset(path,bid,None,'1')
                 version=str(int(asset['version'])+1) if mode=='version' and asset and str(asset.get('version','')).isdigit() else '1' if mode=='copy' else target.stem
-                saved=_asset(target,bid,asset,version,lineage=[asset['id']] if asset else None)
+                saved=_asset(target,bid,asset,version,lineage=[asset['id']] if asset else None,project_id=(project or {}).get('id',''))
         except Exception:
             # File and metadata form one user save. Restore the pre-save bytes
             # only if another program has not changed the result in the meantime.
@@ -204,6 +262,13 @@ def open_in(path,application):
         if os.name=='nt':os.startfile(str(path))
         else:subprocess.Popen(['open' if sys.platform=='darwin' else 'xdg-open',str(path)],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
     else:raise ValueError('Choose an available editor.')
+    return {'opened':True}
+
+
+def open_folder(path):
+    if not Path(path).is_dir():raise ValueError('This folder is unavailable.')
+    if os.name=='nt':os.startfile(str(path))
+    else:subprocess.Popen(['open' if sys.platform=='darwin' else 'xdg-open',str(path)],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
     return {'opened':True}
 
 

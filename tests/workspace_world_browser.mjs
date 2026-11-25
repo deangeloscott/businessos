@@ -96,6 +96,15 @@ try {
     const moving = await evaluate(`(()=>{const w=window.auraWorld,n=w.state().draws;w.bench(3);return w.state().draws-n;})()`);
     check(moving === 3, 'a frame that must be drawn is drawn');
   }
+  await evaluate(`document.querySelector('[data-view="files"]').click()`);
+  await until(`!!document.querySelector('#workspace-file-add')`, 'Files to open');
+  await evaluate(`(()=>{const dataTransfer=new DataTransfer();
+    dataTransfer.items.add(new File(['saved in the workspace'], 'browser-export-proof.txt', {type:'text/plain'}));
+    document.querySelector('#file-list').dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer}));})()`);
+  await until(`document.querySelector('#workspace-file-receipt')?.textContent.includes('browser-export-proof.txt') && !!document.querySelector('#workspace-file-receipt [data-reveal-file]')`, 'the file save receipt');
+  await until(`[...document.querySelectorAll('#file-list [data-file]')].some(file=>file.textContent.includes('browser-export-proof.txt'))`, 'the saved file to appear in Files');
+  await evaluate(`document.querySelector('#workspace-file-receipt [data-file]').click()`);
+  await until(`document.querySelector('#file-canvas')?.textContent.includes('saved in the workspace')`, 'the saved file to reopen from its receipt');
   check(!errors.length, 'no page errors: ' + errors.join(' | '));
   console.log('world browser: ok' + (has3d ? '' : ' (3D unavailable here; layout checked)'));
 } catch (error) { failed = error; }

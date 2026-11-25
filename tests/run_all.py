@@ -10,7 +10,7 @@ from pathlib import Path
 import os,subprocess,sys,time
 ROOT=Path(__file__).resolve().parents[1]
 parser=argparse.ArgumentParser(description=__doc__)
-parser.add_argument('--group',choices=('all','core','distribution','browser'),default='all')
+parser.add_argument('--group',choices=('all','core','workspace','distribution','browser'),default='all')
 group=parser.parse_args().group
 env=dict(os.environ);env['PYTHONDONTWRITEBYTECODE']='1';env['PYTHONUTF8']='1'
 # Tests are the same from inside an AI app as outside one: drop session ids the app gives its commands.
@@ -102,8 +102,10 @@ release_groups={
     'tests/run_distribution.py':'distribution',
     'tests/run_component_distributions.py':'distribution',
     'tests/workspace_world_browser.py':'browser',
+    'tests/run_workspace_world.py':'core',
+    'tests/run_workspace_conversations.py':'core',
 }
-selected=[test for test in TESTS if group=='all' or release_groups.get(test,'core')==group]
+selected=[test for test in TESTS if group=='all' or release_groups.get(test,'workspace' if test.startswith('tests/run_workspace_') else 'core')==group]
 scope='product-integrity' if group=='all' else group
 failures=[]
 try:

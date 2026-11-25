@@ -60,6 +60,10 @@ def codex_run(command,cwd,prompt,native_id,model,effort,update,env,execution,chi
     import workspace_usage
     mode=execution.permission
     params={**execution.native_options.get('thread',{k:v for k,v in execution.native_options.items() if k!='initialize'}),'cwd':str(cwd),**({'model':model} if model else {})}
+    guidance=getattr(execution,'aura_instructions','')
+    if not native_id and guidance:
+        params['developerInstructions']='\n\n'.join(filter(None,(params.get('developerInstructions'),guidance)))
+    if not native_id and getattr(execution,'temporary_chat',False):params['ephemeral']=True
     if mode!='native':params.update(sandbox='danger-full-access' if mode=='full' else mode,approvalPolicy='never' if mode=='full' else 'on-request')
     if child_model:params['config']={**params.get('config',{}),'agents.default_subagent_model':child_model}
     if native_id:params.update(threadId=native_id)
@@ -170,6 +174,9 @@ def codex_run(command,cwd,prompt,native_id,model,effort,update,env,execution,chi
                     if native_id and thread!=native_id:raise ValueError('Codex returned a different native chat. No request was sent.')
                     effective={k:event['result'][k] for k in ('approvalPolicy','sandbox') if k in event['result']}
                     update(native_id=thread,permission_effective=effective)
+                    title=getattr(execution,'aura_title','')
+                    if not native_id and title and not getattr(execution,'temporary_chat',False):
+                        send({'id':'aura-title','method':'thread/name/set','params':{'threadId':thread,'name':title}})
                     controls()
                     if goal:send({'id':'aura-goal-read','method':'thread/goal/get','params':{'threadId':thread}})
                     else:start_turn(prompt,images=execution.attachments)
@@ -429,6 +436,9 @@ def agent_lines(process,kind,prompt,native_id,execution,errors):
                     if native_id and ident!=native_id:raise ValueError('The native app opened a different session. No request was sent.')
                     yield json.dumps({'type':'session','id':ident})
                     controls()
+                    title=getattr(execution,'aura_title','')
+                    if not native_id and title and not state.get('sessionName') and not getattr(execution,'temporary_chat',False):
+                        send({'id':'aura-title','type':'set_session_name','name':title})
                     if kind=='omp':
                         send({'id':'aura-ask','type':'set_ask_dialog','enabled':True})
                         send({'id':'aura-children','type':'set_subagent_subscription','level':'events' if execution.trace else 'progress'})

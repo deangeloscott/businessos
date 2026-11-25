@@ -68,8 +68,9 @@ with tempfile.TemporaryDirectory(prefix='aura-release-artifact-') as td:
     if packaged_tests!=['tests/run_distribution.py']:
         raise SystemExit(f'Release artifact contains unexpected developer tests: {packaged_tests}')
 
-    # Run the minimal packaged-product gate from the fresh unzip.
-    run(product_root,'tests/run_distribution.py')
+    # Staging already ran the full distribution gate. Check the actual archive
+    # for public/private boundaries and exercise the consumer path below.
+    run(product_root,'scripts/validate_public_distribution.py')
 
     # Smoke-test the normal consumer path with a separate organization workspace.
     workspace=unpack_root/'organization-workspace'

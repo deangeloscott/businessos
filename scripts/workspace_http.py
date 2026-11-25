@@ -510,7 +510,7 @@ def handler_for(app):
                 if self.headers.get_content_type() != 'application/json':
                     raise ValueError('Send JSON from the local view.')
                 length = int(self.headers.get('Content-Length', '0'))
-                if length <= 0 or length > (6*1024*1024 if urlsplit(self.path).path in {'/api/support/test','/api/support/prepare'} else 45*1024*1024 if urlsplit(self.path).path=='/api/documents/save' else MAX_BODY):
+                if length <= 0 or length > (6*1024*1024 if urlsplit(self.path).path in {'/api/support/test','/api/support/prepare'} else 45*1024*1024 if urlsplit(self.path).path in {'/api/documents/save','/api/files/import'} else MAX_BODY):
                     # Take the upload first so the page gets this answer, not a dropped connection that reads as
                     # "AURA is not responding".
                     remaining = length if 0 < length <= 256*1024*1024 else 0
@@ -531,16 +531,21 @@ def handler_for(app):
                         owner=copy.copy(app)
                     with workspace_scope(owner.workspace_path):result=owner.native_agents(selected(data.get('business')),data.get('kind'),data)
                     self.send(200,result);return
-                if route in {'/api/documents/save','/api/documents/open'}:
+                if route in {'/api/documents/save','/api/documents/open','/api/files/import','/api/files/reveal'}:
                     with app.lock:
-                        if app.operation and route.endswith('/save'):raise ValueError(app.operation_busy())
+                        if app.operation and route in {'/api/documents/save','/api/files/import'}:raise ValueError(app.operation_busy())
                         expected=data.get('workspace') or self.headers.get('X-Aura-Workspace')
                         if expected!=app.workspace_path:raise ValueError('The workspace changed. Reopen this file before saving.')
                         if app.organization_job and app.organization_job['status']=='working':raise ValueError('Wait for workspace organization before changing files.')
                         owner=copy.copy(app)
                     with workspace_scope(owner.workspace_path):
                         bid=selected(data.get('business'))
-                        if route.endswith('/save'):
+                        if route=='/api/files/import':
+                            result=owner.import_file(bid,data)
+                        elif route=='/api/files/reveal':
+                            path=owner.document_source(bid,data.get('path',''))[0]
+                            result=workspace_documents.open_folder(path.parent)
+                        elif route.endswith('/save'):
                             try:result=owner.document_save(bid,data.get('path',''),data)
                             except workspace_documents.Conflict as error:self.send(409,{'error':str(error)});return
                         else:

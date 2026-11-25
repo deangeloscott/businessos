@@ -3,6 +3,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import secrets
 import time
 from pathlib import Path
@@ -206,6 +207,16 @@ def asset_context(bid,obj):
     work.setdefault('producer',{k:context[k] for k in ('kind','id','app') if k in context})
     work.setdefault('project_refs',context.get('project_refs',[]))
     if context.get('goal_ref'):bos.setdefault('goal_ref',context['goal_ref'])
+    return obj
+
+
+def note_asset_save(bid,obj):
+    try:producer=json.loads(os.environ.get('AURA_PRODUCER','{}'))
+    except ValueError:return obj
+    chat=producer.get('id') if isinstance(producer,dict) else None
+    if (isinstance(chat,str) and re.fullmatch(r'[a-zA-Z0-9_-]{16}',chat)
+            and producer.get('kind')=='chat' and producer_context(bid,producer)):
+        obj.setdefault('extensions',{}).setdefault('businessos',{}).setdefault('work',{})['last_saved_chat']=chat
     return obj
 
 

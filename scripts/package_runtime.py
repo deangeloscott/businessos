@@ -100,7 +100,7 @@ def write_launcher(root, target):
     return name
 
 
-def build(target, output, cache):
+def build(target, output, cache, base_dir=None):
     manifest = json.loads((ROOT/'distribution/bundled-runtimes.json').read_text(encoding='utf-8'))
     if target not in manifest['platforms'] or target != native_platform():
         raise ValueError('Build and verify this target on its native OS and architecture: '+target)
@@ -135,12 +135,31 @@ def build(target, output, cache):
         # An explicitly configured certificate bundle keeps precedence.
         (libraries/'sitecustomize.py').write_text(
             'import os\nimport certifi\nos.environ.setdefault("SSL_CERT_FILE", certifi.where())\n',encoding='utf-8')
-        # Build through the bundled interpreter: the build does not need host
-        # PyYAML/jsonschema either. This retains the existing clean packaging gate.
-        subprocess.run([str(interpreter),'-X','utf8','-E','-s','-B',str(ROOT/'scripts/package_edition.py'),
-                        '--edition','full','--output-dir',str(temporary/'base')],env=env,cwd=ROOT,check=True)
+        base_name='viraltrac-aura-v'+version
+        if base_dir:
+            from workspace_updates import extract
+            base_zip=Path(base_dir).resolve()/(base_name+'.zip')
+            expected=f'{digest(base_zip)}  {base_name}.zip'
+            if base_zip.with_suffix('.zip.sha256').read_text(encoding='utf-8').strip()!=expected:
+                raise ValueError('The shared AURA ZIP does not match this release and its checksum.')
+            staging=temporary/'base';staging.mkdir()
+            base=extract(base_zip,staging)
+            if base.name!=base_name or (base/'VERSION').read_text(encoding='utf-8').strip()!=version:
+                raise ValueError('The shared AURA ZIP contains a different version.')
+            if os.name!='nt':
+                with zipfile.ZipFile(base_zip) as archive_input:
+                    for member in archive_input.infolist():
+                        mode=(member.external_attr>>16)&0o111
+                        if mode and not member.is_dir():
+                            path=staging/member.filename
+                            path.chmod(path.stat().st_mode|mode)
+        else:
+            # Standalone builds still stage through the bundled interpreter.
+            subprocess.run([str(interpreter),'-X','utf8','-E','-s','-B',str(ROOT/'scripts/package_edition.py'),
+                            '--edition','full','--folder-only','--output-dir',str(temporary/'base')],env=env,cwd=ROOT,check=True)
+            base=temporary/'base'/base_name
         root = temporary/name
-        (temporary/'base'/('viraltrac-aura-v'+version)).rename(root)
+        base.rename(root)
         python_root.rename(root/'.aura-runtime')
         shutil.copy2(download(manifest['license_notices'], cache),root/'.aura-runtime/THIRD-PARTY-LICENSES.rst')
         if target.startswith('windows') and not (root/'.aura-runtime/python3.exe').exists():
@@ -214,5 +233,6 @@ if __name__ == '__main__':
     parser.add_argument('--platform',default=native_platform())
     parser.add_argument('--output-dir',required=True)
     parser.add_argument('--cache-dir',required=True)
+    parser.add_argument('--base-dir',type=Path,help='Folder containing the verified plain release ZIP and checksum.')
     args = parser.parse_args()
-    print(json.dumps(build(args.platform,args.output_dir,args.cache_dir),indent=2))
+    print(json.dumps(build(args.platform,args.output_dir,args.cache_dir,args.base_dir),indent=2))

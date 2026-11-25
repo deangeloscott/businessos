@@ -199,6 +199,9 @@ def remember(business_id,payload):
         elif not existing and 'extensions' in properties:
             from workspace_projects import saved_during
             obj=saved_during(bid,obj)
+        if typ=='Asset':
+            from workspace_projects import note_asset_save
+            obj=note_asset_save(bid,obj)
         try:validate_canonical(typ,obj)
         except ValueError as exc:raise ValueError(f'{row["key"]} ({typ}): {exc}. See the {typ} schema and docs/operator-guide.md memory examples.') from exc
         row['object']=obj;objects.append(obj)

@@ -1191,7 +1191,7 @@ async function render() {
   } else if(state.view==='files') {
     const result=await cachedApi('/api/files?business='+encodeURIComponent(state.business));if(!current())return; state.files=result.items;state.fileLocations=result.locations||[];state.missingAssets=result.missing_assets||[];state.fileProjects=result.projects||[];if(!state.fileProjects.some(p=>p.id===state.fileProject))state.fileProject='';if(!state.fileLocations.some(l=>l.id===fileLocation&&!l.missing))fileLocation='';
     view.innerHTML=`<div class="linked-locations">${state.fileLocations.map(l=>`<div class="linked-location"><button ${l.missing?'data-reconnect-location':'data-filelocation'}="${esc(l.id)}"><strong>${esc(l.name)}</strong><small>${l.missing?'Location missing · Reconnect':l.kind==='folder'?'Linked folder':'Linked file'}</small></button><button data-unlink-location="${esc(l.id)}" aria-label="Unlink ${esc(l.name)}">✕</button></div>`).join('')}</div>${state.missingAssets.length?`<details class="missing-files"><summary>${state.missingAssets.length} saved file${state.missingAssets.length===1?' has moved or is':'s have moved or are'} unavailable</summary>${state.missingAssets.map(f=>`<button class="row" data-reconnect-asset="${esc(f.ref)}">${esc(f.name)} · Reconnect →</button>`).join('')}</details>`:''}<div class="files-toolbar"><input class="search" id="file-search" type="search" aria-label="Search saved files" placeholder="Find a file…" value="${esc(state.fileQuery||'')}"><label class="sr-only" for="file-project-filter">Project</label><select id="file-project-filter"><option value="">All projects</option>${(state.fileProjects||[]).map(p=>`<option value="${esc(p.id)}" ${state.fileProject===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select><span class="files-actions"><button type="button" class="secondary" data-add-location>＋ Add files or folder</button><button type="button" class="text-button" data-create-collection="${esc(state.fileProject||'')}">New collection</button></span></div>${fileTypeFilters('full')}<button id="file-all-locations" class="text-button" hidden>All locations</button><div id="file-list" class="file-grid bounded-list" tabindex="0" aria-label="Saved files"></div>`;
-    renderFiles();
+    renderFiles();wireFileSave(view);
   } else if(state.view==='work') {
     if(!state.library.length){const library=await cachedApi('/api/library');if(!current())return;state.library=library;}
     view.innerHTML=`<input class="search" id="work-search" value="${esc(libraryQueryText)}" type="search" aria-label="Search the Library" placeholder="Search the Library…"><div id="library-topics" class="filters" role="group" aria-label="Topics"></div><div class="library-toolbar"><div class="page-tabs" role="group" aria-label="Library section"><button type="button" data-library-tab="methods">Playbooks &amp; workflows</button><button type="button" data-library-tab="apps">From your AI apps</button></div><span class="library-show filters" role="group" aria-label="Show"><button type="button" data-library-show="favorites">★ Favorites</button><button type="button" data-library-show="recent">Recent</button></span><label hidden>Topic <select id="library-topic"><option value="">All topics</option></select></label></div><div id="library-app-actions" class="inline-actions" hidden><button type="button" class="text-button" id="library-connections">Add connection</button><button type="button" class="text-button" data-library-agents>See agents →</button></div><p id="library-note" class="small-note"></p><section id="library-suggested" class="library-suggested" hidden></section><div class="section-head"><h3 id="work-category-title" tabindex="-1">Library items</h3><button id="work-all-topics" class="text-button" hidden>All topics</button></div><div id="work-list"></div>`;
@@ -1253,6 +1253,52 @@ function fileTypeFilters(scope) {return `<div class="filters compact-filters" ar
 function matchingFiles() {
   const q=(state.fileQuery||'').trim().toLowerCase();
   return state.files.filter(f=>usefulFile(f)&&(!state.fileFavoritesOnly||fileMarked(f.path))&&(fileFilter==='all'||fileKind(f)===fileFilter)&&(!state.fileProject||f.project_refs?.includes(state.fileProject))&&(f.path+' '+f.name+' '+(f.location_name||'')).toLowerCase().includes(q)).sort((a,b)=>b.modified-a.modified);
+}
+function fileBytes(file){
+  if(file.size>32*1024*1024)throw new Error('Choose a file up to 32 MB, or link the original.');
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(String(reader.result).split(',',2)[1]);
+    reader.onerror=()=>reject(new Error('The file could not be read.'));
+    reader.readAsDataURL(file);
+  });
+}
+async function saveWorkspaceFile(file,scope){
+  const content=await fileBytes(file);
+  return api('/api/files/import',{...scope,name:file.name,content});
+}
+window.auraSaveFile=(file,{project=state.fileProject||''}={})=>saveWorkspaceFile(file,{business:state.business,workspace:state.data.workspace,project});
+function savedFileActions(files,destination){
+  if(!files?.length)return '';
+  return files.map(file=>`<div class="inline-actions"><span>Saved to ${esc(destination)} · ${esc(file.name)}</span><button type="button" class="text-button" data-file="${esc(file.ref)}">Open file</button><button type="button" class="text-button" data-reveal-file="${esc(file.ref)}">Show folder</button></div>`).join('');
+}
+function wireFileSave(view){
+  const link=view.querySelector('[data-add-location]'),list=view.querySelector('#file-list');
+  if(!link||!list)return;
+  link.textContent='Link existing file or folder';
+  link.className='text-button';
+  link.insertAdjacentHTML('beforebegin','<button type="button" class="secondary" id="workspace-file-add">Add files</button><input type="file" id="workspace-file-picker" multiple hidden>');
+  list.insertAdjacentHTML('beforebegin','<div id="workspace-file-receipt" role="status"></div>');
+  const input=view.querySelector('#workspace-file-picker');
+  const scope=()=>({business:state.business,workspace:state.data.workspace,project:state.fileProject||''});
+  async function add(files,selected){
+    const check=()=>selected.business===state.business&&selected.workspace===state.data.workspace&&state.view==='files';
+    const saved=[];
+    try {
+      for(const file of files)saved.push(await saveWorkspaceFile(file,selected));
+    } finally {
+      if(saved.length&&check()){
+        await render();
+        const receipt=$('#workspace-file-receipt');
+        if(receipt&&check())receipt.innerHTML=savedFileActions(saved,saved[0].destination);
+      }
+    }
+  }
+  let chosen;
+  view.querySelector('#workspace-file-add').onclick=()=>{chosen=scope();input.click();};
+  input.onchange=()=>{const files=[...input.files];input.value='';if(files.length&&chosen)attempt(()=>add(files,chosen));};
+  list.ondragover=event=>{if(event.dataTransfer.types.includes('Files'))event.preventDefault();};
+  list.ondrop=event=>{const files=[...event.dataTransfer.files];if(files.length){event.preventDefault();const selected=scope();attempt(()=>add(files,selected));}};
 }
 function renderQuickFiles() {
   for(const id of ['quick-file-search','file-search'])if($('#'+id)&&$('#'+id).value!==(state.fileQuery||''))$('#'+id).value=state.fileQuery||'';
@@ -2164,7 +2210,7 @@ async function openFileWorkspace(ref,option='',presentation={}) {
     const tryExample=asset?.data.location_reference?.endsWith('/outputs/grant-application-draft.md')&&window.auraExample?.origin()?'<button type="button" class="text-button" data-example-try>Try this with my work</button>':'';
     return resultOrigin(asset,ref)+(attach||tryExample?`<div class="inline-actions file-main-actions">${attach}${tryExample}</div>`:'');
   }
-  await module.openFile({...presentation,resultActions,ref,option,business,workspace,token,api,details,markdown:chatMarkdown,favoriteMarkup:(ref,name)=>fileFavoriteButton(ref,name)+(!ref.startsWith("library/")?archiveControl("file",ref):""),titleActions:setDetailTitleActions,share:ref=>attempt(async()=>{if(state.business!==business||state.data.workspace!==workspace)throw new Error('The workspace changed. Reopen the file before sharing.');await openSharing('file:'+ref);}),current:()=>state.business===business&&state.data.workspace===workspace,
+  await module.openFile({...presentation,resultActions,ref,option,business,workspace,project:state.view==='files'?state.fileProject:state.view==='home'?state.chatMeta?.project_id:'',token,api,details,markdown:chatMarkdown,favoriteMarkup:(ref,name)=>fileFavoriteButton(ref,name)+(!ref.startsWith("library/")?archiveControl("file",ref):""),titleActions:setDetailTitleActions,share:ref=>attempt(async()=>{if(state.business!==business||state.data.workspace!==workspace)throw new Error('The workspace changed. Reopen the file before sharing.');await openSharing('file:'+ref);}),current:()=>state.business===business&&state.data.workspace===workspace,
     saved:async()=>{invalidateReads();const [files,data]=await Promise.all([api('/api/files?business='+encodeURIComponent(business)),api('/api/state?business='+encodeURIComponent(business))]);if(state.business!==business||state.data.workspace!==workspace)return;state.files=files.items;state.data.records=data.records;state.data.records_revision=data.records_revision;if($('#file-list'))renderFiles();if($('#quick-files'))renderQuickFiles();}
   });
 }
@@ -2844,7 +2890,7 @@ function showMessages(latest=false) {
   if(state.formattedSource!==state.chat||state.formattedKey!==formatKey){
     const started=performance.now();
     const lastReply=state.chat.findLastIndex(m=>m.role==='assistant');
-    state.formattedHistory=state.chat.map((r,index)=>`<div class="message ${r.role}"><strong>${r.role==='user'?'YOU':esc(r.agent||state.data?.connection.name||'YOUR AGENT')}${r.at?` <time>${esc(clockTime(r.at))}</time>`:''}${r.role==='assistant'&&r.model?` · ${esc(modelDisplay(r.model))}${r.effort?' · '+esc(human(r.effort)):''}`:''}</strong>${r.role==='assistant'?(r.status==='stopped'&&!String(r.text||'').trim()?'<p class="small-note">Stopped before a reply.</p>':chatMarkdown(r.text)):esc(r.text)}${nativeMedia(r.native_media)}${window.auraCompose?.actions(r,index)||''}${index===lastReply?replyExtras(r):''}</div>`).join('');
+    state.formattedHistory=state.chat.map((r,index)=>`<div class="message ${r.role}"><strong>${r.role==='user'?'YOU':esc(r.agent||state.data?.connection.name||'YOUR AGENT')}${r.at?` <time>${esc(clockTime(r.at))}</time>`:''}${r.role==='assistant'&&r.model?` · ${esc(modelDisplay(r.model))}${r.effort?' · '+esc(human(r.effort)):''}`:''}</strong>${r.role==='assistant'?(r.status==='stopped'&&!String(r.text||'').trim()?'<p class="small-note">Stopped before a reply.</p>':chatMarkdown(r.text)):esc(r.text)}${nativeMedia(r.native_media)}${savedFileActions(r.saved_outputs,r.output_destination)}${window.auraCompose?.actions(r,index)||''}${index===lastReply?replyExtras(r):''}</div>`).join('');
     state.formattedSource=state.chat;state.formattedKey=formatKey;clientPerformance.message_formats++;clientPerformance.message_format_ms+=performance.now()-started;
   }
   const markup=state.formattedHistory;
@@ -2912,6 +2958,7 @@ document.addEventListener('click',event=>attempt(async()=>{
     if(['update-later','update-skip'].includes(button.id))$('#detail').close();
   }
   if(button.hasAttribute('data-add-location'))addLocation();
+  if(button.dataset.revealFile)await api('/api/files/reveal',{business:state.business,workspace:state.data.workspace,path:button.dataset.revealFile});
   if(button.dataset.reconnectLocation)reconnectLocation(button.dataset.reconnectLocation);
   if(button.dataset.reconnectAsset)reconnectLocation(button.dataset.reconnectAsset,true);
   if(button.dataset.previewWorkspace)await previewWorkspace(button.dataset.previewWorkspace);

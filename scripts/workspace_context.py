@@ -362,7 +362,8 @@ def handoff_brief(app,bid,chat_id,returning=False,after=None):
 
 
 def message_ref(raw):
-    header=raw.split('\nUser request:\n',1)[0] if '\nUser request:\n' in raw else ''
+    import workspace_chats
+    _,header=workspace_chats.request_parts(raw)
     found=re.search(r'(?m)^AURA message reference: ([A-Za-z0-9_-]{16})$',header)
     return found.group(1) if found else ''
 
@@ -371,12 +372,16 @@ def retain_receipts(messages,saved):
     index={m['request_id']:m for m in saved if m.get('role')=='user' and m.get('request_id')}
     traces={(m['request_id'],message_key(m)):m['trace_id'] for m in saved if m.get('role')=='assistant' and m.get('request_id') and m.get('trace_id')}
     media={(m['request_id'],message_key(m)):m['native_media'] for m in saved if m.get('role')=='assistant' and m.get('request_id') and m.get('native_media')}
+    outputs={(m['request_id'],message_key(m)):m for m in saved if m.get('role')=='assistant' and m.get('request_id') and m.get('saved_outputs')}
     current=None
     for row in messages:
         if row.get('role')=='user':current=row.get('request_id') if row.get('request_id') in index else None
         elif row.get('role')=='assistant' and current:row.setdefault('request_id',current)
         if row.get('role')=='assistant' and (row.get('request_id'),message_key(row)) in media:
             row.setdefault('native_media',media[(row['request_id'],message_key(row))])
+        if row.get('role')=='assistant' and (row.get('request_id'),message_key(row)) in outputs:
+            saved_row=outputs[(row['request_id'],message_key(row))]
+            row.update({k:saved_row[k] for k in ('saved_outputs','output_destination') if k in saved_row})
         if row.get('role')=='assistant' and (row.get('request_id'),message_key(row)) in traces:row.setdefault('trace_id',traces[(row['request_id'],message_key(row))])
         prior=index.get(row.get('request_id'))
         if prior and row.get('role')=='user' and row.get('text')==prior.get('text'):

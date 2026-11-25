@@ -89,7 +89,7 @@ def _write_distribution_test(dest):
     (dest/'tests/run_distribution.py').write_text('#!/usr/bin/env python3\nfrom pathlib import Path\nimport sys\nROOT=Path(__file__).resolve().parents[1]\nsys.path.insert(0,str(ROOT/"scripts"))\nfrom validate_distribution import validate_distribution\nvalidate_distribution()\n', encoding='utf-8')
 def _run(dest,rel):
     env=dict(os.environ);env['PYTHONDONTWRITEBYTECODE']='1';subprocess.run([sys.executable,str(dest/rel)],cwd=dest,env=env,check=True)
-def build_distribution(edition_id=None,requested_modules=None,output_dir=None,keep_folder=True):
+def stage_distribution(edition_id=None,requested_modules=None,output_dir=None):
     eds=editions()
     if edition_id:
         if edition_id not in eds:raise ValueError(f'Unknown edition {edition_id}')
@@ -103,7 +103,8 @@ def build_distribution(edition_id=None,requested_modules=None,output_dir=None,ke
     outbase=(Path(output_dir) if output_dir else ROOT.parent/'distributions').resolve();outbase.mkdir(parents=True,exist_ok=True);pkgname=f"{slug(display)}-v{os_version()}";dest=outbase/pkgname
     if dest.exists():shutil.rmtree(dest)
     _copy_clean(dest);_prune_modules(dest,modules);_copy_interface_schemas(dest);_write_navigation(dest,eid,display,modules);_write_instance_template(dest,modules);_write_distribution_test(dest)
-    (dest/'VERSION').write_text(os_version()+'\n', encoding='utf-8');_run(dest,'scripts/generate_registry.py');_run(dest,'scripts/validate_workspace.py');_run(dest,'tests/run_distribution.py');_run(dest,'scripts/generate_registry.py');_run(dest,'scripts/validate_workspace.py')
+    (dest/'VERSION').write_text(os_version()+'\n', encoding='utf-8')
+    _run(dest,'tests/run_distribution.py')
     # The distribution smoke test creates process locks/staging in this fresh
     # build tree. They are local coordination state, not part of the download.
     local=dest/'.businessos'
@@ -111,6 +112,12 @@ def build_distribution(edition_id=None,requested_modules=None,output_dir=None,ke
         if not local.resolve().is_relative_to(dest.resolve()) or path_link(local):
             raise ValueError('Build metadata points outside the package. Nothing was removed.')
         shutil.rmtree(local)
+    return {'edition':eid,'display_name':display,'modules':sorted(modules),'folder':str(dest)}
+
+
+def build_distribution(edition_id=None,requested_modules=None,output_dir=None,keep_folder=True):
+    staged=stage_distribution(edition_id,requested_modules,output_dir)
+    dest=Path(staged['folder']);outbase=dest.parent;pkgname=dest.name
     zpath=outbase/(pkgname+'.zip')
     if zpath.exists():zpath.unlink()
     shutil.make_archive(str(zpath.with_suffix('')),'zip',outbase,pkgname)
@@ -121,13 +128,14 @@ def build_distribution(edition_id=None,requested_modules=None,output_dir=None,ke
         if bad:raise RuntimeError(f'ZIP integrity failed at {bad}')
     digest=hashlib.sha256(zpath.read_bytes()).hexdigest();sha=zpath.with_suffix('.zip.sha256');sha.write_text(f'{digest}  {zpath.name}\n', encoding='utf-8')
     if not keep_folder:shutil.rmtree(dest)
-    return {'edition':eid,'display_name':display,'modules':sorted(modules),'folder':str(dest),'zip':str(zpath),'sha256_file':str(sha),'sha256':digest}
+    return {**staged,'zip':str(zpath),'sha256_file':str(sha),'sha256':digest}
 def main():
-    ap=argparse.ArgumentParser(description='Build dependency-aware ViralTrac AURA distributions.');ap.add_argument('--edition');ap.add_argument('--modules',nargs='+');ap.add_argument('--output-dir');ap.add_argument('--list',action='store_true');ap.add_argument('--no-folder',action='store_true');a=ap.parse_args()
+    ap=argparse.ArgumentParser(description='Build dependency-aware ViralTrac AURA distributions.');ap.add_argument('--edition');ap.add_argument('--modules',nargs='+');ap.add_argument('--output-dir');ap.add_argument('--list',action='store_true')
+    output=ap.add_mutually_exclusive_group();output.add_argument('--no-folder',action='store_true');output.add_argument('--folder-only',action='store_true');a=ap.parse_args()
     if a.list:
         for e in editions().values():print(f"{e['id']}: {e['display_name']} — {e['description']}")
         return
-    try:r=build_distribution(a.edition,a.modules,a.output_dir,not a.no_folder)
+    try:r=stage_distribution(a.edition,a.modules,a.output_dir) if a.folder_only else build_distribution(a.edition,a.modules,a.output_dir,not a.no_folder)
     except (ValueError,RuntimeError) as e:raise SystemExit(str(e))
     print(json.dumps(r,indent=2))
 if __name__=='__main__':main()

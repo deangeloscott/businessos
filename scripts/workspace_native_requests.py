@@ -345,7 +345,7 @@ def display(event,execution,update):
     return True
 
 
-def save_image(content,bid):
+def save_image(content,bid,project=None):
     """Materialize a native inline output once; the normal file viewer serves it."""
     import hashlib
     from _common import workspace_root
@@ -356,8 +356,13 @@ def save_image(content,bid):
     except ValueError:raise ValueError('The native app returned an incomplete image.') from None
     valid=(raw.startswith(b'\x89PNG\r\n\x1a\n') if mime=='image/png' else raw.startswith(b'\xff\xd8\xff') if mime=='image/jpeg' else raw.startswith(b'RIFF') and raw[8:12]==b'WEBP' if mime=='image/webp' else raw.startswith((b'GIF87a',b'GIF89a')))
     if not valid or len(raw)>32*1024*1024:raise ValueError('The native app returned an image that cannot be displayed here.')
+    name='Image-'+hashlib.sha256(raw).hexdigest()[:16]+extensions[mime]
+    if project:
+        from workspace_documents import import_bytes
+        item=import_bytes(bid,name,raw,project)
+        return {'path':item['ref'],'name':item['name'],'mime':mime}
     base=workspace_root().resolve()/'attachments'/bid
-    path=base/'work'/('Image-'+hashlib.sha256(raw).hexdigest()[:16]+extensions[mime])
+    path=base/'work'/name
     if not path.resolve().is_relative_to(base):raise ValueError('The image output folder points outside this business. Choose a regular workspace folder.')
     path.parent.mkdir(parents=True,exist_ok=True)
     try:
