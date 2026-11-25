@@ -39,6 +39,7 @@ try {
   const page = (method, params) => send(method, params, sessionId);
   await page('Runtime.enable'); await page('Page.enable');
   await page('Emulation.setDeviceMetricsOverride', { width: 1400, height: 900, deviceScaleFactor: 1, mobile: false });
+  await page('Page.bringToFront');
   await page('Page.navigate', { url });
   const evaluate = async expression => { const r = await page('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true }); if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description || r.exceptionDetails.text); return r.result?.value; };
   const until = async (expression, what, tries = 150) => { for (let i = 0; i < tries; i++) { if (await evaluate(expression).catch(() => false)) return; await sleep(200); } throw new Error('Timed out waiting for ' + what); };
@@ -49,9 +50,8 @@ try {
   const has3d = await evaluate(`!!window.auraWorld?.available && !!window.auraWorld.model()`);
   // Select a collection from the list, then open Connections: the diagram takes the stage and the world goes small.
   await evaluate(`document.querySelector('#world-side [data-world-go^="land:col_"]').click()`);
-  await sleep(400);
   await evaluate(`document.querySelector('[data-world-tab="map"]').click()`);
-  await sleep(700);
+  await until(`!!document.querySelector('#world-map .ln')`, 'Connections to draw its lines');
   const map = await evaluate(`(()=>{const m=document.querySelector('#world-lens #world-map'),side=document.querySelector('#world-side'),stage=document.querySelector('#world-stage').getBoundingClientRect();return m?{height:m.getBoundingClientRect().height,lines:m.querySelectorAll('.ln').length,nodes:m.querySelectorAll('.wm-node').length,side:!!side.querySelector('h2'),mini:stage.width<260}:null;})()`);
   check(map && map.nodes > 1, 'the diagram on the stage has its nodes: ' + JSON.stringify(map));
   check(map.height > 40 && map.side, 'the diagram is visible with its list beside it: ' + JSON.stringify(map));
@@ -61,10 +61,10 @@ try {
   const traced = await evaluate(`(()=>{const n=document.querySelector('#world-map .wm-node[data-world-go^="task:"]')||document.querySelector('#world-map .wm-node[data-world-go^="app:"]');n.dispatchEvent(new PointerEvent('pointerover',{bubbles:true}));const d=document.querySelectorAll('#world-map .world-dim').length;n.dispatchEvent(new PointerEvent('pointerout',{bubbles:true,relatedTarget:document.body}));return {dimmed:d,after:document.querySelectorAll('#world-map .world-dim').length};})()`);
   check(traced.dimmed > 0 && traced.after === 0, 'pointing at a box traces its chain and lets go after: ' + JSON.stringify(traced));
   // Time and AI effort take the stage too.
-  await evaluate(`document.querySelector('[data-world-tab="timeline"]').click()`); await sleep(500);
-  check(await evaluate(`!!document.querySelector('#world-lens .tl-today') && document.querySelectorAll('#world-lens .tl-lane').length>0`), 'Time draws its rows with today on the stage');
-  await evaluate(`document.querySelector('[data-world-tab="effort"]').click()`); await sleep(500);
-  check(await evaluate(`!document.querySelector('#world-lens').hidden && !!document.querySelector('#world-lens .we-stage, #world-lens .tl-empty')`), 'AI effort takes the stage');
+  await evaluate(`document.querySelector('[data-world-tab="timeline"]').click()`);
+  await until(`!!document.querySelector('#world-lens .tl-today') && document.querySelectorAll('#world-lens .tl-lane').length>0`, 'Time to draw its rows with today on the stage');
+  await evaluate(`document.querySelector('[data-world-tab="effort"]').click()`);
+  await until(`!document.querySelector('#world-lens').hidden && !!document.querySelector('#world-lens .we-stage, #world-lens .tl-empty')`, 'AI effort to take the stage');
   // The side panel can be made wider from its edge, with the keyboard as well as by dragging.
   const widths = await evaluate(`(()=>{const g=document.querySelector('#world-grip'),side=document.querySelector('#world-side'),a=side.getBoundingClientRect().width;g.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true}));const b=side.getBoundingClientRect().width;localStorage.removeItem('aura-world-side-width');return [a,b];})()`);
   check(widths[1] > widths[0], 'the side panel widens from its edge: ' + JSON.stringify(widths));
