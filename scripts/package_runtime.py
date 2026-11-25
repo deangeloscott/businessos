@@ -82,7 +82,15 @@ def clean_environment():
 def write_launcher(root, target):
     if target.startswith('windows'):
         name = 'Open AURA.cmd'
-        text = '@echo off\r\nsetlocal DisableDelayedExpansion\r\n"%~dp0.aura-runtime\\python.exe" -X utf8 -E -s -B "%~dp0scripts\\open_aura.py" %*\r\nif errorlevel 1 (\r\n echo AURA could not open. Check the message above.\r\n pause\r\n exit /b 1\r\n)\r\n'
+        # Windows lets people double-click this inside the ZIP without extracting it; only this one file is then
+        # copied out, so say how to fix that instead of failing on a missing path.
+        text = ('@echo off\r\nsetlocal DisableDelayedExpansion\r\n'
+                'if not exist "%~dp0.aura-runtime\\python.exe" (\r\n'
+                ' echo AURA needs its whole folder, so unzip the download first.\r\n'
+                ' echo Right-click the downloaded file, choose Extract All, then open Open AURA in the folder it makes.\r\n'
+                ' pause\r\n exit /b 1\r\n)\r\n'
+                '"%~dp0.aura-runtime\\python.exe" -X utf8 -E -s -B "%~dp0scripts\\open_aura.py" %*\r\n'
+                'if errorlevel 1 (\r\n echo AURA could not open. Check the message above.\r\n pause\r\n exit /b 1\r\n)\r\n')
     else:
         name = 'Open AURA.command' if target.startswith('macos') else 'Open AURA.sh'
         text = '#!/bin/sh\nHERE=${0%/*}\n[ "$HERE" != "$0" ] || HERE=.\nCDPATH= cd -- "$HERE" || exit 1\nexec "$PWD/.aura-runtime/bin/python3" -X utf8 -E -s -B "$PWD/scripts/open_aura.py" "$@"\n'

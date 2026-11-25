@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **Opening AURA from inside the download says what to do.** On Windows, double-clicking **Open AURA** inside the ZIP without extracting it failed with a technical message. It now says to unzip the download first (right-click, Extract All) and open **Open AURA** in that folder.
+
 ## 0.7.1 Alpha — 2026-11-24
 
 - **Corrections save on upgraded workspaces.** A business saved by an older AURA could hold records that today's checks reject (Harbor Home had seven sources dated "2026-10-23" with no time). Every save checked the whole business and refused on any problem, so nothing could be saved or corrected, the owner's corrections included, and the error named unrelated files. Now a change is refused only for problems it adds; older ones are reported and shown once on Home as "N saved records need fixing", which settles itself once they are fixed. A plain date is accepted where a date and time is asked for, since it is an honest answer when only the day is known, and AURA's date labels show it as that day rather than the day before. Correcting a record whose link pointed at something deleted works: the change note's copy of the old value no longer counts as a live link.
