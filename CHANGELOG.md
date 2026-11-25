@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.7.3 Alpha — 2026-11-25
 
 - **A clear message when your AI app isn't signed in.** Claude Code's "Not logged in" showed as "could not complete this request" plus "This chat was interrupted · Continue chat". It now says to sign in, with **Sign in in terminal**, and a request that ended with an explained problem is no longer called interrupted.
 - **No window to keep open.** Opening AURA left a command window that had to stay open the whole time; closing it closed AURA without warning. **Open AURA** now starts AURA in the background, as starting at sign-in already did, opens it in your browser, and its window closes on its own. If AURA can't start, the window stays and shows why. Quit AURA in Settings stops it.
