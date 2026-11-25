@@ -51,7 +51,7 @@ def smoke(archive, previous_file=None):
     assert previous and previous['asset'], 'No older published Windows bundle is available.'
     asset = previous['asset']
     with tempfile.TemporaryDirectory(prefix='AURA Windows upgrade ') as mark:
-        root = Path(mark)
+        root = Path(mark).resolve()
         old_archive = Path(previous_file).resolve() if previous_file else root / asset['name']
         if not previous_file:
             request = Request(asset['browser_download_url'], headers={'User-Agent': 'ViralTrac-AURA'})
@@ -111,7 +111,8 @@ def smoke(archive, previous_file=None):
                 before = updates.sha(marker)
                 api('/api/updates', {'action': 'install'})
                 state = await_version(version, pointer=True)
-                assert Path(state['workspace']) == workspace and state['business_id'] == setup['business_id']
+                assert Path(state['workspace']).resolve() == workspace, 'The upgraded app opened a different workspace.'
+                assert state['business_id'] == setup['business_id'], 'The upgraded app did not open the saved business.'
                 assert updates.sha(marker) == before
                 api('/api/updates', {'action': 'rollback'})
                 restored = await_version(previous['version'], pointer=True)

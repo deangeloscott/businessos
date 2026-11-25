@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 from _common import *
 import argparse
-import hashlib
 from pathlib import Path
 import json, os, subprocess, sys, tempfile, zipfile
 from package_edition import build_distribution
@@ -111,8 +110,5 @@ finally:
     subprocess.run([sys.executable,'-c',interface_probe,str(workspace)],cwd=product_root,env=consumer,check=True)
 
 print(json.dumps(result,indent=2))
-with zip_path.open('rb') as archive:
-    checksum=hashlib.file_digest(archive,'sha256').hexdigest()
-zip_path.with_name(zip_path.name+'.sha256').write_text(checksum+'  '+zip_path.name+'\n',encoding='utf-8')
 print('fresh release artifact validation passed')
 print('consumer external-workspace smoke test passed')
