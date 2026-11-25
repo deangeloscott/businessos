@@ -477,7 +477,9 @@ def setup_error(message):
         return SETUP_ERRORS['signin']
     if any(word in text for word in ('api key', 'api_key', 'credentials', 'unauthorized', 'authentication', '401')):
         return SETUP_ERRORS['credentials']
-    if any(word in text for word in ('sign-in', 'sign in', 'login expired', 'token expired', 'token has expired')):
+    # Includes Claude Code's "Not logged in · Please run /login" when it has never been signed in.
+    if any(word in text for word in ('sign-in', 'sign in', 'login expired', 'token expired', 'token has expired', 'not logged in',
+                                     'logged out', 'please log in', 'run /login')):
         return SETUP_ERRORS['signin']
     if re.search(r'permission denied:\s*[\x22\x27]?(?:[a-z]:[\\/]|[/\\])|eacces|read.only file|\b(?:file|folder|directory)\b.{0,80}(permission|denied|not readable)|(?:permission|denied).{0,80}\b(file|folder|directory)\b', text):
         return SETUP_ERRORS['files']

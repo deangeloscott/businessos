@@ -113,6 +113,10 @@ def describe(chat,job=None,observation=None):
     process=process_state(record) if not live and needed(chat) else 'unknown'
     if live:state='running'
     elif chat.get('status')=='stopped':state='stopped'
+    elif chat.get('status')=='error' and record.get('status')=='error':
+        # The request ended with a problem its reply already explains (sign in, a limit, a missing model). It wasn't
+        # interrupted, and continuing won't help until that is sorted; sending again will.
+        state='failed'
     elif needed(chat):
         if process=='running':
             state='running_elsewhere';message='This request is still running. Check for its latest reply before continuing.'
