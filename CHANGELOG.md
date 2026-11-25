@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.7.2 Alpha — 2026-11-24
 
 - **A shortcut to open AURA.** Settings → Startup & updates now offers **Show AURA in the Start menu** (Windows), **Add AURA to Applications** (Mac) or **Add AURA to the app menu** (Linux), beside "Start AURA when I sign in" and saved with it, so AURA opens without finding its folder. It keeps working after AURA updates itself, follows AURA to a new folder, and **Remove from this computer** removes it.
 - **Setting up through an agent gets the download for your computer.** `SETUP-WITH-AI.md` says to use the bundled Python when the folder has one, so no system Python is needed.
