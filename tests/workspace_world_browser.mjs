@@ -3,20 +3,32 @@
    Checks: the expanded Connections diagram is visible with a long list beside it; following a link to something the
    world does not draw keeps the camera where it was; a still frame costs less than a drawn one; no page errors. */
 import { spawn } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
 const [browserPath, url] = process.argv.slice(2);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const profile = mkdtempSync(join(tmpdir(), 'aura-world-browser-'));
-const port = 9300 + Math.floor(Math.random() * 500);
-const browser = spawn(browserPath, ['--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, '--no-first-run', '--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--window-size=1400,900', 'about:blank'], { stdio: 'ignore' });
+const browser = spawn(browserPath, ['--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-first-run', '--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--window-size=1400,900', 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe'] });
+let launchError, stderr = '';
+browser.on('error', error => { launchError = error; });
+browser.stderr.setEncoding('utf8').on('data', chunk => { stderr = (stderr + chunk).slice(-1500); });
 let ws, failed = null;
 try {
   let version;
-  for (let i = 0; i < 75 && !version; i++) { try { version = await (await fetch(`http://127.0.0.1:${port}/json/version`)).json(); } catch { await sleep(200); } }
-  if (!version) throw new Error('The browser did not start.');
+  for (let i = 0; i < 125 && !version; i++) {
+    if (launchError || browser.exitCode !== null) break;
+    try {
+      const [port] = readFileSync(join(profile, 'DevToolsActivePort'), 'utf8').trim().split(/\r?\n/);
+      if (!/^\d+$/.test(port)) throw new Error('Waiting for the browser debug port.');
+      const response = await fetch(`http://127.0.0.1:${port}/json/version`, {signal: AbortSignal.timeout(1000)});
+      const info = await response.json();
+      if (info.webSocketDebuggerUrl) version = info;
+    } catch {}
+    if (!version) await sleep(200);
+  }
+  if (!version) throw new Error('The browser did not start. ' + (launchError?.message || stderr.trim() || 'No debug port was reported.'));
   ws = new WebSocket(version.webSocketDebuggerUrl);
   await new Promise((ok, fail) => { ws.onopen = ok; ws.onerror = fail; });
   let id = 0; const pending = new Map(), errors = [];

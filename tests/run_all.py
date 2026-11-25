@@ -5,9 +5,13 @@ Run every product-owned regression even when one fails so one local execution re
 the complete failure set. Qualification-harness self-tests run separately under
 `qualification/self_test.py` and are not counted as AURA product tests.
 """
+import argparse
 from pathlib import Path
 import os,subprocess,sys,time
 ROOT=Path(__file__).resolve().parents[1]
+parser=argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--group',choices=('all','core','distribution','browser'),default='all')
+group=parser.parse_args().group
 env=dict(os.environ);env['PYTHONDONTWRITEBYTECODE']='1';env['PYTHONUTF8']='1'
 # Tests are the same from inside an AI app as outside one: drop session ids the app gives its commands.
 for name in ('CLAUDE_CODE_SESSION_ID','PI_SESSION_ID','PI_SESSION_FILE','HERMES_SESSION_ID','ANTIGRAVITY_CONVERSATION_ID','AURA_PRODUCER'):env.pop(name,None)
@@ -94,9 +98,16 @@ TESTS=[
     'tests/run_customer_facing_qa_invariant.py',
     'tests/run_claim_manifest_operational_promises.py'
 ]
+release_groups={
+    'tests/run_distribution.py':'distribution',
+    'tests/run_component_distributions.py':'distribution',
+    'tests/workspace_world_browser.py':'browser',
+}
+selected=[test for test in TESTS if group=='all' or release_groups.get(test,'core')==group]
+scope='product-integrity' if group=='all' else group
 failures=[]
 try:
-    for rel in TESTS:
+    for rel in selected:
         print(f'== {rel} ==',flush=True)
         started=time.monotonic()
         completed=subprocess.run([sys.executable,str(ROOT/rel)],cwd=ROOT,env=env)
@@ -104,7 +115,8 @@ try:
         if completed.returncode!=0:failures.append((rel,completed.returncode))
 finally:shutil.rmtree(state,ignore_errors=True)
 if failures:
-    print(f'\nAURA product-integrity gate failed: {len(failures)}/{len(TESTS)} suites failed')
+    print(f'\nAURA {scope} gate failed: {len(failures)}/{len(selected)} suites failed')
     for rel,code in failures:print(f'- {rel} (exit {code})')
     raise SystemExit(1)
-print(f'all AURA product-integrity tests passed: {len(TESTS)} suites')
+suffix='suite' if len(selected)==1 else 'suites'
+print(f'all AURA {scope} tests passed: {len(selected)} {suffix}')

@@ -31,6 +31,8 @@ print(json.dumps(built))
 def main():
     browser=next((b for b in BROWSERS.get(sys.platform,['/usr/bin/google-chrome','/usr/bin/chromium','/usr/bin/chromium-browser']) if Path(b).exists()),None)
     if not browser or not shutil.which('node'):
+        if os.environ.get('AURA_REQUIRE_BROWSER') == '1':
+            raise RuntimeError('The browser checks require Chrome or Edge and Node.')
         print('world browser: skipped (no Chrome, Edge or Node here)');return
     with tempfile.TemporaryDirectory(prefix='aura-world-browser-') as t:
         base=Path(t);env={**os.environ,'BUSINESSOS_WORKSPACE_CONFIG':str(base/'pointer.json'),'AURA_STATE_DIR':str(base/'state')};env.pop('BUSINESSOS_WORKSPACE',None);env.pop('AURA_PRODUCER',None)

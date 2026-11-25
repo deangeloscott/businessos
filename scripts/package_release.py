@@ -24,14 +24,16 @@ def run(root, rel, *args, env=None):
 
 parser=argparse.ArgumentParser(description='Verify and package the platform-neutral release.')
 parser.add_argument('--output-dir',type=Path,default=ROOT.parent/'distributions')
+parser.add_argument('--package-only',action='store_true',help='Run packaging checks while CI runs regressions separately.')
 args=parser.parse_args()
 
 # Validate the committed source checkout before building the user artifact.
 run(ROOT,'scripts/generate_registry.py')
 run(ROOT,'scripts/validate_workspace.py')
 run(ROOT,'scripts/validate_public_distribution.py')
-run(ROOT,'tests/run_all.py')
-run(ROOT,'qualification/self_test.py')
+if not args.package_only:
+    run(ROOT,'tests/run_all.py')
+    run(ROOT,'qualification/self_test.py')
 
 # The full edition is the canonical public release artifact. package_edition.py
 # deliberately strips maintainer qualification, developer tests, local workspace

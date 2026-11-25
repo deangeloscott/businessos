@@ -148,4 +148,4 @@ Check a new component in Modern and at least one retro style, in both modes.
 
 ## Releasing AURA
 
-Prepare the version and its changelog entry, then push the matching `vX.Y.Z` tag. **Build and release AURA** runs the product gate and native builds in parallel, checks the complete asset set and publishes the verified prerelease from a draft. Run the same workflow manually for a build-only check. The Windows bundle job upgrades the previous public release and rolls back using a disposable workspace. Test reports and artifacts are available on the Actions run.
+Prepare the version and its changelog entry, then push the matching `vX.Y.Z` tag. **Build and release AURA** runs the regression groups, plain ZIP verification, and native builds in parallel. It checks the complete asset set before publishing the prerelease from a draft. Run the same workflow manually for a build-only check. Retry failed jobs to reuse successful checks and artifacts. The Windows bundle job upgrades the previous public release and rolls back using a disposable workspace.
