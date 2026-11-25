@@ -1848,7 +1848,19 @@ class Workspace:
         except (OSError,ValueError) as error:result['startup']=False;result['problems'].append(str(error))
         try:workspace_resume.clear_wake()
         except (OSError,ValueError,subprocess.SubprocessError):result['problems'].append("AURA's wake-up couldn't be removed from this computer's scheduler.")
+        try:
+            result['shortcut']=workspace_startup.shortcut_status().get('enabled',False)
+            workspace_startup.configure_shortcut(False,PRODUCT_ROOT)
+        except (OSError,ValueError) as error:result['shortcut']=False;result['problems'].append(str(error))
         return result
+
+    def launcher_root(self):
+        """The folder the person opens AURA from. After an update AURA runs from a newer copy, but the original folder's
+        Open AURA is still what opens it (it follows the update), so a shortcut points there."""
+        settings=workspace_updates.read(workspace_updates.state_dir()/'updates/settings.json',{}) or {}
+        for root in settings.get('launch_roots',[]):
+            if workspace_updates.launch_target(root)==PRODUCT_ROOT.resolve():return Path(root)
+        return PRODUCT_ROOT
 
     def notify(self, bid, chat_id, title, kind='limit', task_id=None, goal_id=None, collection_id=None, item_title=None, item_id=None):
         """A bell notification for something that happened while the user may not be looking."""

@@ -457,7 +457,7 @@ def handler_for(app):
                     result=workspace_schedules.history(query.get('id',''),[workspace_root(),*(row['path'] for row in app.recent_workspaces())])
                     self.send(200,json.loads(app.connections.redact(json.dumps(result))))
                 elif route == '/api/startup':
-                    self.send(200, workspace_startup.status())
+                    self.send(200, {**workspace_startup.status(), 'shortcut':workspace_startup.shortcut_status()})
                 elif route == '/api/updates':
                     if query.get('editing') == '1':
                         app.update_editing_until = time.time() + 8
@@ -1056,9 +1056,14 @@ def handler_for(app):
                     elif route == '/api/startup':
                         if not isinstance(data.get('enabled'), bool):
                             raise ValueError('Choose whether AURA should start when you sign in.')
-                        self.send(200, workspace_startup.configure(data['enabled'], PRODUCT_ROOT,
+                        # The shortcut is saved first: it is the quick one, and a startup problem shouldn't undo it.
+                        shortcut = workspace_startup.shortcut_status()
+                        if isinstance(data.get('shortcut'), bool) and data['shortcut'] != shortcut['enabled']:
+                            shortcut = workspace_startup.configure_shortcut(data['shortcut'], app.launcher_root())
+                        result = workspace_startup.configure(data['enabled'], PRODUCT_ROOT,
                             workspace_root(), selected(data.get('business')) if data.get('business') else '',
-                            getattr(app, 'launch_extra', ())))
+                            getattr(app, 'launch_extra', ()))
+                        self.send(200, {**result, 'shortcut':shortcut})
                     elif route == '/api/schedules/action':
                         self.send(202, app.schedule_action(selected(data.get('business')),data))
                     elif route == '/api/schedules/stop':

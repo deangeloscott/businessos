@@ -282,11 +282,98 @@ class RunningAura(VisualInstance):
         return 'It is still closing. Open AURA again in a moment.'
 
 
+def shortcut_path():
+    """Where people look for an app: the Start menu, Applications, or the desktop's app menu."""
+    if sys.platform == 'win32':
+        return Path(os.environ['APPDATA']) / 'Microsoft/Windows/Start Menu/Programs/AURA.lnk'
+    if sys.platform == 'darwin':
+        return Path.home() / 'Applications/AURA.app'
+    if sys.platform.startswith('linux'):
+        return Path(os.environ.get('XDG_DATA_HOME') or Path.home() / '.local/share') / 'applications/viraltrac-aura.desktop'
+    raise ValueError('A shortcut is not available on this system.')
+
+
+SHORTCUT_LABELS = {'win32':'Show AURA in the Start menu', 'darwin':'Add AURA to Applications'}
+
+
+def shortcut_status():
+    label = SHORTCUT_LABELS.get(sys.platform, 'Add AURA to the app menu')
+    try:target = shortcut_path()
+    except (ValueError, KeyError):return {'supported':False, 'enabled':False, 'label':label}
+    try:saved = json.loads((state_dir() / 'shortcut.json').read_text(encoding='utf-8'))
+    except (OSError, ValueError):saved = {}
+    enabled = isinstance(saved, dict) and saved.get('path') == str(target) and target.exists()
+    return {'supported':True, 'enabled':enabled, 'label':label, 'product':saved.get('product', '') if enabled else ''}
+
+
+def _opener(root):
+    """What the shortcut runs: the folder's own Open AURA (which also opens versions AURA updated to), or Python with
+    AURA's opener where there is no such file (a copy run from source)."""
+    for name in ('Open AURA.cmd', 'Open AURA.command', 'Open AURA.sh'):
+        if (root / name).is_file():
+            return [str(root / name)] if name.endswith('.cmd') else ['/bin/sh', str(root / name)]
+    return [str(Path(sys.executable).resolve()), '-X', 'utf8', '-E', '-s', '-B', str(root / 'scripts/open_aura.py')]
+
+
+def configure_shortcut(enabled, product):
+    """Add or remove AURA's shortcut. One AURA didn't make (or that was changed since) is left alone."""
+    target, saved = shortcut_path(), state_dir() / 'shortcut.json'
+    current = shortcut_status()
+    if not enabled:
+        if current['enabled']:
+            if target.is_dir():
+                import shutil;shutil.rmtree(target)
+            else:target.unlink()
+        saved.unlink(missing_ok=True)
+        return shortcut_status()
+    if target.exists() and not current['enabled']:
+        raise ValueError(f'There is already an AURA shortcut at {target}. Remove it first, then try again.')
+    root = Path(product).resolve()
+    argv = _opener(root)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if sys.platform == 'win32':
+        def quoted(value):
+            return "'" + str(value).replace("'", "''") + "'"
+        command = ("$s=(New-Object -ComObject WScript.Shell).CreateShortcut(" + quoted(target) + ");"
+                   "$s.TargetPath=" + quoted(argv[0]) + ";$s.Arguments=" + quoted(subprocess.list2cmdline(argv[1:])) +
+                   ";$s.WorkingDirectory=" + quoted(root) + ";$s.Description='Open AURA';$s.Save()")
+        encoded = base64.b64encode(command.encode('utf-16-le')).decode('ascii')
+        powershell = Path(os.environ['SystemRoot']) / 'System32/WindowsPowerShell/v1.0/powershell.exe'
+        subprocess.run([str(powershell), '-NoProfile', '-NonInteractive', '-EncodedCommand', encoded],
+                       check=True, timeout=15, capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW)
+    elif sys.platform == 'darwin':
+        # A small app made here, not downloaded, so macOS opens it without asking. Apps started from the Dock get only
+        # the system folders on their search path; keep the one AI apps were found on.
+        quoted = lambda value: "'" + str(value).replace("'", "'\\''") + "'"
+        (target / 'Contents/MacOS').mkdir(parents=True, exist_ok=True)
+        (target / 'Contents/Info.plist').write_bytes(plistlib.dumps({'CFBundleName':'AURA', 'CFBundleDisplayName':'AURA',
+            'CFBundleExecutable':'AURA', 'CFBundleIdentifier':'com.viraltrac.aura.open', 'CFBundlePackageType':'APPL'}))
+        script = target / 'Contents/MacOS/AURA'
+        script.write_text('#!/bin/sh\nexport PATH=' + quoted(os.environ.get('PATH', '')) + '\nexec ' + ' '.join(map(quoted, argv)) + '\n',
+                          encoding='utf-8')
+        script.chmod(0o755)
+    else:
+        def escaped(value):
+            return '"' + str(value).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$').replace('%', '%%') + '"'
+        target.write_text('[Desktop Entry]\nType=Application\nName=AURA\nComment=Open AURA\nTerminal=false\nExec=' +
+                          ' '.join(map(escaped, ['env', 'PATH=' + os.environ.get('PATH', ''), *argv])) + '\n', encoding='utf-8')
+    state_dir().mkdir(parents=True, exist_ok=True)
+    saved.write_text(json.dumps({'path':str(target), 'product':str(root)}), encoding='utf-8')
+    return shortcut_status()
+
+
 def follow(product, launch_target=None):
     """When AURA opens from another folder (a new version unpacked beside the old one), "Start AURA when I sign in"
     follows it, so the old folder doesn't start at the next sign-in and its scheduled tasks don't move back to it.
-    An automatic update keeps the original launcher, which already opens the current version."""
+    An automatic update keeps the original launcher, which already opens the current version. AURA's shortcut follows
+    the same way."""
     product = Path(product).resolve()
+    shortcut = shortcut_status()
+    if shortcut.get('enabled') and shortcut.get('product'):
+        old = Path(shortcut['product']).resolve()
+        if old != product and not (launch_target and launch_target(old) == product):
+            try:configure_shortcut(False, old);configure_shortcut(True, product)
+            except (OSError, ValueError, subprocess.SubprocessError):pass  # the old shortcut still opens the old folder
     current = status()
     if not current.get('enabled') or not current.get('product') or not current.get('workspace'):return False
     saved = Path(current['product']).resolve()

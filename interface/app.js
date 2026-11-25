@@ -1608,12 +1608,12 @@ async function syncSchedules(force=false) {
   } finally {state.scheduleLoading=false;}
 }
 function startupSection(startup) {
-  return `<section class="startup-section"><h3>Startup</h3><form id="startup-form"><label class="startup-choice"><input type="checkbox" name="enabled" ${startup.enabled?'checked':''} ${startup.supported?'':'disabled'}> Start AURA when I sign in</label><p class="small-note">${startup.supported?'Keeps AURA available in the background on this computer.':'Automatic startup is unavailable on this system.'}</p>${startup.product&&startup.product!==state.data.product?'<p class="small-note">Save to use this version at startup.</p>':startup.workspace&&startup.workspace!==state.data.workspace?'<p class="small-note">Save to use this workspace at startup.</p>':''}<div class="startup-actions"><button class="secondary" ${startup.supported?'':'disabled'}>Save startup</button><span id="startup-save-status" class="small-note" role="status"></span></div></form></section>`;
+  return `<section class="startup-section"><h3>Startup</h3><form id="startup-form"><label class="startup-choice"><input type="checkbox" name="enabled" ${startup.enabled?'checked':''} ${startup.supported?'':'disabled'}> Start AURA when I sign in</label><p class="small-note">${startup.supported?'Keeps AURA available in the background on this computer.':'Automatic startup is unavailable on this system.'}</p>${startup.shortcut?.supported?`<label class="startup-choice"><input type="checkbox" name="shortcut" ${startup.shortcut.enabled?'checked':''}> ${esc(startup.shortcut.label)}</label><p class="small-note">Open AURA from there, without finding its folder.</p>`:''}${startup.product&&startup.product!==state.data.product?'<p class="small-note">Save to use this version at startup.</p>':startup.workspace&&startup.workspace!==state.data.workspace?'<p class="small-note">Save to use this workspace at startup.</p>':''}<div class="startup-actions"><button class="secondary" ${startup.supported||startup.shortcut?.supported?'':'disabled'}>Save</button><span id="startup-save-status" class="small-note" role="status"></span></div></form></section>`;
 }
 /* Removing AURA: there is no installer, so deleting its folder is the uninstall. This takes away first what AURA set up
    on the computer outside that folder, so nothing is left running for a folder that's gone. */
 function removeSection(){
-  return `<section class="remove-section"><h3>Removing AURA</h3><p class="small-note">There's nothing to uninstall: you delete the AURA folder. First remove what AURA set up on this computer: its scheduled tasks on the computer's scheduler, starting at sign-in, and the wake-up that continues chats after a plan limit. Your workspace and everything your businesses saved stay where they are, and so do tasks your AI apps run with their own schedulers.</p><div id="remove-computer" class="inline-actions"><button type="button" class="secondary" data-remove-computer="ask">Remove from this computer</button></div></section>`;
+  return `<section class="remove-section"><h3>Removing AURA</h3><p class="small-note">There's nothing to uninstall: you delete the AURA folder. First remove what AURA set up on this computer: its scheduled tasks on the computer's scheduler, starting at sign-in, its shortcut, and the wake-up that continues chats after a plan limit. Your workspace and everything your businesses saved stay where they are, and so do tasks your AI apps run with their own schedulers.</p><div id="remove-computer" class="inline-actions"><button type="button" class="secondary" data-remove-computer="ask">Remove from this computer</button></div></section>`;
 }
 document.addEventListener('click',event=>{
   const button=event.target.closest('[data-remove-computer]');if(!button)return;
@@ -1624,8 +1624,8 @@ document.addEventListener('click',event=>{
   attempt(async()=>{
     button.disabled=true;
     let r;try{r=await api('/api/remove-from-computer',{});}finally{if(button.isConnected)button.disabled=false;}
-    const done=[r.tasks.length?`${r.tasks.length} scheduled task${r.tasks.length===1?'':'s'} removed`:'No scheduled tasks were on this computer',r.startup?'AURA no longer starts when you sign in':''].filter(Boolean).join('. ')+'.';
-    const box=$('#startup-form [name=enabled]');if(box)box.checked=false;
+    const done=[r.tasks.length?`${r.tasks.length} scheduled task${r.tasks.length===1?'':'s'} removed`:'No scheduled tasks were on this computer',r.startup?'AURA no longer starts when you sign in':'',r.shortcut?'Its shortcut is removed':''].filter(Boolean).join('. ')+'.';
+    document.querySelectorAll('#startup-form [name=enabled],#startup-form [name=shortcut]').forEach(box=>{box.checked=false;});
     host.innerHTML=`<p role="status">${esc(done)}${r.problems.length?' '+r.problems.map(esc).join(' '):' You can now quit AURA and delete its folder.'}</p>${r.problems.length?'':'<button type="button" class="secondary" data-remove-computer="quit">Quit AURA</button>'}`;
   });
 });
@@ -3177,8 +3177,9 @@ document.addEventListener('submit',event=>{
       if(form.getAttribute('id')==='custom-agent-form') { const saved=await api('/api/custom-agent',{name:data.get('name'),command:data.get('command')}); $('#detail').close(); notice(saved.name+' added. Choose it as your AI app.'); await refresh(); }
       if(form.getAttribute('id')==='business-form') { await api('/api/save',{business:state.business,kind:'business',name:data.get('name'),description:data.get('description')||'',ref:form.dataset.ref}); $('#detail').close(); notice('Saved.'); await refresh(); window.auraFocus?.afterDescription(data.get('description')||''); }
       if(form.getAttribute('id')==='startup-form') {
-        await api('/api/startup',{enabled:data.has('enabled'),business:state.business});
-        $('#startup-save-status').textContent=data.has('enabled')?'Startup is on.':'Startup is off.';
+        const shortcutBox=form.querySelector('[name=shortcut]');
+        const saved=await api('/api/startup',{enabled:data.has('enabled'),business:state.business,...(shortcutBox?{shortcut:shortcutBox.checked}:{})});
+        $('#startup-save-status').textContent=(data.has('enabled')?'Startup is on.':'Startup is off.')+(shortcutBox?(saved.shortcut?.enabled?' Shortcut added.':' No shortcut.'):'');
       }
       if(form.getAttribute('id')==='task-request-form') {
         const task=state.editingTask;
