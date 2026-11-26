@@ -58,9 +58,13 @@ def version(value):
     return tuple(map(int, match.groups())) if match else (0, 0, 0)
 
 
+def schema_files(root):
+    return sorted([*Path(root).glob('core/**/*.schema.json'), *Path(root).glob('systems/**/*.schema.json')])
+
+
 def schema_hash(root):
     digest = hashlib.sha256()
-    for path in sorted([*Path(root).glob('core/**/*.schema.json'), *Path(root).glob('systems/**/*.schema.json')]):
+    for path in schema_files(root):
         digest.update(path.relative_to(root).as_posix().encode())
         digest.update(path.read_bytes())
     return digest.hexdigest()

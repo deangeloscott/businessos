@@ -9,7 +9,8 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
-from package_runtime import build, download, native_platform, unpack_wheel
+from package_runtime import build, download, native_platform, stage_schema_bytes, unpack_wheel
+from workspace_updates import schema_hash
 
 manifest = json.loads((ROOT/'distribution/bundled-runtimes.json').read_text())
 assert set(manifest['platforms']) == {'windows-x64','windows-arm64','macos-x64','macos-arm64','linux-x64','linux-arm64'}
@@ -19,6 +20,14 @@ for target,spec in manifest['platforms'].items():
     assert all(len(w['sha256'])==64 for w in spec['wheels'])
 with tempfile.TemporaryDirectory(prefix='aura-bundle-boundary-') as directory:
     base = Path(directory)
+    schema=base/'core'/'example.schema.json';schema.parent.mkdir()
+    schema.write_bytes(b'{\r\n  "title": "Example"\r\n}\r\n')
+    old_windows_hash=schema_hash(base)
+    schema.write_bytes(schema.read_bytes().replace(b'\r\n',b'\n'))
+    stage_schema_bytes(base,'linux-x64')
+    assert schema_hash(base)!=old_windows_hash
+    stage_schema_bytes(base,'windows-x64')
+    assert schema_hash(base)==old_windows_hash
     raw = b'verified fixture bytes'
     expected = hashlib.sha256(raw).hexdigest()
     cached = base/(expected[:16]+'-fixture.tar.gz')

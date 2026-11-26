@@ -100,6 +100,18 @@ def write_launcher(root, target):
     return name
 
 
+def stage_schema_bytes(root, target):
+    """Keep existing Windows installs compatible with the shared app ZIP."""
+    if not target.startswith('windows'):
+        return
+    from workspace_updates import schema_files
+    for path in schema_files(root):
+        raw=path.read_bytes()
+        windows=raw.replace(b'\r\n',b'\n').replace(b'\n',b'\r\n')
+        if windows!=raw:
+            path.write_bytes(windows)
+
+
 def build(target, output, cache, base_dir=None):
     manifest = json.loads((ROOT/'distribution/bundled-runtimes.json').read_text(encoding='utf-8'))
     if target not in manifest['platforms'] or target != native_platform():
@@ -160,6 +172,7 @@ def build(target, output, cache, base_dir=None):
             base=temporary/'base'/base_name
         root = temporary/name
         base.rename(root)
+        stage_schema_bytes(root,target)
         python_root.rename(root/'.aura-runtime')
         shutil.copy2(download(manifest['license_notices'], cache),root/'.aura-runtime/THIRD-PARTY-LICENSES.rst')
         if target.startswith('windows') and not (root/'.aura-runtime/python3.exe').exists():
