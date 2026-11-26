@@ -89,16 +89,21 @@ def smoke(archive, previous_file=None):
 
         def await_version(expected, pointer=False):
             deadline = time.monotonic() + 90
+            last_seen = {}
             while time.monotonic() < deadline:
                 try:
                     state = api('/api/state')
-                    active = updates.read(local / 'updates/settings.json').get('active')
+                    saved = updates.read(local / 'updates/settings.json')
+                    active = saved.get('active')
+                    last_seen = {'version':state.get('version'), 'error':saved.get('error'), 'last_update':saved.get('last_update')}
                     if state['version'] == expected and (not pointer or active and Path(active) == Path(state['product'])):
                         return state
+                    if saved.get('failed_version') == expected and saved.get('error'):
+                        raise RuntimeError('AURA could not prepare or activate ' + expected + ': ' + saved['error'])
                 except (OSError, ValueError, AttributeError):
                     pass
                 time.sleep(.25)
-            raise RuntimeError('AURA did not activate and answer as version ' + expected)
+            raise RuntimeError('AURA did not activate and answer as version ' + expected + ': ' + json.dumps(last_seen))
 
         with (root / 'launcher.log').open('w+', encoding='utf-8') as log:
             server = subprocess.Popen([str(updates.bundled_python(old)), '-B', '-X', 'utf8', __file__, '--serve',
@@ -120,6 +125,8 @@ def smoke(archive, previous_file=None):
             except Exception:
                 log.seek(0)
                 print(log.read()[-5000:])
+                for background in (local/'interface.log',local/'updates/launch.log'):
+                    if background.is_file():print(background.read_text(encoding='utf-8',errors='replace')[-5000:])
                 raise
             finally:
                 try:

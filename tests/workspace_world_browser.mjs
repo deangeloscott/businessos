@@ -14,7 +14,7 @@ const browser = spawn(browserPath, ['--headless=new', '--remote-debugging-port=0
 let launchError, stderr = '';
 browser.on('error', error => { launchError = error; });
 browser.stderr.setEncoding('utf8').on('data', chunk => { stderr = (stderr + chunk).slice(-1500); });
-let ws, failed = null;
+let ws, failed = null, startupFailed = false;
 try {
   let version;
   for (let i = 0; i < 125 && !version; i++) {
@@ -28,7 +28,10 @@ try {
     } catch {}
     if (!version) await sleep(200);
   }
-  if (!version) throw new Error('The browser did not start. ' + (launchError?.message || stderr.trim() || 'No debug port was reported.'));
+  if (!version) {
+    startupFailed = true;
+    throw new Error('The browser did not start. ' + (launchError?.message || stderr.trim() || 'No debug port was reported.'));
+  }
   ws = new WebSocket(version.webSocketDebuggerUrl);
   await new Promise((ok, fail) => { ws.onopen = ok; ws.onerror = fail; });
   let id = 0; const pending = new Map(), errors = [];
@@ -109,4 +112,4 @@ try {
   console.log('world browser: ok' + (has3d ? '' : ' (3D unavailable here; layout checked)'));
 } catch (error) { failed = error; }
 finally { try { ws?.close(); } catch {} browser.kill(); await sleep(300); try { rmSync(profile, { recursive: true, force: true }); } catch {} }
-if (failed) { console.error('world browser: ' + failed.message); process.exit(1); }
+if (failed) { console.error('world browser: ' + failed.message); process.exit(startupFailed ? 2 : 1); }

@@ -109,6 +109,8 @@ selected=[test for test in TESTS if group=='all' or release_groups.get(test,'wor
 scope='product-integrity' if group=='all' else group
 failures=[]
 try:
+    if group=='workspace':
+        subprocess.run([sys.executable,str(ROOT/'scripts/generate_registry.py')],cwd=ROOT,env=env,check=True)
     for rel in selected:
         print(f'== {rel} ==',flush=True)
         started=time.monotonic()

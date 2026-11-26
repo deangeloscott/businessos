@@ -29,8 +29,8 @@ print(json.dumps(built))
 
 
 def main():
-    browser=next((b for b in BROWSERS.get(sys.platform,['/usr/bin/google-chrome','/usr/bin/chromium','/usr/bin/chromium-browser']) if Path(b).exists()),None)
-    if not browser or not shutil.which('node'):
+    browsers=[b for b in BROWSERS.get(sys.platform,['/usr/bin/google-chrome','/usr/bin/chromium','/usr/bin/chromium-browser']) if Path(b).exists()]
+    if not browsers or not shutil.which('node'):
         if os.environ.get('AURA_REQUIRE_BROWSER') == '1':
             raise RuntimeError('The browser checks require Chrome or Edge and Node.')
         print('world browser: skipped (no Chrome, Edge or Node here)');return
@@ -44,7 +44,15 @@ def main():
             for _ in range(150):
                 try:urllib.request.urlopen(f'http://127.0.0.1:{port}/',timeout=1);break
                 except OSError:time.sleep(.2)
-            subprocess.run(['node',str(ROOT/'tests/workspace_world_browser.mjs'),browser,f"http://127.0.0.1:{port}/?business={built['business_id']}&view=aura"],check=True,timeout=240)
+            url=f"http://127.0.0.1:{port}/?business={built['business_id']}&view=aura"
+            command=['node',str(ROOT/'tests/workspace_world_browser.mjs')]
+            result=subprocess.run([*command,browsers[0],url],timeout=240)
+            if result.returncode==2:
+                # Retry only a browser startup failure, with a fresh profile and
+                # the other installed browser if available.
+                print('world browser: retrying browser startup',flush=True)
+                subprocess.run([*command,browsers[-1],url],check=True,timeout=240)
+            else:result.check_returncode()
         finally:
             server.terminate()
             try:server.wait(10)

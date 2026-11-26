@@ -3910,10 +3910,11 @@ class Workspace:
             execution = self.execution = Execution()
             execution.output_project=output_project
             if native:
-                separate=not chat.get('native_id') and not native_spec and kind in {'codex','claude'}
-                prompt,execution.aura_instructions=workspace_chats.native_request(prompt,text,separate)
-                execution.aura_title=workspace_chats.short(self.connections.redact(chat['title']),80)
                 execution.temporary_chat=temporary_chat
+                if keep_warm_id is None:
+                    separate=not chat.get('native_id') and not native_spec and kind in {'codex','claude'}
+                    prompt,execution.aura_instructions=workspace_chats.native_request(prompt,text,separate)
+                    execution.aura_title=workspace_chats.short(self.connections.redact(chat.get('title') or ''),80)
             if not welcome and keep_warm_id is None:
                 import workspace_trace
                 execution.trace=workspace_trace.Recorder(job['id'],bid,self.connections.redact)
