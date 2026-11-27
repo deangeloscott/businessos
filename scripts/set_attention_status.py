@@ -42,6 +42,6 @@ def main():
     parser.add_argument('business_id');parser.add_argument('attention_id');parser.add_argument('status',choices=sorted(STATUSES));parser.add_argument('--resolution-ref',action='append',default=[]);parser.add_argument('--note');parser.add_argument('--at');args=parser.parse_args()
     try:result=set_status(args.business_id,args.attention_id,args.status,args.resolution_ref,args.note,args.at)
     except ValueError as exc:raise SystemExit(str(exc))
-    print(json.dumps(result,indent=2))
+    print(json.dumps({**result,**as_saved(note=args.note)},indent=2))
 
 if __name__=='__main__':main()

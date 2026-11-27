@@ -351,6 +351,22 @@ def _location(path):
     return Path(path).resolve()
 
 
+_BARE_AMOUNT=re.compile(r'(?<![\w$£€¥.,])\d{1,3}(?:,\d{3})+(?:\.\d+)?(?![\d,])|(?<![\w$£€¥.,])\d+\.\d{2}(?![\d.])')
+
+
+def as_saved(**texts):
+    """Text a helper saved, shown as it arrived. A shell expands `$` plus a digit inside double quotes before AURA sees
+    the text ("$412,000" arrives as "12,000"), so the caller sees what was kept and can correct it."""
+    shown={name:value for name,value in texts.items() if value}
+    if not shown:return {}
+    result={'saved_text':shown}
+    # Any $-and-digit left means the shell did not expand them (it expands every one in the same string).
+    if any(_BARE_AMOUNT.search(v) and not re.search(r'\$\d',v) for v in shown.values()):
+        result['check']=('An amount here has no currency sign. If it had one, your shell removed it with the digit after '
+                         'it, so "$412,000" was saved as "12,000". Run the helper again with that text in single quotes.')
+    return result
+
+
 def storage_ref(path):
     text=os.path.normpath(str(path))
     if os.path.isabs(text):

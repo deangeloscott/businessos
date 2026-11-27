@@ -796,7 +796,7 @@ class Workspace:
                 workspace_startup.configure(True,PRODUCT_ROOT,target,extra=self.launch_extra)
             except (OSError, ValueError, subprocess.SubprocessError):
                 info['connection_note'] = 'Workspace opened. Save Startup again to use this folder when you sign in.'
-        threading.Thread(target=self.protect_format, args=(str(target),), daemon=True, name='aura-format').start()
+        self.protect_format(str(target))
         return info
 
     def organization_references(self):
@@ -1943,15 +1943,21 @@ class Workspace:
             print(time.strftime('%Y-%m-%d %H:%M:%S')+' Could not clear old AURA update copies: '+str(error)[:300],flush=True)
 
     def protect_format(self, root=None):
-        """A newer AURA backs up a workspace before its first save there (workspace_storage.protect_format), holding
-        changes made in AURA meanwhile, as any backup does. If it can't, the person is told on Home."""
-        root=str(root or self.workspace_path);error=None
+        """Called as a workspace opens. Usually it only notes this version's record format, at once. When the workspace
+        was last opened by a version with a different format, a backup runs in the background first
+        (workspace_storage.protect_format), holding changes made in AURA meanwhile as any backup does."""
+        root=str(root or self.workspace_path)
         try:needed=workspace_storage.format_backup_needed(root)
         except (OSError,ValueError):needed=False
-        if not needed:
-            try:workspace_storage.protect_format(root)
-            except (OSError,ValueError):pass
+        if needed:
+            threading.Thread(target=self._format_backup,args=(root,),daemon=True,name='aura-format').start()
             return None
+        try:workspace_storage.protect_format(root)
+        except (OSError,ValueError):pass
+        return None
+
+    def _format_backup(self, root):
+        error=None
         version=(PRODUCT_ROOT/'VERSION').read_text(encoding='utf-8').strip()
         for attempt in range(4):
             if attempt:time.sleep(30)
@@ -4219,7 +4225,7 @@ def main():
         # When AURA now runs from another folder, what starts it from outside follows: tasks on the computer's own
         # scheduler, "Start AURA when I sign in" and the wake-up that continues chats after a plan limit.
         threading.Thread(target=app.after_start, daemon=True, name='aura-follow').start()
-        threading.Thread(target=app.protect_format, daemon=True, name='aura-format').start()
+        app.protect_format()
         instance.publish(server.server_port, app.token)
         url = f'http://127.0.0.1:{server.server_port}/' + ('?business=' + quote(args.business_id) if args.business_id else '')
         names=', '.join(b['name'] for b in business_directory())[:80]

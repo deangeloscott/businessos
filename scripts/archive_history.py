@@ -57,7 +57,7 @@ def main():
     args=parser.parse_args()
     try:moved=archive_objects(args.business_id,args.object_ref,args.reason,args.archived_at)
     except (ValueError,FileExistsError,OSError,json.JSONDecodeError) as exc:raise SystemExit(str(exc))
-    print(json.dumps({'business_id':args.business_id,'archived_count':len(moved),'moved':moved,'selection_authority':False,'rule':'Objects are archived only because the caller explicitly selected already-resolved/superseded organization state; AURA does not infer retention value from age.'},indent=2))
+    print(json.dumps({'business_id':args.business_id,'archived_count':len(moved),'moved':moved,'selection_authority':False,'rule':'Objects are archived only because the caller explicitly selected already-resolved/superseded organization state; AURA does not infer retention value from age.',**as_saved(reason=args.reason)},indent=2))
 
 
 if __name__=='__main__':main()

@@ -47,6 +47,7 @@ def main():
     if not (ROOT/'instances'/args.business_id).exists():raise SystemExit(f'Unknown business: {args.business_id}')
     try:obj,path,created,reopened=upsert(args.business_id,args.dedupe_key,args.attention_type,args.severity,args.title,args.reason,args.recommended_action,args.source_ref,args.evidence_ref,args.lineage_ref,args.next_review_at,args.seen_at)
     except ValueError as exc:raise SystemExit(str(exc))
-    print(json.dumps({'attention_id':obj['id'],'status':obj['status'],'created':created,'reopened':reopened,'occurrence_count':obj['occurrence_count'],'path':storage_ref(path)},indent=2))
+    print(json.dumps({'attention_id':obj['id'],'status':obj['status'],'created':created,'reopened':reopened,'occurrence_count':obj['occurrence_count'],'path':storage_ref(path),
+                      **as_saved(title=args.title,reason=args.reason,recommended_action=args.recommended_action)},indent=2))
 
 if __name__=='__main__':main()

@@ -516,6 +516,8 @@ def protect_format(root, report=_quiet):
     from workspace_startup import state_dir
     root = Path(root).resolve()
     stamp = root / FORMAT_FILE
+    if not (root / '.businessos').is_dir():
+        return None  # not a workspace (or no longer here): leave nothing behind
     saved, current = _format_records(root)
     result = None
     if format_backup_needed(root):
