@@ -363,7 +363,10 @@ def run(ident):
         command=list(choice['argv'])
         env={**os.environ,**Connections(state_dir()).environment(),'BUSINESSOS_WORKSPACE':task['workspace'],'PYTHONUTF8':'1'}
         execution=Execution();execution.permission=task.get('permission','native')
-        prompt=(f"This is an unattended scheduled run of “{task['name']}” for AURA business {task['business_id']}, with no one watching. "
+        # The task's name, not the opening instructions, is what the app's own chat history shows for this run.
+        execution.aura_title=(task['name']+' · scheduled')[:80]
+        # Apps that title a chat by its first words (Codex here) show the task's name.
+        prompt=(f"{task['name']} (scheduled run)\n\nThis is an unattended scheduled run of “{task['name']}” for AURA business {task['business_id']}, with no one watching. "
                 "Check what is already done before acting, and don't repeat anything that already happened.\n\n"+task['prompt'])
         if task['app']=='codex':
             command[-1:-1]=['--sandbox',{'full':'danger-full-access','read-only':'read-only'}.get(execution.permission,'workspace-write')]

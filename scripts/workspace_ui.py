@@ -796,6 +796,7 @@ class Workspace:
                 workspace_startup.configure(True,PRODUCT_ROOT,target,extra=self.launch_extra)
             except (OSError, ValueError, subprocess.SubprocessError):
                 info['connection_note'] = 'Workspace opened. Save Startup again to use this folder when you sign in.'
+        threading.Thread(target=self.protect_format, args=(str(target),), daemon=True, name='aura-format').start()
         return info
 
     def organization_references(self):
@@ -1867,6 +1868,11 @@ class Workspace:
             result['shortcut']=workspace_startup.shortcut_status().get('enabled',False)
             workspace_startup.configure_shortcut(False,PRODUCT_ROOT)
         except (OSError,ValueError) as error:result['shortcut']=False;result['problems'].append(str(error))
+        # The copies updates keep (and workspace backups made before a newer version used a workspace) live in
+        # AURA's settings folder, not the AURA folder the person deletes. The running version stays until AURA quits.
+        try:result['update_copies']=len(workspace_updates.prune(self.updates,keep_previous=False))
+        except (OSError,ValueError):result['problems'].append("AURA's earlier update copies couldn't all be removed.")
+        result['settings_folder']=str(workspace_updates.state_dir())
         return result
 
     def launcher_root(self):
@@ -1914,6 +1920,63 @@ class Workspace:
         return {'chat':workspace_recovery.revision(chat),'settings':workspace_context.digest({k:chat.get(k) for k in
                     ('connection','model','effort','permission_mode','context_refs','project','account_id')}),
                 'goal':workspace_goals.continuation_basis(bid,workspace_goals.find(bid,goal_id)) if goal_id else None}
+
+    def after_start(self):
+        """At each start: bring the person's AURA folder to this version after an update (it then opens this version
+        directly), move what starts AURA from outside to this folder, and clear update copies nothing needs."""
+        updater=self.updates
+        settled=workspace_updates.settle(updater)
+        if not settled and workspace_updates.read(updater.path).get('settled_from')!=str(PRODUCT_ROOT):
+            # Following is for the folder AURA opens from; once settled, that is the person's folder, which the
+            # next start runs from and follows.
+            self.follow_product()
+        elif settled:
+            # A pending "continue after a plan limit" wake-up must not point at an update copy about to be cleared.
+            try:
+                if (any(r.get('status','pending')=='pending' for r in workspace_resume.pending())
+                        and workspace_accounts.load()['policy'].get('resume')=='closed'):
+                    workspace_resume.schedule_wake(settled[0])
+            except (OSError,ValueError,subprocess.SubprocessError) as error:
+                print(time.strftime('%Y-%m-%d %H:%M:%S')+' Could not move the wake-up to this AURA folder: '+str(error)[:300],flush=True)
+        try:workspace_updates.prune(updater)
+        except (OSError,ValueError) as error:
+            print(time.strftime('%Y-%m-%d %H:%M:%S')+' Could not clear old AURA update copies: '+str(error)[:300],flush=True)
+
+    def protect_format(self, root=None):
+        """A newer AURA backs up a workspace before its first save there (workspace_storage.protect_format), holding
+        changes made in AURA meanwhile, as any backup does. If it can't, the person is told on Home."""
+        root=str(root or self.workspace_path);error=None
+        try:needed=workspace_storage.format_backup_needed(root)
+        except (OSError,ValueError):needed=False
+        if not needed:
+            try:workspace_storage.protect_format(root)
+            except (OSError,ValueError):pass
+            return None
+        version=(PRODUCT_ROOT/'VERSION').read_text(encoding='utf-8').strip()
+        for attempt in range(4):
+            if attempt:time.sleep(30)
+            def work(report):
+                with workspace_scope(root):return workspace_storage.protect_format(root,report)
+            self.lock.acquire()
+            if self.operation:
+                self.lock.release();continue
+            try:
+                # run_operation lets go of the lock as soon as the backup is under way.
+                return self.run_operation(self.lock,'backup',f'Backing up this workspace before AURA {version} saves in it',work)
+            except (OSError,ValueError) as problem:
+                if str(problem).startswith('Stopped'):return None
+                error=problem
+        try:
+            from upsert_attention import upsert
+            with workspace_scope(root):
+                for business in business_directory():
+                    upsert(business['id'],'aura-format-backup','data_quality','medium',
+                           f'AURA {version} couldn’t back up this workspace before using it',
+                           'This version saves records in a newer format, so AURA keeps a backup first to make going back '
+                           'to the previous version possible. The backup did not finish: '+str(error or 'AURA was busy.')[:300],
+                           recommended_action='Make a backup in Back up or restore. AURA also tries again the next time it opens.')
+        except (OSError,ValueError,KeyError):pass
+        return None
 
     def follow_product(self):
         import workspace_os_schedules
@@ -3145,15 +3208,36 @@ class Workspace:
         self.read_cache.clear()
         return result
 
-    def saved_outputs(self,bid,chat_id,started_at):
+    def saved_outputs(self,bid,chat_id,started_at,folder=None,project=None):
+        """What this request saved: files the AI recorded for this chat, and new or changed files in the request's
+        output folder whether or not it recorded them, newest first, so the person can open what was made."""
         found=[]
         for ref,asset in asset_records(bid).items():
             work=asset.get('extensions',{}).get('businessos',{}).get('work',{})
             if work.get('last_saved_chat')!=chat_id or (workspace_usage.timestamp(asset.get('updated_at')) or 0)<started_at:continue
             path=asset_path(bid,asset.get('location_reference'))
             if path and path.is_file():
-                found.append({'ref':'asset/'+ref+'/'+path.name,'name':path.name,'path':str(path)})
-        return found
+                found.append({'ref':'asset/'+ref+'/'+path.name,'name':path.name,'path':str(path),'at':path.stat().st_mtime})
+        known={Path(item['path']).resolve() for item in found}
+        root=workspace_root().resolve();base=Path(folder) if folder else None;seen=0
+        for current,dirs,files in (os.walk(base) if base and base.is_dir() else ()):
+            depth=len(Path(current).relative_to(base).parts)
+            dirs[:]=[] if depth>=3 else [d for d in dirs if not d.startswith('.') and d not in workspace_storage.PRIVATE]
+            for name in files:
+                seen+=1
+                if seen>5000:dirs[:]=[];break
+                if name.startswith(('.','~$')) or name.endswith(('.tmp','.aura~','.aura-tmp','.partial')) or name in {'Thumbs.db','desktop.ini'}:continue
+                path=Path(current)/name
+                try:changed=path.stat().st_mtime
+                except OSError:continue
+                if changed<started_at-1 or path.resolve() in known:continue
+                if path.resolve().is_relative_to(root):ref=path.resolve().relative_to(root).as_posix()
+                elif project and project.get('folder') and path.resolve().is_relative_to(Path(project['folder']).resolve()):
+                    ref='project/'+project['id']+'/'+path.resolve().relative_to(Path(project['folder']).resolve()).as_posix()
+                else:continue
+                found.append({'ref':ref,'name':name,'path':str(path),'at':changed});known.add(path.resolve())
+        found.sort(key=lambda item:-item['at'])
+        return [{k:v for k,v in item.items() if k!='at'} for item in found]
 
     def record_snapshot(self,bid):
         base=str(workspace_root()/'instances'/bid)
@@ -3844,6 +3928,7 @@ class Workspace:
             job = {'id': new_id(12), 'business_id': bid, 'status': 'working', 'reply': '', 'activity': [],
                    'created': time.time(), 'updated': time.time(), 'progress': 'Starting your AI'}
             job['output_destination']=output_project['name'] if output_project else 'Workspace files'
+            job['output_root']=str(self._output_root)
             if getattr(self,'_catch_up_from',None):job['catch_up_from']=self._catch_up_from
             job.update(references=selected_context['references'],inherited_references=inherited_context['references'],files=files or [],goal_id=goal_id or '')
             if context_notes:job['context_note']=' '.join(dict.fromkeys(context_notes))
@@ -3912,8 +3997,12 @@ class Workspace:
             if native:
                 execution.temporary_chat=temporary_chat
                 if keep_warm_id is None:
-                    separate=not chat.get('native_id') and not native_spec and kind in {'codex','claude'}
+                    separate=not native_spec and (kind=='claude' or kind=='codex' and not chat.get('native_id'))
                     prompt,execution.aura_instructions=workspace_chats.native_request(prompt,text,separate)
+                    if kind=='claude' and separate and not execution.aura_instructions:
+                        # Claude Code reuses the guidance a chat started with until a long chat is compacted, then
+                        # rebuilds it from what this launch passes, so a continued chat passes it again.
+                        execution.aura_instructions=(PRODUCT_ROOT/'CONTEXT.md').read_text(encoding='utf-8').strip()
                     execution.aura_title=workspace_chats.short(self.connections.redact(chat.get('title') or ''),80)
             if not welcome and keep_warm_id is None:
                 import workspace_trace
@@ -4129,7 +4218,8 @@ def main():
         threading.Thread(target=update_watch, daemon=True).start()
         # When AURA now runs from another folder, what starts it from outside follows: tasks on the computer's own
         # scheduler, "Start AURA when I sign in" and the wake-up that continues chats after a plan limit.
-        threading.Thread(target=app.follow_product, daemon=True, name='aura-follow').start()
+        threading.Thread(target=app.after_start, daemon=True, name='aura-follow').start()
+        threading.Thread(target=app.protect_format, daemon=True, name='aura-format').start()
         instance.publish(server.server_port, app.token)
         url = f'http://127.0.0.1:{server.server_port}/' + ('?business=' + quote(args.business_id) if args.business_id else '')
         names=', '.join(b['name'] for b in business_directory())[:80]

@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- **One AURA folder after an update.** The folder you open AURA from is brought to the new version, so it no longer shows an old version beside the one running, and AI apps working in it get current guidance and helpers. The previous version is still kept for going back, and update copies nothing needs are cleared instead of adding about 90 MB per update. A folder you've added your own files to is left alone, with a note in Settings.
+- **Updates no longer stop at a new record format.** A version that saves records differently backs up each workspace before it first saves there, so you don't have to back up by hand and follow release notes. If that backup can't be made, Home says so.
+- **What a chat made, listed after it.** Files that appear in the chat's output folder show with **Open file** and **Show folder**, whether or not the AI recorded them.
+- **Smaller fixes.** The Start menu shortcut opens AURA without a command window and says on screen if AURA can't start. Scheduled runs are named after their task in the AI app's own chat history. Updates ask for free space in proportion to their size instead of 4 GB. Remove from this computer also removes the earlier versions AURA keeps and names its settings folder. The update panel no longer offers a restart notice while an update is being prepared.
+
 ## 0.7.5 Alpha — 2026-11-25
 
 - **One place to find work.** Drop or add files in Files to save them in the current project or workspace. Finished chats show saved artifacts with **Open file** and **Show folder**.

@@ -33,11 +33,11 @@ Open one starting point directly when you already know the visual job. Each file
 | 08 | [The Night Commuter Safety & Lighting Architecture](06-mobility-transport/08-the-night-commuter-safety-and-lighting-architecture.md) | The Proof |
 | 09 | [All-Weather Water & Mud Demonstration](06-mobility-transport/09-all-weather-water-and-mud-demonstration.md) | The Proof |
 | 10 | [The Documented Long-Use Commuter Demonstration](06-mobility-transport/10-the-documented-long-use-commuter-demonstration.md) | The Proof |
-| 11 | [The Ergonomic Geometry, Standover & Dimensional Fit Blueprint](06-mobility-transport/11-the-ergonomic-geometry-standover-and-dimensional-fit-blueprint.md) | The Specimen |
+| 11 | [The Ergonomic Geometry, Standover & Dimensional Fit Blueprint](06-mobility-transport/11-the-ergonomic-geometry-standover.md) | The Specimen |
 | 12 | [The Hill-Climb Torque Demonstration](06-mobility-transport/12-the-hill-climb-torque-demonstration.md) | The Proof |
 | 13 | [The Close-Tracking 45° Axle-Height Velocity](06-mobility-transport/13-the-close-tracking-45-axle-height-velocity.md) | The Ritual |
-| 14 | [The Monsoon Water Exposure & Electronic Demonstration](06-mobility-transport/14-the-monsoon-water-exposure-and-electronic-demonstration.md) | The Proof |
-| 15 | [The Rapid Transit Multi-Modal Fold & Elevator Blueprint](06-mobility-transport/15-the-rapid-transit-multi-modal-fold-and-elevator-blueprint.md) | The Specimen |
+| 14 | [The Monsoon Water Exposure & Electronic Demonstration](06-mobility-transport/14-the-monsoon-water-exposure-and-electronic.md) | The Proof |
+| 15 | [The Rapid Transit Multi-Modal Fold & Elevator Blueprint](06-mobility-transport/15-the-rapid-transit-multi-modal-fold-and-elevator.md) | The Specimen |
 
 ## Optional references
 

@@ -57,6 +57,9 @@ def validate_public_distribution():
             continue
         if any(x.lower() in rel.lower() for x in FORBIDDEN_PATH_PARTS):errors.append(f'forbidden internal path included: {rel}')
         if p.name.startswith('.env') or p.suffix.lower() in {'.pem','.key','.p12','.pfx'}:errors.append(f'sensitive credential/config file included: {rel}')
+        # Windows without long paths turned on stops at 260 characters, and an update unpacks the app about 120
+        # characters deep (more for longer user names); AURA 0.7.5 and earlier unpack it deeper still.
+        if len(rel)>125 and not rel.startswith(('.git/','local-notes/')) and 'node_modules' not in p.parts:errors.append(f'path is too long for Windows updates (over 125 characters): {rel}')
         if p.suffix.lower() not in TEXT_SUFFIXES and p.name!='VERSION':continue
         try:text=p.read_text(errors='strict', encoding='utf-8')
         except (UnicodeDecodeError,OSError):continue

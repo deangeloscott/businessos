@@ -27,8 +27,8 @@ Browse the menu when you need an idea, or open one directly when its visual job 
 | 10 | [The Luxury Unboxing & Hangtag Presentation](03-body-worn-apparel/10-the-luxury-unboxing-and-hangtag-presentation.md) | The Specimen |
 | 11 | [The 5-Year Break-In & Patina Evolution](03-body-worn-apparel/11-the-5-year-break-in-and-patina-evolution.md) | The Proof |
 | 12 | [The Dual-Model Real-World Fit & Layering Comparison](03-body-worn-apparel/12-the-dual-model-real-world-fit-and-layering-comparison.md) | The Proof |
-| 13 | [The Hydrostatic Deluge & DWR Water-Beading Stress Test](03-body-worn-apparel/13-the-hydrostatic-deluge-and-dwr-water-beading-stress-test.md) | The Proof |
-| 14 | [The Ergonomic Range-of-Motion & Articulation Stress Test](03-body-worn-apparel/14-the-ergonomic-range-of-motion-and-articulation-stress-test.md) | The Proof |
+| 13 | [The Hydrostatic Deluge & DWR Water-Beading Stress Test](03-body-worn-apparel/13-the-hydrostatic-deluge-and-dwr-water-beading.md) | The Proof |
+| 14 | [The Ergonomic Range-of-Motion & Articulation Stress Test](03-body-worn-apparel/14-the-ergonomic-range-of-motion-and-articulation.md) | The Proof |
 | 15 | [The Architectural Fashion Editorial Drape](03-body-worn-apparel/15-the-architectural-fashion-editorial-drape.md) | The Habitat |
 
 ## Optional references

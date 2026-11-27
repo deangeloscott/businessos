@@ -459,7 +459,7 @@ def _run(command, kind, cwd, env, prompt, native_id, model, effort, update, exec
         elif getattr(execution,'temporary_chat',False):argv+=['--no-session-persistence']
         elif getattr(execution,'aura_title','') and claude_can_name(tuple(base_command(command))):
             argv+=['--name',execution.aura_title]
-        if getattr(execution,'aura_instructions','') and not native_id and not extra:
+        if getattr(execution,'aura_instructions','') and not extra:
             argv+=['--append-system-prompt',execution.aura_instructions]
         # AURA's guidance and helpers live in the product folder. Claude Code otherwise asks to read
         # them at the start of every chat; its own option makes that folder reachable. Commands and

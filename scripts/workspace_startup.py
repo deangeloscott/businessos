@@ -303,12 +303,17 @@ def shortcut_status():
     try:saved = json.loads((state_dir() / 'shortcut.json').read_text(encoding='utf-8'))
     except (OSError, ValueError):saved = {}
     enabled = isinstance(saved, dict) and saved.get('path') == str(target) and target.exists()
-    return {'supported':True, 'enabled':enabled, 'label':label, 'product':saved.get('product', '') if enabled else ''}
+    return {'supported':True, 'enabled':enabled, 'label':label, 'product':saved.get('product', '') if enabled else '',
+            'opener':saved.get('opener') if enabled else None}
 
 
 def _opener(root):
-    """What the shortcut runs: the folder's own Open AURA (which also opens versions AURA updated to), or Python with
-    AURA's opener where there is no such file (a copy run from source)."""
+    """What the shortcut runs: the folder's own opener (which also opens versions AURA updated to), or Python with
+    AURA's opener where there is no such file (a copy run from source). On Windows the bundled windowless Python runs
+    it, as starting at sign-in does, so no command window flashes up."""
+    quiet = root / '.aura-runtime/pythonw.exe'
+    if sys.platform == 'win32' and quiet.is_file() and (root / 'scripts/open_aura.py').is_file():
+        return [str(quiet), '-X', 'utf8', '-E', '-s', '-B', str(root / 'scripts/open_aura.py')]
     for name in ('Open AURA.cmd', 'Open AURA.command', 'Open AURA.sh'):
         if (root / name).is_file():
             return [str(root / name)] if name.endswith('.cmd') else ['/bin/sh', str(root / name)]
@@ -358,7 +363,7 @@ def configure_shortcut(enabled, product):
         target.write_text('[Desktop Entry]\nType=Application\nName=AURA\nComment=Open AURA\nTerminal=false\nExec=' +
                           ' '.join(map(escaped, ['env', 'PATH=' + os.environ.get('PATH', ''), *argv])) + '\n', encoding='utf-8')
     state_dir().mkdir(parents=True, exist_ok=True)
-    saved.write_text(json.dumps({'path':str(target), 'product':str(root)}), encoding='utf-8')
+    saved.write_text(json.dumps({'path':str(target), 'product':str(root), 'opener':argv}), encoding='utf-8')
     return shortcut_status()
 
 
@@ -368,15 +373,19 @@ def follow(product, launch_target=None):
     An automatic update keeps the original launcher, which already opens the current version. AURA's shortcut follows
     the same way."""
     product = Path(product).resolve()
+    # AURA's own update copies are cleared once unused, so what starts AURA moves off them to this folder.
+    copies = (state_dir() / 'updates/versions').resolve()
+    def opens_here(old):
+        return old == product or (launch_target and launch_target(old) == product and not old.is_relative_to(copies))
     shortcut = shortcut_status()
     if shortcut.get('enabled') and shortcut.get('product'):
         old = Path(shortcut['product']).resolve()
-        if old != product and not (launch_target and launch_target(old) == product):
+        # Also remade when this version opens AURA a better way than the one it was made with.
+        if not opens_here(old) or (old == product and shortcut.get('opener') != _opener(product)):
             try:configure_shortcut(False, old);configure_shortcut(True, product)
             except (OSError, ValueError, subprocess.SubprocessError):pass  # the old shortcut still opens the old folder
     current = status()
     if not current.get('enabled') or not current.get('product') or not current.get('workspace'):return False
-    saved = Path(current['product']).resolve()
-    if saved == product or (launch_target and launch_target(saved) == product):return False
+    if opens_here(Path(current['product']).resolve()):return False
     configure(True, product, current['workspace'])
     return True

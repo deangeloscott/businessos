@@ -54,6 +54,8 @@ def main():
         del sys.argv[pos:pos + 2]
     # A desktop launch has no console. Keep startup errors available locally
     # instead of letting pythonw discard them. Never log requests or credentials.
+    # Opened with no window of its own (the Start menu shortcut); a window that started it reports problems itself.
+    desktop = sys.stdout is None and '--no-open' not in sys.argv and os.environ.pop('AURA_OPENED_FROM_WINDOW', '') != '1'
     if sys.stdout is None or sys.stderr is None:
         import time
         from workspace_startup import state_dir
@@ -112,7 +114,9 @@ def main():
                 # Resolve the existing file, not a merged virtual directory.
                 os.environ['AURA_STATE_DIR'] = str(preferences.resolve().parent)
         arguments = [a for a in sys.argv[1:] if a != '--background']
-        if person:print('Opening AURA…', flush=True)
+        if person:
+            print('Opening AURA…', flush=True)
+            os.environ['AURA_OPENED_FROM_WINDOW'] = '1'
         pid = workspace_startup.launch_background(
             [sys.executable, '-X', 'utf8', '-E', '-s', '-B', str(root / 'scripts/open_aura.py'), *arguments], root)
         if not person:
@@ -123,7 +127,16 @@ def main():
     # another copy. Explicit workspace_ui.py servers remain independent.
     if '--reuse' not in sys.argv:
         sys.argv.append('--reuse')
-    runpy.run_path(str(root / 'scripts/workspace_ui.py'), run_name='__main__')
+    try:
+        runpy.run_path(str(root / 'scripts/workspace_ui.py'), run_name='__main__')
+    except BaseException as error:
+        # Opened from the Start menu with no window: say so on screen instead of only in the log.
+        if desktop and os.name == 'nt' and not isinstance(error, KeyboardInterrupt) and getattr(error, 'code', 1) not in (0, None):
+            import ctypes
+            from workspace_startup import state_dir
+            ctypes.windll.user32.MessageBoxW(None, "AURA couldn't open. What happened is in " + str(state_dir() / 'interface.log') + '.',
+                                             'AURA', 0x10)
+        raise
     return 0
 
 

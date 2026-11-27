@@ -253,7 +253,7 @@ class ChatRun:
                 if chat:
                     if job['status']=='complete':
                         try:
-                            job['saved_outputs']=app.saved_outputs(bid,chat['id'],job['created'])[:30]
+                            job['saved_outputs']=app.saved_outputs(bid,chat['id'],job['created'],job.get('output_root'),getattr(execution,'output_project',None))[:30]
                             known={item['ref'] for item in job['saved_outputs']}
                             for item in job.get('native_media',[]):
                                 if item['path'] not in known:

@@ -168,7 +168,21 @@ with tempfile.TemporaryDirectory(prefix='AURA update boundary ') as directory:
     bad.save(release=updates.release_choice([release(schema_archive)], '0.2.1', updates.native_platform()))
     with patch.object(updates, 'urlopen', return_value=Download(schema_archive.read_bytes())), patch.object(updates.subprocess, 'run') as execute:
         bad.prepare(); execute.assert_not_called()
-    assert 'workspace upgrade' in bad.message
+    assert 'does not match' in bad.message
+    # A newer record format no longer blocks the update: the new version backs up each workspace before saving there.
+    (newer / 'core').mkdir()
+    (newer / 'core/record.schema.json').write_text('{"type": "object"}')
+    updates.write(newer / 'BUNDLED-RUNTIME.json', dict(incompatible, workspace_schema_sha256=updates.schema_hash(newer)))
+    updates.write_integrity(newer)
+    format_archive = Path(shutil.make_archive(str(base / 'format-change'), 'zip', base, newer.name))
+    bad.save(release=updates.release_choice([release(format_archive)], '0.2.1', updates.native_platform()))
+    with patch.object(updates, 'urlopen', return_value=Download(format_archive.read_bytes())), patch.object(updates.subprocess, 'run'):
+        bad.prepare()
+    assert bad.status == 'ready', bad.message
+    bad.action('later')
+    shutil.rmtree(newer / 'core')
+    updates.write(newer / 'BUNDLED-RUNTIME.json', dict(incompatible, workspace_schema_sha256=updates.schema_hash(newer)))
+    updates.write_integrity(newer)
     (current / '.git').mkdir()
     assert not bad.state()['can_install'] and 'Git' in bad.state()['manual_reason']
     (current / '.git').rmdir()

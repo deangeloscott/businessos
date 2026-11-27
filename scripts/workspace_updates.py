@@ -62,11 +62,14 @@ def schema_files(root):
     return sorted([*Path(root).glob('core/**/*.schema.json'), *Path(root).glob('systems/**/*.schema.json')])
 
 
-def schema_hash(root):
+def schema_hash(root, normalized=False):
+    """The workspace record format an app expects. Bundles record the exact bytes, which AURA 0.7.5 and earlier
+    compare as they are; `normalized` ignores line endings, so a Windows and a macOS build of one release agree."""
     digest = hashlib.sha256()
     for path in schema_files(root):
         digest.update(path.relative_to(root).as_posix().encode())
-        digest.update(path.read_bytes())
+        raw = path.read_bytes()
+        digest.update(raw.replace(b'\r\n', b'\n') if normalized else raw)
     return digest.hexdigest()
 
 
@@ -239,6 +242,7 @@ class Updater:
         self.timings = {}
         self.phase_started = None
         self.waiting_for = ''
+        self.settling = False
 
     def phase(self, status, message=''):
         with self.lock:
@@ -279,7 +283,8 @@ class Updater:
                     'manual_reason': 'This is a source checkout. Update it through Git.' if (self.product / '.git').exists() else
                         'Download a bundled AURA app to use one-click updates.' if not runtime else
                         'A verified download for this computer is not available yet.' if available and not release.get('asset') else '',
-                    'rollback': Path(previous).name if not source and saved.get('active') == str(self.product) and previous and Path(previous).is_dir() else None,
+                    'rollback': Path(previous).name if not source and str(self.product) in {saved.get('active'), saved.get('settled_from')} and previous and Path(previous).is_dir() else None,
+                    'home_note': saved.get('home_note', ''),
                     'releases_url': PAGE, 'restart_needed': restart_needed()}
 
     def save(self, **values):
@@ -355,11 +360,15 @@ class Updater:
                 self.save(**({'later_until': time.time() + DAY} if action == 'later' else {'skipped': release.get('version')}))
                 self.cancel_pending()
             elif action == 'install':
+                if self.settling:
+                    raise ValueError('AURA is finishing its last update. Try again in a minute.')
                 if not state['can_install']:
                     raise ValueError(state['manual_reason'] or 'No newer update is available.')
                 self.start(self.prepare)
                 self.status, self.message = 'preparing', 'Preparing the update…'
             elif action == 'rollback':
+                if self.settling:
+                    raise ValueError('AURA is finishing its last update. Try again in a minute.')
                 if not state['rollback']:
                     raise ValueError(state['manual_reason'] or 'The previous version is only available from your current updated app.')
                 if self.operation and self.operation.is_alive():
@@ -367,8 +376,10 @@ class Updater:
                 previous = read(self.path).get('previous')
                 if not previous or not Path(previous).is_dir():
                     raise ValueError('The previous app version is no longer in its saved folder.')
-                if schema_hash(Path(previous)) != schema_hash(self.product):
-                    raise ValueError('The previous version needs a different workspace format. Restore a backup before using it.')
+                if schema_hash(Path(previous), True) != schema_hash(self.product, True):
+                    raise ValueError('The previous version saves records differently and may not read what this one saved. '
+                                     'AURA backed up your workspace before this version first opened it: restore that backup '
+                                     '(Back up or restore) into a new folder, then open it with the previous version from Downloads.')
                 if modified(Path(previous)):
                     raise ValueError('The previous app files have changed. Open that copy separately to review your changes.')
                 bundled_python(Path(previous))
@@ -424,29 +435,33 @@ class Updater:
             if tag != 'v' + release['version'] or not verified_asset(asset, tag, platform):
                 raise ValueError('The saved release details are incomplete. Check for updates again.')
             self.store.mkdir(parents=True, exist_ok=True)
-            if shutil.disk_usage(self.store).free < asset['size'] + MAX_UNPACKED:
-                raise ValueError('There isn’t enough free space. Free up 4 GB and try again.')
-            temporary = Path(tempfile.mkdtemp(prefix='preparing-', dir=self.store))
+            # Room for the download, its unpacked app (about three times the ZIP) and a copy of the current version.
+            needed = 4 * asset['size'] + 256 * 1024 * 1024
+            if shutil.disk_usage(self.store).free < needed:
+                raise ValueError(f'There isn’t enough free space. Free up {-(-needed // (1024 * 1024))} MB and try again.')
+            # Short folder names: an app folder holds paths over 100 characters, and Windows without long paths
+            # turned on stops at 260 in all.
+            temporary = Path(tempfile.mkdtemp(prefix='u-', dir=self.store))
             app = release.get('app_asset') or {}
             fingerprint = runtime_fingerprint(self.product) if app else ''
             target = None
             if (fingerprint and verified_asset(app, tag, platform, app_only=True) and
                     '-app-' + fingerprint + '.' in app['name'] and app['size'] < asset['size']):
                 try:
-                    target = self.download(app, temporary / 'app')
+                    target = self.download(app, temporary / 'a')
                     reuse_runtime(self.product, target, fingerprint)
                     self.validate_target(target, release['version'], platform)
                     asset = app
                 except (OSError, ValueError, subprocess.SubprocessError, tarfile.TarError, zipfile.BadZipFile):
                     target = None
             if target is None:
-                target = self.download(asset, temporary / 'full', fallback=self.progress is not None)
+                target = self.download(asset, temporary / 'f', fallback=self.progress is not None)
                 self.validate_target(target, release['version'], platform)
             versions = self.store / 'versions'
             versions.mkdir(exist_ok=True)
             if versions.is_symlink() or versions.resolve().parent != self.store.resolve():
                 raise ValueError('The update folder points somewhere else. Use Downloads to install this version separately.')
-            destination = versions / (release['tag'] + '-' + native_platform() + '-' + asset['digest'][7:19] + '-' + str(time.time_ns()))
+            destination = versions / (release['tag'] + '-' + asset['digest'][7:15] + '-' + format(time.time_ns() % 16 ** 6, '06x'))
             target.rename(destination)
             self.save(error='', failed_version=None)
             with self.lock:
@@ -493,7 +508,7 @@ class Updater:
         self.phase('verifying', 'Verifying and preparing the update…')
         if total != asset['size'] or 'sha256:' + sha(archive) != asset['digest']:
             raise ValueError('The download could not be verified. Try downloading it again.')
-        unpacked = directory / 'unpacked'
+        unpacked = directory / 'x'
         unpacked.mkdir()
         return extract(archive, unpacked)
 
@@ -502,8 +517,10 @@ class Updater:
         if (metadata.get('platform') != platform or metadata.get('aura_version') != release_version or
                 (target / 'VERSION').read_text(encoding='utf-8').strip() != release_version or modified(target)):
             raise ValueError('The update does not match this computer or its release.')
-        if metadata.get('update_protocol') != 1 or metadata.get('workspace_schema_sha256') != schema_hash(target) or schema_hash(target) != schema_hash(self.product):
-            raise ValueError('This version needs a workspace upgrade. Back up your workspace and follow the release notes.')
+        if metadata.get('update_protocol') != 1 or metadata.get('workspace_schema_sha256') != schema_hash(target):
+            raise ValueError('The update does not match this computer or its release.')
+        # A newer version may save records in a newer format. It backs up each workspace before it first saves there
+        # (workspace_storage.protect_format), so the update itself needs nothing from the person.
         interpreter = bundled_python(target)
         probe = "import sys;from pathlib import Path;sys.path.insert(0,sys.argv[1]);import yaml,jsonschema,workspace_ui"
         subprocess.run([str(interpreter), '-I', '-B', '-c', probe, str(target / 'scripts')],
@@ -604,7 +621,7 @@ def handoff(updater, workspace, business, port, extra):
     saved = read(updater.path)
     roots = list(dict.fromkeys([*saved.get('launch_roots', []), str(previous), str(target)]))
     skipped_version = previous_version if version(target_version) < version(previous_version) else target_version
-    updater.save(active=str(target), previous=str(previous), launch_roots=roots, error='',
+    updater.save(active=str(target), previous=str(previous), launch_roots=roots, error='', settled_from='', home_note='',
                  last_update=updater.result('rolled_back' if target_version != skipped_version else 'updated', target_version),
                  skipped=skipped_version)
     if startup.get('enabled'):
@@ -613,3 +630,182 @@ def handoff(updater, workspace, business, port, extra):
         except (OSError, ValueError, subprocess.SubprocessError):
             updater.save(error='AURA updated. Open Settings → Startup & updates and save once to update automatic startup.')
     updater.cancel_pending()
+
+
+# One AURA folder. An update is prepared and started from a verified copy in AURA's settings folder; the folder the
+# person opens AURA from (their download) is then brought to that same version, so it is the one current AURA for
+# them, for AI apps working in it, and for its launcher. The version it held is kept as the one to go back to.
+
+def _versions(store):
+    return (Path(store) / 'versions').resolve()
+
+
+def home_folders(saved, store):
+    """The folders the person opens AURA from, as opposed to AURA's own update copies."""
+    versions = _versions(store)
+    return [Path(r).resolve() for r in saved.get('launch_roots', [])
+            if not Path(r).resolve().is_relative_to(versions) and (Path(r) / 'UPDATE-INTEGRITY.json').is_file()]
+
+
+def _replace(source, target):
+    target.parent.mkdir(parents=True, exist_ok=True)
+    staged = target.with_name(target.name + '.aura~')
+    shutil.copy2(source, staged)
+    os.replace(staged, target)
+
+
+def mirror(source, home):
+    """Make `home` hold exactly the verified files of `source`. Only files named in AURA's own file lists are written
+    or removed; anything else in the folder stays. Unchanged files (usually the whole bundled Python) are skipped."""
+    source, home = Path(source), Path(home)
+    new, old = read(source / 'UPDATE-INTEGRITY.json'), read(home / 'UPDATE-INTEGRITY.json')
+    files, links = new.get('files') or {}, new.get('links') or {}
+    if not files:
+        raise ValueError('The running version has no file list.')
+    # The bundled Python first: if another program is still using it, nothing else has changed yet.
+    for name in sorted(files, key=lambda n: not n.startswith(RUNTIME + '/')):
+        target = home / safe_name(name)
+        if target.is_file() and not target.is_symlink() and sha(target) == files[name]:
+            continue
+        if target.is_symlink():
+            target.unlink()
+        _replace(source / safe_name(name), target)
+    for name, value in links.items():
+        target = home / safe_name(name)
+        if target.is_symlink() and os.readlink(target) == value:
+            continue
+        if target.is_symlink() or target.is_file():
+            target.unlink()
+        target.parent.mkdir(parents=True, exist_ok=True)
+        os.symlink(value, target)
+    for name in set(old.get('files') or {}) | set(old.get('links') or {}):
+        if name in files or name in links:
+            continue
+        path = home / safe_name(name)
+        if path.is_symlink() or path.is_file():
+            path.unlink()
+        parent = path.parent
+        while parent != home and parent.is_dir() and not any(parent.iterdir()):
+            parent.rmdir()
+            parent = parent.parent
+    _replace(source / 'UPDATE-INTEGRITY.json', home / 'UPDATE-INTEGRITY.json')
+    if modified(home) or (home / 'VERSION').read_text(encoding='utf-8') != (source / 'VERSION').read_text(encoding='utf-8'):
+        raise ValueError('The AURA folder did not match the running version after the update.')
+
+
+def settle(updater, wait=120):
+    """Run by the version that just started after an update or a return to the previous version. Whatever can't be
+    done now leaves AURA running from its verified copy, and is tried again at the next start."""
+    product, store = updater.product, updater.store
+    if not product.is_relative_to(_versions(store)):
+        return None
+    from workspace_startup import VisualInstance
+    guard = VisualInstance(store / 'installer')
+    guard.path = store / 'install.json'
+    deadline = time.monotonic() + wait
+    # The version that handed over finishes recording the update, then lets go of this lock.
+    while not guard.acquire():
+        if time.monotonic() > deadline:
+            return None
+        time.sleep(1)
+    updater.settling = True
+    try:
+        saved = read(updater.path)
+        homes = [h for h in home_folders(saved, store) if h != product]
+        if saved.get('active') != str(product) or not homes:
+            return None
+        previous = Path(saved['previous']).resolve() if saved.get('previous') else None
+        current = (product / 'VERSION').read_text(encoding='utf-8').strip()
+        done, notes = [], []
+        for home in homes:
+            if modified(home):
+                notes.append(f'Your AURA folder {home} has changes of your own, so it was left as it was. '
+                             f'AURA {current} runs from {product}.')
+                continue
+            if home == previous:
+                # Keep the version this folder holds to go back to, before the folder changes.
+                kept = _versions(store) / ('v' + (home / 'VERSION').read_text(encoding='utf-8').strip() + '-kept-' +
+                                           format(time.time_ns() % 16 ** 6, '06x'))
+                staging = kept.with_name(kept.name + '.partial')
+                shutil.copytree(home, staging, symlinks=True, ignore=shutil.ignore_patterns('__pycache__', '.businessos'))
+                if modified(staging):
+                    shutil.rmtree(staging, ignore_errors=True)
+                    raise ValueError('The copy of the previous version could not be verified.')
+                staging.rename(kept)
+                previous = kept
+            for attempt in range(24):
+                try:
+                    mirror(product, home)
+                    break
+                except PermissionError:
+                    # Another program (often the version that just closed) still has a file open.
+                    if attempt == 23:
+                        raise
+                    time.sleep(5)
+            done.append(home)
+        changes = {'home_note': ' '.join(notes)}
+        if done:
+            roots = list(dict.fromkeys([*saved.get('launch_roots', []), *map(str, done)]))
+            changes.update(active=str(done[0]), settled_from=str(product), launch_roots=roots,
+                           previous=str(previous) if previous else saved.get('previous'))
+        updater.save(**changes)
+        if done:
+            import workspace_startup
+            startup = workspace_startup.status()
+            if startup.get('enabled') and startup.get('workspace') and Path(startup.get('product') or '.').resolve() != done[0]:
+                workspace_startup.configure(True, done[0], startup['workspace'], interpreter=bundled_python(done[0]))
+        return done
+    except (OSError, ValueError, subprocess.SubprocessError) as error:
+        print(time.strftime('%Y-%m-%d %H:%M:%S') + ' AURA will finish bringing its folder to this version at the next start: ' +
+              str(error)[:300], flush=True)
+        return None
+    finally:
+        updater.settling = False
+        guard.close()
+
+
+def prune(updater, keep_previous=True):
+    """AURA's own update copies, kept to what is needed: the running version, the active one and (normally) one to go
+    back to. A copy that something on this computer still starts is kept; leftovers a day old are cleared."""
+    store = updater.store
+    versions = _versions(store)
+    if not versions.is_dir():
+        return []
+    from workspace_startup import VisualInstance, shortcut_status, status
+    guard = VisualInstance(store / 'installer')
+    guard.path = store / 'install.json'
+    if not guard.acquire():
+        return []
+    try:
+        saved = read(updater.path)
+        keep = {updater.product.resolve(), *(Path(p).resolve() for p in (saved.get('active'), status().get('product'),
+                                                                          shortcut_status().get('product')) if p)}
+        try:
+            import workspace_os_schedules
+            # A task on the computer's scheduler names the AURA folder whose helper runs it.
+            keep |= {Path(task['runner'][1]).resolve().parents[1] for task in workspace_os_schedules.definitions()
+                     if len(task.get('runner') or []) > 1}
+        except (OSError, ValueError, KeyError, TypeError, IndexError):
+            return []
+        if keep_previous and saved.get('previous'):
+            keep.add(Path(saved['previous']).resolve())
+        removed = []
+        for folder in versions.iterdir():
+            if folder.is_symlink() or not folder.is_dir() or folder.resolve() in keep:
+                continue
+            if folder.name.endswith('.partial') and time.time() - folder.stat().st_mtime < DAY:
+                continue
+            shutil.rmtree(folder, ignore_errors=True)
+            if not folder.exists():
+                removed.append(str(folder))
+        for folder in [*store.glob('preparing-*'), *store.glob('u-*')]:
+            if folder.is_dir() and not folder.is_symlink() and time.time() - folder.stat().st_mtime > DAY:
+                shutil.rmtree(folder, ignore_errors=True)
+        if removed:
+            changes = {'launch_roots': [r for r in saved.get('launch_roots', []) if r not in removed]}
+            if saved.get('previous') in removed:
+                changes['previous'] = None
+            updater.save(**changes)
+        return removed
+    finally:
+        guard.close()

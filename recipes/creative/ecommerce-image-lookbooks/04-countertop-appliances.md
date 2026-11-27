@@ -34,7 +34,7 @@ Open one starting point directly when you already know the visual job. Each file
 | 09 | [The Sensory Output Proof](04-countertop-appliances/09-the-sensory-output-proof.md) | The Proof |
 | 10 | [The Complete Tool & Accessory Bundle](04-countertop-appliances/10-the-complete-tool-and-accessory-bundle.md) | The Specimen |
 | 11 | [The 10-Year Workhorse & Heavy-Cycle Resilience](04-countertop-appliances/11-the-10-year-workhorse-and-heavy-cycle-resilience.md) | The Proof |
-| 12 | [The Engineering Contrast: Metal vs. Generic Reference](04-countertop-appliances/12-the-engineering-teardown-commercial-metal-vs-plastic-competitor.md) | The Proof |
+| 12 | [The Engineering Contrast: Metal vs. Generic Reference](04-countertop-appliances/12-the-engineering-teardown-commercial-metal.md) | The Proof |
 | 13 | [The Floating Exploded Architectural Void](04-countertop-appliances/13-the-floating-exploded-architectural-void.md) | The Specimen |
 | 14 | [The Thermal Heat Map & PID Stability Proof](04-countertop-appliances/14-the-thermal-heat-map-and-pid-stability-proof.md) | The Proof |
 | 15 | [The Noise & Vibration Comparison](04-countertop-appliances/15-the-acoustic-isolation-and-whisper-quiet-proof.md) | The Proof |

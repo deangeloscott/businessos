@@ -33,11 +33,11 @@ Open one starting point directly when you already know the visual job. Each file
 | 08 | [The Lived-In Domestic Sanctuary](05-architectural-macro/08-the-lived-in-domestic-sanctuary.md) | The Habitat |
 | 09 | [The Material Torture Test (Weather & Wear)](05-architectural-macro/09-the-material-torture-test-weather-and-wear.md) | The Proof |
 | 10 | [The Dimensional Orthographic Architecture](05-architectural-macro/10-the-dimensional-orthographic-architecture.md) | The Specimen |
-| 11 | [The Noble Silvered Timber & Decadal Weathering Grace](05-architectural-macro/11-the-noble-silvered-timber-and-decadal-weathering-grace.md) | The Proof |
-| 12 | [The Multi-Human Seating Capacity & Shoulder Clearance Blueprint](05-architectural-macro/12-the-multi-human-seating-capacity-and-shoulder-clearance-blueprint.md) | The Specimen |
+| 11 | [The Noble Silvered Timber & Decadal Weathering Grace](05-architectural-macro/11-the-noble-silvered-timber-and-decadal.md) | The Proof |
+| 12 | [The Multi-Human Seating Capacity & Shoulder Clearance Blueprint](05-architectural-macro/12-the-multi-human-seating-capacity-and-shoulder.md) | The Specimen |
 | 13 | [The Biophilic Alpine / Coastal Dawn Sanctuary](05-architectural-macro/13-the-biophilic-alpine-coastal-dawn-sanctuary.md) | The Habitat |
 | 14 | [The Problem vs. Sanctuary Contrast (The Relief Proof)](05-architectural-macro/14-the-problem-vs-sanctuary-contrast-the-relief-proof.md) | The Proof |
-| 15 | [The Freight Delivery, Modular Assembly & Gateway Access Blueprint](05-architectural-macro/15-the-freight-delivery-modular-assembly-and-gateway-access-blueprint.md) | The Specimen |
+| 15 | [The Freight Delivery, Modular Assembly & Gateway Access Blueprint](05-architectural-macro/15-the-freight-delivery-modular-assembly.md) | The Specimen |
 
 ## Optional references
 

@@ -489,3 +489,42 @@ def relocate(source, destination, report=_quiet):
         '--profile',profile.get('profile','power_user'),'--no-link','--json',
         *(['--no-knowledge'] if profile.get('knowledge_enabled') is False else [])],env=env,check=True,capture_output=True,timeout=30,**flags)
     return {'path':str(target),'files':len(rows),'verified':True,'source_retained':True}
+
+
+FORMAT_FILE = '.businessos/aura-format.json'
+
+
+def _format_records(root):
+    from workspace_updates import schema_hash
+    try:saved = workspace_catalog.read_json(Path(root) / FORMAT_FILE, {})
+    except (OSError, ValueError):saved = {}
+    current = {'schema':schema_hash(PRODUCT_ROOT, True), 'version':(PRODUCT_ROOT / 'VERSION').read_text(encoding='utf-8').strip()}
+    return (saved if isinstance(saved, dict) else {}), current
+
+
+def format_backup_needed(root):
+    """Whether the workspace was last opened by a version that saved records in a different format. No earlier
+    record (a new workspace, or one not opened since versions began keeping it) has nothing to compare against."""
+    saved, current = _format_records(root)
+    return bool(saved.get('schema') and saved['schema'] != current['schema'] and (Path(root) / 'instances').is_dir())
+
+
+def protect_format(root, report=_quiet):
+    """Before this AURA saves in a workspace last opened by a version with a different record format, keep a verified
+    backup of it in AURA's settings folder (the two newest per workspace), so going back to that version stays
+    possible. Returns the backup, or None when nothing was needed. A failed backup raises and is tried again."""
+    from workspace_startup import state_dir
+    root = Path(root).resolve()
+    stamp = root / FORMAT_FILE
+    saved, current = _format_records(root)
+    result = None
+    if format_backup_needed(root):
+        folder = state_dir() / 'workspace-backups' / hashlib.sha256(str(root).encode()).hexdigest()[:16]
+        folder.mkdir(parents=True, exist_ok=True)
+        result = backup(root, folder, report=report)
+        for old in sorted(folder.glob('AURA-backup-*.zip'))[:-2]:
+            old.unlink(missing_ok=True)
+        current.update(backup=result['path'], from_version=saved.get('version', ''))
+    if saved.get('schema') != current['schema'] or saved.get('version') != current['version']:
+        workspace_catalog.write_json(stamp, {**{k:v for k,v in saved.items() if k in {'backup','from_version'}}, **current})
+    return result

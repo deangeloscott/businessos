@@ -16,18 +16,30 @@ from urllib.request import Request, urlopen
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def small_update(archive):
+    """The smaller app-only download built beside the full one (most updates use it)."""
+    suffix = archive.name[len(archive.stem):] if archive.suffix == '.zip' else '.tar.gz'
+    found = sorted(archive.parent.glob(archive.name[:-len(suffix)] + '-app-*' + suffix))
+    return found[0] if len(found) == 1 else None
+
+
 def serve(old, archive, port):
     sys.path.insert(0, str(old / 'scripts'))
     import workspace_startup
     import workspace_updates
 
     live_open = workspace_updates.urlopen
-    asset = workspace_updates.read(workspace_updates.state_dir() / 'updates/settings.json')['release']['asset']
+    release = workspace_updates.read(workspace_updates.state_dir() / 'updates/settings.json')['release']
+    files = {release['asset']['browser_download_url']: archive}
+    small = small_update(archive)
+    if small and release.get('app_asset'):
+        files[release['app_asset']['browser_download_url']] = small
 
     def candidate_open(request, *args, **kwargs):
-        if getattr(request, 'full_url', '') == asset['browser_download_url']:
-            stream = archive.open('rb')
-            stream.geturl = lambda: asset['browser_download_url']
+        url = getattr(request, 'full_url', '')
+        if url in files:
+            stream = files[url].open('rb')
+            stream.geturl = lambda: url
             return stream
         return live_open(request, *args, **kwargs)
 
@@ -66,9 +78,15 @@ def smoke(archive, previous_file=None):
         candidate = {'name': archive.name, 'size': archive.stat().st_size, 'digest': 'sha256:' + updates.sha(archive),
                      'browser_download_url': updates.DOWNLOADS + tag + '/' + archive.name}
         assert updates.verified_asset(candidate, tag, 'windows-x64')
+        release = {'version': version, 'tag': tag, 'asset': candidate}
+        small = small_update(archive)
+        if small:
+            # The path most updates take: the app files only, reusing the installed runtime when it matches.
+            release['app_asset'] = {'name': small.name, 'size': small.stat().st_size, 'digest': 'sha256:' + updates.sha(small),
+                                    'browser_download_url': updates.DOWNLOADS + tag + '/' + small.name}
+            assert updates.verified_asset(release['app_asset'], tag, 'windows-x64', app_only=True)
         local = root / 'settings'
-        updates.write(local / 'updates/settings.json', {'policy': 'manual',
-                      'release': {'version': version, 'tag': tag, 'asset': candidate}})
+        updates.write(local / 'updates/settings.json', {'policy': 'manual', 'release': release})
         workspace = root / 'workspace'
         env = dict(os.environ, AURA_STATE_DIR=str(local), BUSINESSOS_WORKSPACE=str(workspace),
                    BUSINESSOS_WORKSPACE_CONFIG=str(root / 'selection.json'), AURA_WORKSPACES_HOME=str(root / 'workspaces'),
@@ -96,7 +114,8 @@ def smoke(archive, previous_file=None):
                     saved = updates.read(local / 'updates/settings.json')
                     active = saved.get('active')
                     last_seen = {'version':state.get('version'), 'error':saved.get('error'), 'last_update':saved.get('last_update')}
-                    if state['version'] == expected and (not pointer or active and Path(active) == Path(state['product'])):
+                    here = {Path(p) for p in (active, saved.get('settled_from')) if p}
+                    if state['version'] == expected and (not pointer or Path(state['product']) in here):
                         return state
                     if saved.get('failed_version') == expected and saved.get('error'):
                         raise RuntimeError('AURA could not prepare or activate ' + expected + ': ' + saved['error'])
@@ -116,6 +135,20 @@ def smoke(archive, previous_file=None):
                 before = updates.sha(marker)
                 api('/api/updates', {'action': 'install'})
                 state = await_version(version, pointer=True)
+                # The folder the person opens AURA from now holds the new version itself, and the version it held is
+                # kept to go back to.
+                deadline = time.monotonic() + 180
+                while time.monotonic() < deadline:
+                    saved = updates.read(local / 'updates/settings.json')
+                    if saved.get('active') and Path(saved['active']).resolve() == old.resolve():
+                        break
+                    time.sleep(.5)
+                else:
+                    raise RuntimeError('The AURA folder was not brought to the new version: ' + json.dumps(saved))
+                assert (old / 'VERSION').read_text(encoding='utf-8').strip() == version and not updates.modified(old)
+                assert Path(saved['previous']).is_dir() and (Path(saved['previous']) / 'VERSION').read_text(encoding='utf-8').strip() == previous['version']
+                download = (saved.get('last_update') or {}).get('download') or {}
+                path_taken = 'the smaller app-only download' if small and download.get('total') == small.stat().st_size else 'the full download'
                 assert Path(state['workspace']).resolve() == workspace, 'The upgraded app opened a different workspace.'
                 assert state['business_id'] == setup['business_id'], 'The upgraded app did not open the saved business.'
                 assert updates.sha(marker) == before
@@ -143,7 +176,8 @@ def smoke(archive, previous_file=None):
                 if server.poll() is None:
                     server.terminate()
                 server.wait(timeout=10)
-    print(f'Published Windows {previous["version"]} upgraded to {version} and rolled back with its workspace intact.')
+    print(f'Published Windows {previous["version"]} upgraded to {version} using {path_taken}, brought its own folder to '
+          f'{version}, and rolled back with its workspace intact.')
 
 
 if __name__ == '__main__':
