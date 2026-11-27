@@ -1,11 +1,13 @@
 # Changelog
 
-## Unreleased
-
+## 0.7.6 Alpha — 2026-11-26
 - **One AURA folder after an update.** The folder you open AURA from is brought to the new version, so it no longer shows an old version beside the one running, and AI apps working in it get current guidance and helpers. The previous version is still kept for going back, and update copies nothing needs are cleared instead of adding about 90 MB per update. A folder you've added your own files to is left alone, with a note in Settings.
 - **Updates no longer stop at a new record format.** A version that saves records differently backs up each workspace before it first saves there, so you don't have to back up by hand and follow release notes. If that backup can't be made, Home says so.
 - **What a chat made, listed after it.** Files that appear in the chat's output folder show with **Open file** and **Show folder**, whether or not the AI recorded them.
 - **Dollar amounts that survive the shell.** In double quotes, a shell drops `$` and the digit after it, so a note saying "$412,000" was saved as "12,000". The attention and archive helpers now show back the text they saved and point out an amount with no currency sign, and at the model floor Haiku then re-ran the command correctly.
+- **You can see when AURA is working.** A button whose work takes more than a moment shows it and can't be pressed twice, and slow steps say what's happening: creating your workspace, connecting to your AI, looking for AI apps, finding models, setting up a task, opening a workspace. Adding files shows which one is being added. A finished Claude Code reply no longer shows "Background work is running" when nothing is.
+- **Fewer slips with long Claude Code chats and Windows paths.** AURA's guidance is passed again whenever a Claude Code chat continues, so it returns after a long chat is compacted. Updates unpack into shorter folders and a few very long recipe file names are shorter, so updates work on Windows computers without long paths turned on.
+- **The download's security prompts explained.** The start guide, download guide and AI setup guide say what to do when Windows shows "Windows protected your PC" or macOS asks for approval, because the download isn't code-signed yet.
 - **One step to prepare a release.** `python scripts/set_version.py X.Y.Z` sets the version everywhere it appears and dates the changelog.
 - **Smaller fixes.** The Start menu shortcut opens AURA without a command window and says on screen if AURA can't start. Scheduled runs are named after their task in the AI app's own chat history. Updates ask for free space in proportion to their size instead of 4 GB. Remove from this computer also removes the earlier versions AURA keeps and names its settings folder. The update panel no longer offers a restart notice while an update is being prepared.
 
