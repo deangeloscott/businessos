@@ -15,6 +15,8 @@ The launcher starts AURA in the background and opens it in your browser; its win
 
 Follow the short workspace/AI connection setup. If you do not have an AI app yet, use the download/sign-in links there. The interface can open before an AI is connected. An AI account, API access, or a separately configured local model is still needed to do AI work. Optional tools such as FFmpeg are obtained when a task needs them, rather than installed for everyone.
 
+Windows may show **Windows protected your PC** the first time you open **Open AURA.cmd**, because the download isn't code-signed yet. Choose **More info**, check the app is the one you extracted from the official release, then **Run anyway**. Windows remembers the choice. If the window doesn't offer **Run anyway**, right-click the downloaded ZIP before extracting, choose **Properties**, tick **Unblock**, and extract again.
+
 macOS may ask you to approve the downloaded launcher in **Privacy & Security**. The current release is not Apple-notarized. Approve only a download you obtained from the official release; AURA does not remove quarantine flags or disable operating-system protections. The same normal download/security prompts may apply on other platforms.
 
 ## What is included

@@ -411,7 +411,9 @@ def agent_lines(process,kind,prompt,native_id,execution,errors):
                     elif subtype=='task_updated' and (event.get('patch') or {}).get('status') in {'completed','failed','stopped'}:tasks.discard(task)
                     elif subtype=='session_state_changed':session_state=event.get('state')
                 yield json.dumps(event)
-                if typ=='result':result_received=True;yield json.dumps({'type':'aura_reply_ready','background':bool(tasks) or session_state not in {None,'idle'} or last_goal_status=='active'})
+                # Claude Code still reports "running" for a moment after its reply; only background tasks or an active goal are
+                # work that continues (the request still ends only once the session is idle).
+                if typ=='result':result_received=True;yield json.dumps({'type':'aura_reply_ready','background':bool(tasks) or last_goal_status=='active'})
                 if result_received and not tasks and session_state in {None,'idle'} and last_goal_status!='active' and not execution.helpers and not any(r['status']=='pending' for r in execution.requests.snapshot()):
                     if goal and last_goal_status is None and kind=='claude':
                         from workspace_native_goals import claude_transcript_status

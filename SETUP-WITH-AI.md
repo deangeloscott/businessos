@@ -8,7 +8,7 @@ The goal is simple: connect AURA to a usable organization workspace, establish t
 
 Do not turn setup into a capability registry, dependency manager, questionnaire, host framework, or execution system.
 
-If this folder contains `.aura-runtime`, it is the download for this computer and brings its own Python: use `.aura-runtime\python.exe` on Windows or `.aura-runtime/bin/python3` on macOS and Linux wherever the commands below say `python`. No system Python is needed. The person can also open AURA themselves with **Open AURA** in this folder.
+If this folder contains `.aura-runtime`, it is the download for this computer and brings its own Python: use `.aura-runtime\python.exe` on Windows or `.aura-runtime/bin/python3` on macOS and Linux wherever the commands below say `python`. No system Python is needed. The person can also open AURA themselves with **Open AURA** in this folder. The download isn't code-signed yet, so Windows may show "Windows protected your PC" (More info → Run anyway) and macOS may ask for approval in Privacy & Security the first time; help them through that only for a download from the official release.
 
 When the requested work needs a capability or account that is not available, consult the relevant part of the optional [tools, models, and services guide](docs/tools-and-services.md). Reuse existing access and preferences, consider native tools or useful combinations, and help connect the smallest suitable addition within the user's authorization. Let the first useful task confirm the connection when possible; do not add a separate test once it has done so. Missing access to one service should not stop independent work.
 

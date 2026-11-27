@@ -1626,3 +1626,5 @@ body.in-aura .world-main:not(.lens-on) .world-ask{left:auto;right:14px;transform
 .sidebar-chat .chat-from{font-size:.68rem;opacity:.7;margin-left:auto;padding-left:.35rem;white-space:nowrap}
 .reply-extras{gap:.75rem;flex-wrap:wrap}
 #phone-chats-business{margin:0 0 .75rem 1.6rem;max-width:calc(100% - 1.6rem)}
+/* A pressed button whose work takes more than a moment (app.js busyFor). */
+button[aria-busy=true]:not(#chat-refresh){cursor:progress}button[aria-busy=true]:not(#chat-refresh)::after{content:'';display:inline-block;width:.75em;height:.75em;margin-left:.5em;border:1.5px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-.1em;animation:refresh-turn .8s linear infinite}@media(prefers-reduced-motion:reduce){button[aria-busy=true]:not(#chat-refresh)::after{animation:none;border-right-color:currentColor;opacity:.6}}

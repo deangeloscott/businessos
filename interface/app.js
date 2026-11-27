@@ -64,15 +64,42 @@ async function cachedApi(path){
   const promise=api(url);const entry={at:now,promise};readResponses.set(key,entry);
   promise.catch(()=>{if(readResponses.get(key)===entry)readResponses.delete(key);});return promise;
 }
+// Whatever someone just pressed shows that it is working when what it started takes more than a moment: the button
+// waits (no second press) with a small spinner, and says what is happening where it has words for it (data-busy).
+let lastPressed=null;
+const pressed=el=>{if(el&&!el.closest('#chat-refresh'))lastPressed={el,at:performance.now()};};
+document.addEventListener('click',event=>pressed(event.target.closest?.('button')),true);
+document.addEventListener('submit',event=>pressed(event.submitter||event.target.querySelector('[type=submit],button.primary')),true);
+const busyCount=new WeakMap();
+function busyFor(){
+  const press=lastPressed;
+  if(!press||performance.now()-press.at>400||!press.el.isConnected)return ()=>{};
+  const el=press.el;let shown=false;
+  const timer=setTimeout(()=>{
+    if(!el.isConnected)return;
+    shown=true;busyCount.set(el,(busyCount.get(el)||0)+1);
+    if(busyCount.get(el)>1)return;
+    el.setAttribute('aria-busy','true');el.dataset.wasDisabled=el.disabled?'1':'';el.disabled=true;
+    if(el.dataset.busy){el.dataset.idleHtml=el.innerHTML;el.textContent=el.dataset.busy;}
+  },500);
+  return ()=>{
+    clearTimeout(timer);if(!shown)return;
+    const left=(busyCount.get(el)||1)-1;busyCount.set(el,left);if(left)return;
+    el.removeAttribute('aria-busy');
+    if(el.dataset.idleHtml!==undefined&&el.textContent===el.dataset.busy)el.innerHTML=el.dataset.idleHtml;
+    delete el.dataset.idleHtml;
+    if(!el.dataset.wasDisabled)el.disabled=false;
+  };
+}
 async function api(path, data, options={}) {
-  const started=performance.now();let failed=false;
+  const started=performance.now();let failed=false;const idle=data?busyFor():()=>{};
   try{
     const response=await fetch(path,{method:data?'POST':'GET',headers:{'X-Aura-Token':token,...(data&&state.data?.workspace?{'X-Aura-Workspace':state.data.workspace}:{}),...(data?{'Content-Type':'application/json'}:{})},...(data?{body:JSON.stringify(data)}:{}),...options});
     const body=await response.json();
     if(!response.ok){const error=new Error(body.error||'Something could not be completed. Refresh and try again.');error.status=response.status;error.readable=true;error.detailId=body.error_id;technicalError(error);throw error;}
     if(data&&!path.startsWith('/api/support/'))invalidateReads();return body;
   }catch(error){failed=true;if(!error.readable){const readable=new Error(humanError(error));readable.readable=true;throw readable;}throw error;}
-  finally{const elapsed=performance.now()-started;clientPerformance.requests++;clientPerformance.errors+=Number(failed);clientPerformance.total_ms+=elapsed;clientPerformance.max_ms=Math.max(clientPerformance.max_ms,elapsed);}
+  finally{idle();const elapsed=performance.now()-started;clientPerformance.requests++;clientPerformance.errors+=Number(failed);clientPerformance.total_ms+=elapsed;clientPerformance.max_ms=Math.max(clientPerformance.max_ms,elapsed);}
 }
 // A backup, restore or move runs while the rest of AURA keeps working. While the page waits for it, show how far
 // along it is, with a way to stop it.
@@ -1278,10 +1305,14 @@ function wireFileSave(view){
   const scope=()=>({business:state.business,workspace:state.data.workspace,project:state.fileProject||''});
   async function add(files,selected){
     const check=()=>selected.business===state.business&&selected.workspace===state.data.workspace&&state.view==='files';
-    const saved=[];
+    const saved=[],status=$('#workspace-file-receipt');
     try {
-      for(const file of files)saved.push(await saveWorkspaceFile(file,selected));
+      for(const [index,file] of files.entries()){
+        if(status&&check())status.textContent=files.length===1?`Adding ${file.name}…`:`Adding files · ${index+1} of ${files.length}…`;
+        saved.push(await saveWorkspaceFile(file,selected));
+      }
     } finally {
+      if(!saved.length&&status?.isConnected)status.textContent='';
       if(saved.length&&check()){
         await render();
         const receipt=$('#workspace-file-receipt');
@@ -1529,7 +1560,7 @@ function scheduleForm() {
   const current=state.data.connection,apps=current.choices.filter(c=>c.available&&nativeConnection(c.id));
   const draft=state.scheduleDraft??={name:'',description:'',when:'',app:'',model:current.model||'',effort:current.effort||''};
   if(!apps.some(c=>c.id===draft.app))draft.app=apps.find(c=>c.id===current.selected)?.id||apps[0]?.id||'';
-  return `<details id="schedule-add" class="schedule-add" ${state.scheduleAdding?'open':''}><summary class="secondary compact add-button">Add scheduled task</summary><form class="form-grid" id="schedule-form">${draft.collection_id?`<input type="hidden" name="collection_id" value="${esc(draft.collection_id)}"><p class="small-note">Save results to ${esc(draft.collection_name)}</p>`:''}<div class="schedule-basics"><label>Task name<input name="name" required maxlength="200" value="${esc(draft.name)}" placeholder="Weekly competitor check"></label><label>When?<input name="when" required maxlength="300" value="${esc(draft.when)}" placeholder="Every Monday at 9am"></label></div><label>What should it do?<textarea name="description" required rows="2" maxlength="20000" placeholder="Check competitor pricing and summarize meaningful changes.">${esc(draft.description)}</textarea></label><label>Business goal<select name="goal_id"><option value="">No business goal</option>${workspaceGoalRecords().map(g=>`<option value="${esc(g.ref)}" ${g.ref===draft.goal_id?'selected':''}>${esc(g.title)}</option>`).join('')}</select></label><label>Assistant<select name="assistant_id" id="schedule-assistant"><option value="">Unassigned</option>${(state.assistantProfiles||[]).map(p=>`<option value="${esc(p.id)}" ${p.id===draft.assistant_id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label>${!apps.length?'<p>Connect an AI app to run this task. <button type="button" class="text-button" data-action="connect">Connect AI</button></p>':''}<div class="schedule-run-with" ${apps.length?'':'hidden'}><label>AI app<select name="app" id="schedule-app" required>${apps.map(c=>`<option value="${esc(c.id)}" ${c.id===draft.app?'selected':''}>${esc(c.name)}</option>`).join('')||'<option value="">Connect an AI app first</option>'}</select></label><label>Model<select name="model" id="schedule-model" required disabled><option>Finding models…</option></select></label><label id="schedule-effort-label" hidden>Effort<select name="effort" id="schedule-effort"></select></label></div><p id="schedule-create-status" class="small-note" role="status"></p><div class="inline-actions"><button class="primary" id="create-schedule" disabled ${apps.length?'':'hidden'}>Create task →</button><button type="button" class="text-button" id="schedule-retry-models" hidden>Try again</button></div></form></details>`;
+  return `<details id="schedule-add" class="schedule-add" ${state.scheduleAdding?'open':''}><summary class="secondary compact add-button">Add scheduled task</summary><form class="form-grid" id="schedule-form">${draft.collection_id?`<input type="hidden" name="collection_id" value="${esc(draft.collection_id)}"><p class="small-note">Save results to ${esc(draft.collection_name)}</p>`:''}<div class="schedule-basics"><label>Task name<input name="name" required maxlength="200" value="${esc(draft.name)}" placeholder="Weekly competitor check"></label><label>When?<input name="when" required maxlength="300" value="${esc(draft.when)}" placeholder="Every Monday at 9am"></label></div><label>What should it do?<textarea name="description" required rows="2" maxlength="20000" placeholder="Check competitor pricing and summarize meaningful changes.">${esc(draft.description)}</textarea></label><label>Business goal<select name="goal_id"><option value="">No business goal</option>${workspaceGoalRecords().map(g=>`<option value="${esc(g.ref)}" ${g.ref===draft.goal_id?'selected':''}>${esc(g.title)}</option>`).join('')}</select></label><label>Assistant<select name="assistant_id" id="schedule-assistant"><option value="">Unassigned</option>${(state.assistantProfiles||[]).map(p=>`<option value="${esc(p.id)}" ${p.id===draft.assistant_id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label>${!apps.length?'<p>Connect an AI app to run this task. <button type="button" class="text-button" data-action="connect">Connect AI</button></p>':''}<div class="schedule-run-with" ${apps.length?'':'hidden'}><label>AI app<select name="app" id="schedule-app" required>${apps.map(c=>`<option value="${esc(c.id)}" ${c.id===draft.app?'selected':''}>${esc(c.name)}</option>`).join('')||'<option value="">Connect an AI app first</option>'}</select></label><label>Model<select name="model" id="schedule-model" required disabled><option>Finding models…</option></select></label><label id="schedule-effort-label" hidden>Effort<select name="effort" id="schedule-effort"></select></label></div><p id="schedule-create-status" class="small-note" role="status"></p><div class="inline-actions"><button class="primary" id="create-schedule" data-busy="Setting up the task…" disabled ${apps.length?'':'hidden'}>Create task →</button><button type="button" class="text-button" id="schedule-retry-models" hidden>Try again</button></div></form></details>`;
 }
 async function loadScheduleModels(refresh=false) {
   const app=$('#schedule-app')?.value;if(!app)return;
@@ -1664,7 +1695,7 @@ async function syncSchedules(force=false) {
   } finally {state.scheduleLoading=false;}
 }
 function startupSection(startup) {
-  return `<section class="startup-section"><h3>Startup</h3><form id="startup-form"><label class="startup-choice"><input type="checkbox" name="enabled" ${startup.enabled?'checked':''} ${startup.supported?'':'disabled'}> Start AURA when I sign in</label><p class="small-note">${startup.supported?'Keeps AURA available in the background on this computer.':'Automatic startup is unavailable on this system.'}</p>${startup.shortcut?.supported?`<label class="startup-choice"><input type="checkbox" name="shortcut" ${startup.shortcut.enabled?'checked':''}> ${esc(startup.shortcut.label)}</label><p class="small-note">Open AURA from there, without finding its folder.</p>`:''}${startup.product&&startup.product!==state.data.product?'<p class="small-note">Save to use this version at startup.</p>':startup.workspace&&startup.workspace!==state.data.workspace?'<p class="small-note">Save to use this workspace at startup.</p>':''}<div class="startup-actions"><button class="secondary" ${startup.supported||startup.shortcut?.supported?'':'disabled'}>Save</button><span id="startup-save-status" class="small-note" role="status"></span></div></form></section>`;
+  return `<section class="startup-section"><h3>Startup</h3><form id="startup-form"><label class="startup-choice"><input type="checkbox" name="enabled" ${startup.enabled?'checked':''} ${startup.supported?'':'disabled'}> Start AURA when I sign in</label><p class="small-note">${startup.supported?'Keeps AURA available in the background on this computer.':'Automatic startup is unavailable on this system.'}</p>${startup.shortcut?.supported?`<label class="startup-choice"><input type="checkbox" name="shortcut" ${startup.shortcut.enabled?'checked':''}> ${esc(startup.shortcut.label)}</label><p class="small-note">Open AURA from there, without finding its folder.</p>`:''}${startup.product&&startup.product!==state.data.product?'<p class="small-note">Save to use this version at startup.</p>':startup.workspace&&startup.workspace!==state.data.workspace?'<p class="small-note">Save to use this workspace at startup.</p>':''}<div class="startup-actions"><button class="secondary" data-busy="Saving…" ${startup.supported||startup.shortcut?.supported?'':'disabled'}>Save</button><span id="startup-save-status" class="small-note" role="status"></span></div></form></section>`;
 }
 /* Removing AURA: there is no installer, so deleting its folder is the uninstall. This takes away first what AURA set up
    on the computer outside that folder, so nothing is left running for a folder that's gone. */
@@ -1674,7 +1705,7 @@ function removeSection(){
 document.addEventListener('click',event=>{
   const button=event.target.closest('[data-remove-computer]');if(!button)return;
   const host=$('#remove-computer'),step=button.dataset.removeComputer;
-  if(step==='ask'){host.innerHTML='<p>Remove AURA’s scheduled tasks, starting at sign-in and its wake-up from this computer? Scheduled tasks stop running and won’t come back.</p><button type="button" class="secondary" data-remove-computer="yes">Remove</button><button type="button" class="text-button" data-remove-computer="no">Cancel</button>';host.querySelector('[data-remove-computer="no"]').focus();return;}
+  if(step==='ask'){host.innerHTML='<p>Remove AURA’s scheduled tasks, starting at sign-in and its wake-up from this computer? Scheduled tasks stop running and won’t come back.</p><button type="button" class="secondary" data-remove-computer="yes" data-busy="Removing…">Remove</button><button type="button" class="text-button" data-remove-computer="no">Cancel</button>';host.querySelector('[data-remove-computer="no"]').focus();return;}
   if(step==='no'){host.innerHTML='<button type="button" class="secondary" data-remove-computer="ask">Remove from this computer</button>';host.querySelector('button').focus();return;}
   if(step==='quit'){attempt(()=>closeAura('quit'));return;}
   attempt(async()=>{
@@ -2583,7 +2614,7 @@ async function previewWorkspace(path) {
   const workspaces=result.items.filter(w=>w.kind==='workspace');
   if(workspaces.length===1) {
     const w=workspaces[0];
-    details('Open saved work',`<h3>${esc(w.name)}</h3><p>${w.businesses.length} ${w.businesses.length===1?'business':'businesses'} · ${w.files} files · ${size(w.bytes)}</p><p class="small-note storage-path">${esc(w.path)}</p>${w.aliases.length?'<p class="small-note">This AURA download points to the saved workspace above.</p>':''}<button class="primary" data-open-workspace="${esc(w.path)}">Open workspace →</button>`);
+    details('Open saved work',`<h3>${esc(w.name)}</h3><p>${w.businesses.length} ${w.businesses.length===1?'business':'businesses'} · ${w.files} files · ${size(w.bytes)}</p><p class="small-note storage-path">${esc(w.path)}</p>${w.aliases.length?'<p class="small-note">This AURA download points to the saved workspace above.</p>':''}<button class="primary" data-open-workspace="${esc(w.path)}" data-busy="Opening your workspace…">Open workspace →</button>`);
   } else {
     const missing=result.items.find(w=>w.kind==='missing');
     details(missing?'Find your workspace':'Choose saved work',workspaces.length?`<div class="card">${workspaceRows(workspaces)}</div>`:`<p>${esc(missing?.note||'No saved business workspace was found here. Choose another folder, or link these files from Files.')}</p><button class="secondary" data-find-workspace="${esc(missing?.path||'')}">Choose folder…</button>`);

@@ -100,6 +100,8 @@ ViralTrac is an optional companion for tracking, attribution and experiments. AU
 
 **`python` or `python3` isn't found.** Use the bundled download, or install Python 3 and try the other name.
 
+**Windows says "Windows protected your PC" or macOS won't open the launcher.** The download isn't code-signed yet, so the computer asks first. On Windows choose **More info → Run anyway**; on macOS approve it in **System Settings → Privacy & Security**. Only do this for a download from the official release. [Details](docs/bundled-downloads.md).
+
 More: [troubleshooting](docs/troubleshooting.md).
 
 ## Removing AURA
