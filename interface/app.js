@@ -3225,7 +3225,10 @@ document.addEventListener('submit',event=>{
     }
     if(form.getAttribute('id')==='open-workspace-form'){submit.disabled=true;try{await previewWorkspace(data.get('path'));}finally{submit.disabled=false;}return;}
       if(form.getAttribute('id')==='create-workspace-form') {
-        await api('/api/workspaces/create',Object.fromEntries(data));
+        // Creating a workspace takes a few seconds; say so instead of looking unresponsive.
+        const label=submit?.textContent;if(submit){submit.disabled=true;submit.textContent='Creating your workspace…';}
+        try{await api('/api/workspaces/create',Object.fromEntries(data));}
+        finally{if(submit?.isConnected){submit.disabled=false;submit.textContent=label;}}
         for(const dialog of document.querySelectorAll('dialog[open]'))dialog.close();
         state.business='';state.hydrated=false;state.chat=[];state.chatMeta=null;state.newAssistantId=null;state.newAssistantName='';state.catalog=null;state.library=[];state.setupPrompted=new Set();
         await refresh();notice('Workspace saved in '+state.data.workspace);return;
